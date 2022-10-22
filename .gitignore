@@ -1,0 +1,3 @@
+.Xil/
+impl/**/vivado/*
+!impl/**/vivado/create_project.tcl
