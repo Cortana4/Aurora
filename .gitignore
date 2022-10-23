@@ -1,3 +1,5 @@
 .Xil/
-impl/**/vivado/*
-!impl/**/vivado/create_project.tcl
+impl/**/Vivado/*
+!impl/**/Vivado/create_project.bat
+!impl/**/Vivado/create_project.tcl
+!impl/**/Vivado/vivado.tcl
