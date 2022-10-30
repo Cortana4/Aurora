@@ -30,7 +30,7 @@ module int_multiplier
 	logic	[2*n-1:0]	reg_res;
 	logic				reg_sgn;
 
-	logic	[n+m:0]		acc;
+	logic	[n+m-1:0]	acc;
 
 	integer				counter;
 

@@ -22,22 +22,28 @@ module AmberFive_pipeline
 	logic	[31:0]	PC_ID;
 	logic	[31:0]	IR_ID;
 	logic	[31:0]	IM_ID;
-	logic	[4:0]	rs1_addr_ID;
+	logic	[5:0]	rs1_addr_ID;
 	logic	[31:0]	rs1_data_ID;
 	logic			rs1_access_ID;
-	logic	[4:0]	rs2_addr_ID;
+	logic	[5:0]	rs2_addr_ID;
 	logic	[31:0]	rs2_data_ID;
 	logic			rs2_access_ID;
-	logic	[4:0]	rd_addr_ID;
+	logic	[5:0]	rs3_addr_ID;
+	logic	[31:0]	rs3_data_ID;
+	logic			rs3_access_ID;
+	logic	[5:0]	rd_addr_ID;
 	logic			rd_access_ID;
 	logic			sel_PC_ID;
 	logic			sel_IM_ID;
 	logic			sel_MUL_ID;
 	logic			sel_DIV_ID;
+	logic			sel_FPU_ID;
 	logic	[2:0]	MEM_op_ID;
 	logic	[3:0]	ALU_op_ID;
 	logic	[1:0]	MUL_op_ID;
 	logic	[1:0]	DIV_op_ID;
+	logic	[4:0]	FPU_op_ID;
+	logic	[2:0]	FPU_rm_ID;
 	logic			dmem_access_ID;
 	logic			jump_ena_ID;
 	logic			jump_ind_ID;
@@ -47,7 +53,7 @@ module AmberFive_pipeline
 	logic	[31:0]	PC_EX;
 	logic	[31:0]	IR_EX;
 	logic	[31:0]	IM_EX;
-	logic	[4:0]	rd_addr_EX;
+	logic	[5:0]	rd_addr_EX;
 	logic	[31:0]	rd_data_EX;
 	logic			rd_access_EX;
 	logic	[2:0]	MEM_op_EX;
@@ -59,7 +65,7 @@ module AmberFive_pipeline
 	logic	[31:0]	PC_MEM;
 	logic	[31:0]	IR_MEM;
 	logic	[31:0]	IM_MEM;
-	logic	[4:0]	rd_addr_MEM;
+	logic	[5:0]	rd_addr_MEM;
 	logic	[31:0]	rd_data_MEM;
 	logic			rd_access_MEM;
 	
@@ -71,6 +77,7 @@ module AmberFive_pipeline
 	
 	logic			rd_after_ld_rs1;
 	logic			rd_after_ld_rs2;
+	logic			rd_after_ld_rs3;
 	
 	logic			stall;
 	logic			flush;
@@ -78,6 +85,7 @@ module AmberFive_pipeline
 	
 	assign			rd_after_ld_rs1	= rs1_access_ID && |rs1_addr_ID && rd_access_EX && rs1_addr_ID == rd_addr_EX && dmem_access_EX;
 	assign			rd_after_ld_rs2	= rs2_access_ID && |rs2_addr_ID && rd_access_EX && rs2_addr_ID == rd_addr_EX && dmem_access_EX;
+	assign			rd_after_ld_rs3	= rs3_access_ID && |rs3_addr_ID && rd_access_EX && rs3_addr_ID == rd_addr_EX && dmem_access_EX;
 	
 	assign			stall			= bubble;
 	assign			flush			= jump_taken;
@@ -119,16 +127,22 @@ module AmberFive_pipeline
 		.rs2_addr_ID(rs2_addr_ID),
 		.rs2_data_ID(rs2_data_ID),
 		.rs2_access_ID(rs2_access_ID),
+		.rs3_addr_ID(rs3_addr_ID),
+		.rs3_data_ID(rs3_data_ID),
+		.rs3_access_ID(rs3_access_ID),
 		.rd_addr_ID(rd_addr_ID),
 		.rd_access_ID(rd_access_ID),
 		.sel_PC_ID(sel_PC_ID),
 		.sel_IM_ID(sel_IM_ID),
 		.sel_MUL_ID(sel_MUL_ID),
 		.sel_DIV_ID(sel_DIV_ID),
+		.sel_FPU_ID(sel_FPU_ID),
 		.MEM_op_ID(MEM_op_ID),
 		.ALU_op_ID(ALU_op_ID),
 		.MUL_op_ID(MUL_op_ID),
 		.DIV_op_ID(DIV_op_ID),
+		.FPU_op_ID(FPU_op_ID),
+		.FPU_rm_ID(FPU_rm_ID),
 		.dmem_access_ID(dmem_access_ID),
 		.jump_ena_ID(jump_ena_ID),
 		.jump_ind_ID(jump_ind_ID),
@@ -154,16 +168,22 @@ module AmberFive_pipeline
 		.rs2_addr_ID(rs2_addr_ID),
 		.rs2_data_ID(rs2_data_ID),
 		.rs2_access_ID(rs2_access_ID),
+		.rs3_addr_ID(rs3_addr_ID),
+		.rs3_data_ID(rs3_data_ID),
+		.rs3_access_ID(rs3_access_ID),
 		.rd_addr_ID(rd_addr_ID),
 		.rd_access_ID(rd_access_ID),
 		.sel_PC_ID(sel_PC_ID),
 		.sel_IM_ID(sel_IM_ID),
 		.sel_MUL_ID(sel_MUL_ID),
 		.sel_DIV_ID(sel_DIV_ID),
+		.sel_FPU_ID(sel_FPU_ID),
 		.MEM_op_ID(MEM_op_ID),
 		.ALU_op_ID(ALU_op_ID),
 		.MUL_op_ID(MUL_op_ID),
 		.DIV_op_ID(DIV_op_ID),
+		.FPU_op_ID(FPU_op_ID),
+		.FPU_rm_ID(FPU_rm_ID),
 		.dmem_access_ID(dmem_access_ID),
 		.jump_ena_ID(jump_ena_ID),
 		.jump_ind_ID(jump_ind_ID),

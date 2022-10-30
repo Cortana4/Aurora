@@ -9,22 +9,28 @@ module EX_stage
 	input	logic	[31:0]	PC_ID,
 	input	logic	[31:0]	IR_ID,
 	input	logic	[31:0]	IM_ID,
-	input	logic	[4:0]	rs1_addr_ID,
+	input	logic	[5:0]	rs1_addr_ID,
 	input	logic	[31:0]	rs1_data_ID,
 	input	logic			rs1_access_ID,
-	input	logic	[4:0]	rs2_addr_ID,
+	input	logic	[5:0]	rs2_addr_ID,
 	input	logic	[31:0]	rs2_data_ID,
 	input	logic			rs2_access_ID,
-	input	logic	[4:0]	rd_addr_ID,
+	input	logic	[5:0]	rs3_addr_ID,
+	input	logic	[31:0]	rs3_data_ID,
+	input	logic			rs3_access_ID,
+	input	logic	[5:0]	rd_addr_ID,
 	input	logic			rd_access_ID,
 	input	logic			sel_PC_ID,
 	input	logic			sel_IM_ID,
 	input	logic			sel_MUL_ID,
 	input	logic			sel_DIV_ID,
+	input	logic			sel_FPU_ID,
 	input	logic	[2:0]	MEM_op_ID,
 	input	logic	[3:0]	ALU_op_ID,
 	input	logic	[1:0]	MUL_op_ID,
 	input	logic	[1:0]	DIV_op_ID,
+	input	logic	[4:0]	FPU_op_ID,
+	input	logic	[2:0]	FPU_rm_ID,
 	input	logic			dmem_access_ID,
 	input	logic			jump_ena_ID,
 	input	logic			jump_ind_ID,
@@ -43,7 +49,7 @@ module EX_stage
 	output	logic	[31:0]	PC_EX,
 	output	logic	[31:0]	IR_EX,
 	output	logic	[31:0]	IM_EX,
-	output	logic	[4:0]	rd_addr_EX,
+	output	logic	[5:0]	rd_addr_EX,
 	output	logic	[31:0]	rd_data_EX,
 	output	logic			rd_access_EX,
 	output	logic	[2:0]	MEM_op_EX,
@@ -51,7 +57,7 @@ module EX_stage
 	output	logic			illegal_inst_EX,
 	output	logic			misaligned_addr_EX,
 
-	input	logic	[4:0]	rd_addr_MEM,
+	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM,
 	input	logic			rd_access_MEM
 );
@@ -64,8 +70,13 @@ module EX_stage
 	logic			bypass_rs2_EX;
 	logic			bypass_rs2_MEM;
 	
+	logic	[31:0]	rs3_data;
+	logic			bypass_rs3_EX;
+	logic			bypass_rs3_MEM;
+	
 	logic	[31:0]	a;
 	logic	[31:0]	b;
+	logic	[31:0]	c;
 	
 	logic	[31:0]	ALU_out;
 	
@@ -79,6 +90,11 @@ module EX_stage
 	logic			DIV_busy;
 	logic			DIV_ready;
 	
+	logic			FPU_load;
+	logic	[31:0]	FPU_out;
+	logic			FPU_busy;
+	logic			FPU_ready;
+	
 	logic	[31:0]	rd_data;
 
 	logic			misaligned_addr;
@@ -87,12 +103,16 @@ module EX_stage
 	assign			bypass_rs1_MEM	= rs1_access_ID && |rs1_addr_ID && rd_access_MEM && rs1_addr_ID == rd_addr_MEM;
 	assign			bypass_rs2_EX	= rs2_access_ID && |rs2_addr_ID && rd_access_EX  && rs2_addr_ID == rd_addr_EX;
 	assign			bypass_rs2_MEM	= rs2_access_ID && |rs2_addr_ID && rd_access_MEM && rs2_addr_ID == rd_addr_MEM;
+	assign			bypass_rs3_EX	= rs3_access_ID && |rs3_addr_ID && rd_access_EX  && rs3_addr_ID == rd_addr_EX;
+	assign			bypass_rs3_MEM	= rs3_access_ID && |rs3_addr_ID && rd_access_MEM && rs3_addr_ID == rd_addr_MEM;
 
 	assign			a				= sel_PC_ID ? PC_ID : rs1_data;
 	assign			b				= sel_IM_ID ? IM_ID : rs2_data;
+	assign			c				= rs3_data;
 	
 	assign			MUL_load		= sel_MUL_ID && !MUL_busy && !MUL_ready;
 	assign			DIV_load		= sel_DIV_ID && !DIV_busy && !DIV_ready;
+	assign			FPU_load		= sel_FPU_ID && !FPU_busy && !FPU_ready;
 	
 	assign			jump_taken		= jump_ena_ID && ALU_out[0] && !clear;
 	
@@ -124,6 +144,18 @@ module EX_stage
 			rs2_data	= rs2_data_ID;
 	end
 	
+	// rs3 bypass
+	always_comb begin
+		if (bypass_rs3_EX)
+			rs3_data	= rd_data_EX;
+
+		else if (bypass_rs3_MEM)
+			rs3_data	= rd_data_MEM;
+			
+		else
+			rs3_data	= rs3_data_ID;
+	end
+	
 	// output multiplexer
 	always_comb begin
 		if (sel_MUL_ID) begin
@@ -134,6 +166,11 @@ module EX_stage
 		else if (sel_DIV_ID) begin
 			rd_data		= DIV_out;
 			ready		= DIV_ready;
+		end
+		
+		else if (sel_FPU_ID) begin
+			rd_data		= FPU_out;
+			ready		= FPU_ready;
 		end
 		
 		else begin
@@ -250,6 +287,31 @@ module EX_stage
 
 		.busy(DIV_busy),
 		.ready(DIV_ready)
+	);
+	
+	FPU FPU_inst
+	(
+		.clk(clk),
+		.reset(reset),
+		.load(FPU_load),
+
+		.op(FPU_op_ID),
+		.rm(FPU_rm_ID),
+
+		.a(a),
+		.b(b),
+		.c(c),
+
+		.result(FPU_out),
+
+		.IV(),
+		.DZ(),
+		.OF(),
+		.UF(),
+		.IE(),
+
+		.busy(FPU_busy),
+		.ready(FPU_ready)
 	);
 
 endmodule

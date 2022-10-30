@@ -8,7 +8,7 @@ module MEM_stage
 	input	logic	[31:0]	PC_EX,
 	input	logic	[31:0]	IR_EX,
 	input	logic	[31:0]	IM_EX,
-	input	logic	[4:0]	rd_addr_EX,
+	input	logic	[5:0]	rd_addr_EX,
 	input	logic	[31:0]	rd_data_EX,
 	input	logic			rd_access_EX,
 	input	logic	[2:0]	MEM_op_EX,
@@ -21,7 +21,7 @@ module MEM_stage
 	output	logic	[31:0]	PC_MEM,
 	output	logic	[31:0]	IR_MEM,
 	output	logic	[31:0]	IM_MEM,
-	output	logic	[4:0]	rd_addr_MEM,
+	output	logic	[5:0]	rd_addr_MEM,
 	output	logic	[31:0]	rd_data_MEM,
 	output	logic			rd_access_MEM
 );
