@@ -2,8 +2,12 @@ module ID_stage
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			stall,
-	input	logic			clear,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	
+	output	logic			valid_out,
+	input	logic			ready_in,
 	
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IR_IF,
@@ -70,10 +74,13 @@ module ID_stage
 	logic			jump_ena;
 	logic			jump_ind;
 	logic			illegal_inst;
+	
+	assign			ready_out	= ready_in;
 
 	// ID/EX pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || clear) begin
+		if (reset) begin // flush bei jump??
+			valid_out		<= 1'b0;
 			PC_ID			<= 32'h00000000;
 			IR_ID			<= 32'h00000000;
 			IM_ID			<= 32'h00000000;
@@ -105,7 +112,8 @@ module ID_stage
 			illegal_inst_ID	<= 1'b0;
 		end
 		
-		else if (!stall) begin
+		else if (valid_in && ready_out) begin
+			valid_out		<= 1'b1;
 			PC_ID			<= PC_IF;
 			IR_ID			<= IR_IF;
 			IM_ID			<= immediate;
@@ -135,6 +143,39 @@ module ID_stage
 			jump_ena_ID		<= jump_ena;
 			jump_ind_ID		<= jump_ind;
 			illegal_inst_ID	<= illegal_inst;
+		end
+		
+		else if (valid_out && ready_in) begin
+			valid_out		<= 1'b0;
+			PC_ID			<= 32'h00000000;
+			IR_ID			<= 32'h00000000;
+			IM_ID			<= 32'h00000000;
+			rs1_addr_ID		<= 6'd0;
+			rs1_data_ID		<= 32'h00000000;
+			rs1_access_ID	<= 1'b0;
+			rs2_addr_ID		<= 6'd0;
+			rs2_data_ID		<= 32'h00000000;
+			rs2_access_ID	<= 1'b0;
+			rs3_addr_ID		<= 6'd0;
+			rs3_data_ID		<= 32'h00000000;
+			rs3_access_ID	<= 1'b0;
+			rd_addr_ID		<= 6'd0;
+			rd_access_ID	<= 1'b0;
+			sel_PC_ID		<= 1'b0;
+			sel_IM_ID		<= 1'b0;
+			sel_MUL_ID		<= 1'b0;
+			sel_DIV_ID		<= 1'b0;
+			sel_FPU_ID		<= 1'b0;
+			MEM_op_ID		<= 3'd0;
+			ALU_op_ID		<= 4'd0;
+			MUL_op_ID		<= 2'd0;
+			DIV_op_ID		<= 2'd0;
+			FPU_op_ID		<= 5'd0;
+			FPU_rm_ID		<= 3'd0;
+			dmem_access_ID	<= 1'b0;
+			jump_ena_ID		<= 1'b0;
+			jump_ind_ID		<= 1'b0;
+			illegal_inst_ID	<= 1'b0;
 		end
 	end
 
@@ -189,5 +230,7 @@ module ID_stage
 		.rs3_addr(rs3_addr),
 		.rs3_data(rs3_data)
 	);
+	
+	// csr_file
 
 endmodule

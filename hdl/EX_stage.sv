@@ -4,7 +4,12 @@ module EX_stage
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			clear,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	
+	output	logic			valid_out,
+	input	logic			ready_in,
 	
 	input	logic	[31:0]	PC_ID,
 	input	logic	[31:0]	IR_ID,
@@ -39,12 +44,21 @@ module EX_stage
 	output	logic			jump_taken,
 	output	logic	[31:0]	jump_addr,
 	
-	output	logic	[31:0]	dmem_addr,
-	output	logic	[31:0]	dmem_dout,
-	output	logic			dmem_ena,
-	output	logic	[3:0]	dmem_wen,
-	
-	output	logic			ready,
+	// read address channel
+	output	logic	[31:0]	dmem_axi_araddr,
+	output	logic	[2:0]	dmem_axi_arprot,
+	input	logic			dmem_axi_arready,
+	output	logic			dmem_axi_arvalid,
+	// write address channel
+	output	logic	[31:0]	dmem_axi_awaddr,
+	output	logic	[2:0]	dmem_axi_awprot,
+	input	logic			dmem_axi_awready,
+	output	logic			dmem_axi_awvalid,
+	// write data channel
+	output	logic	[31:0]	dmem_axi_wdata,
+	input	logic			dmem_axi_wready,
+	output	logic	[3:0]	dmem_axi_wstrb,
+	output	logic			dmem_axi_wvalid,
 	
 	output	logic	[31:0]	PC_EX,
 	output	logic	[31:0]	IR_EX,
@@ -74,6 +88,8 @@ module EX_stage
 	logic			bypass_rs3_EX;
 	logic			bypass_rs3_MEM;
 	
+	logic			rd_after_ld_hazard;
+	
 	logic	[31:0]	a;
 	logic	[31:0]	b;
 	logic	[31:0]	c;
@@ -99,26 +115,62 @@ module EX_stage
 
 	logic			misaligned_addr;
 	
-	assign			bypass_rs1_EX	= rs1_access_ID && |rs1_addr_ID && rd_access_EX  && rs1_addr_ID == rd_addr_EX;
-	assign			bypass_rs1_MEM	= rs1_access_ID && |rs1_addr_ID && rd_access_MEM && rs1_addr_ID == rd_addr_MEM;
-	assign			bypass_rs2_EX	= rs2_access_ID && |rs2_addr_ID && rd_access_EX  && rs2_addr_ID == rd_addr_EX;
-	assign			bypass_rs2_MEM	= rs2_access_ID && |rs2_addr_ID && rd_access_MEM && rs2_addr_ID == rd_addr_MEM;
-	assign			bypass_rs3_EX	= rs3_access_ID && |rs3_addr_ID && rd_access_EX  && rs3_addr_ID == rd_addr_EX;
-	assign			bypass_rs3_MEM	= rs3_access_ID && |rs3_addr_ID && rd_access_MEM && rs3_addr_ID == rd_addr_MEM;
+	logic			stall;
+	
+	assign			bypass_rs1_EX		= rs1_access_ID && |rs1_addr_ID && rd_access_EX  && rs1_addr_ID == rd_addr_EX;
+	assign			bypass_rs1_MEM		= rs1_access_ID && |rs1_addr_ID && rd_access_MEM && rs1_addr_ID == rd_addr_MEM;
+	
+	assign			bypass_rs2_EX		= rs2_access_ID && |rs2_addr_ID && rd_access_EX  && rs2_addr_ID == rd_addr_EX;
+	assign			bypass_rs2_MEM		= rs2_access_ID && |rs2_addr_ID && rd_access_MEM && rs2_addr_ID == rd_addr_MEM;
+	
+	assign			bypass_rs3_EX		= rs3_access_ID && |rs3_addr_ID && rd_access_EX  && rs3_addr_ID == rd_addr_EX;
+	assign			bypass_rs3_MEM		= rs3_access_ID && |rs3_addr_ID && rd_access_MEM && rs3_addr_ID == rd_addr_MEM;
+	
+	assign			rd_after_ld_hazard	= (bypass_rs1_EX || bypass_rs2_EX || bypass_rs3_EX) && dmem_access_EX;
 
-	assign			a				= sel_PC_ID ? PC_ID : rs1_data;
-	assign			b				= sel_IM_ID ? IM_ID : rs2_data;
-	assign			c				= rs3_data;
+	assign			a					= sel_PC_ID ? PC_ID : rs1_data;
+	assign			b					= sel_IM_ID ? IM_ID : rs2_data;
+	assign			c					= rs3_data;
 	
-	assign			MUL_load		= sel_MUL_ID && !MUL_busy && !MUL_ready;
-	assign			DIV_load		= sel_DIV_ID && !DIV_busy && !DIV_ready;
-	assign			FPU_load		= sel_FPU_ID && !FPU_busy && !FPU_ready;
+	assign			MUL_load			= sel_MUL_ID && !MUL_busy && !MUL_ready;
+	assign			DIV_load			= sel_DIV_ID && !DIV_busy && !DIV_ready;
+	assign			FPU_load			= sel_FPU_ID && !FPU_busy && !FPU_ready;
 	
-	assign			jump_taken		= jump_ena_ID && ALU_out[0] && !clear;
+	assign			jump_taken			= jump_ena_ID && ALU_out[0] && !rd_after_ld_hazard;
 	
-	assign			dmem_addr		= ALU_out;
-	assign			dmem_dout		= rs2_data;
-	assign			dmem_ena		= dmem_access_ID && !clear;
+	assign			ready_out			= ready_in && !stall;
+	assign			stall				= rd_after_ld_hazard || !ready ||
+											(dmem_axi_arvalid && !dmem_axi_arready) ||
+											(dmem_axi_awvalid && !dmem_axi_awready) ||
+											(dmem_axi_wvalid  && !dmem_axi_wready);
+
+	// byte enable computation
+	always_comb begin
+		dmem_axi_wstrb	= 4'b0000;
+		
+		if (dmem_axi_awvalid) begin
+			case (MEM_op_EX)
+			`MEM_SB:	dmem_axi_wstrb	= 4'b0001 << dmem_axi_awaddr[1:0];
+			`MEM_SH:	dmem_axi_wstrb	= 4'b0011 << dmem_axi_awaddr[1:0];
+			`MEM_SW:	dmem_axi_wstrb	= 4'b1111 << dmem_axi_awaddr[1:0];
+			endcase
+		end
+	end
+	
+	// check for misaligned access exception
+	always_comb begin
+		misaligned_addr	= 1'b0;
+		
+		if (dmem_access_ID) begin
+			case (MEM_op_ID)
+			`MEM_LH,
+			`MEM_LHU,
+			`MEM_SH:	misaligned_addr	= &ALU_out[1:0];
+			`MEM_LW,
+			`MEM_SW:	misaligned_addr	= |ALU_out[1:0];
+			endcase
+		end
+	end
 
 	// rs1 bypass
 	always_comb begin
@@ -187,61 +239,135 @@ module EX_stage
 		else
 			jump_addr	= PC_ID + IM_ID;
 	end
-
-	// byte enable computation
-	always_comb begin
-		dmem_wen	= 4'b0000;
-		
-		if (dmem_ena) begin
-			case (MEM_op_ID)
-			`MEM_SB:	dmem_wen	= 4'b0001 << dmem_addr[1:0];
-			`MEM_SH:	dmem_wen	= 4'b0011 << dmem_addr[1:0];
-			`MEM_SW:	dmem_wen	= 4'b1111 << dmem_addr[1:0];
-			endcase
-		end
-	end
 	
-	// check for misaligned access exception
+	// valid_out bypass
 	always_comb begin
-		misaligned_addr	= 1'b0;
-		
-		if (dmem_ena) begin
-			case (MEM_op_ID)
-			`MEM_LH,
-			`MEM_LHU,
-			`MEM_SH:	misaligned_addr	= &dmem_addr[1:0];
-			`MEM_LW,
-			`MEM_SW:	misaligned_addr	= |dmem_addr[1:0];
-			endcase
+		if (dmem_access_EX) begin
+			if (rd_access_EX)
+				valid_out	= dmem_axi_araddr_taken || (dmem_axi_arvalid && dmem_axi_arready);
+
+			else begin
+				valid_out	= (dmem_axi_awaddr_taken && dmem_axi_awaddr_taken) ||
+							  (dmem_axi_awaddr_taken && dmem_axi_wvalid  && dmem_axi_wready) ||
+							  (dmem_axi_wdata_taken  && dmem_axi_awvalid && dmem_axi_awready);
+			end
 		end
+		
+		else
+			valid_out	= valid_reg;
 	end
 	
 	// EX/MEM pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || clear) begin
-			PC_EX				<= 32'h00000000;
-			IR_EX				<= 32'h00000000;
-			IM_EX				<= 32'h00000000;
-			rd_addr_EX			<= 4'h0;
-			rd_data_EX			<= 32'h00000000;
-			rd_access_EX		<= 1'b0;
-			MEM_op_EX			<= 3'd0;
-			dmem_access_EX		<= 1'b0;
-			illegal_inst_EX		<= 1'b0;
-			misaligned_addr_EX	<= 1'b0;
+		if (reset) begin
+			valid_reg				<= 1'b0;
+			dmem_axi_araddr			<= 32'h00000000;
+			dmem_axi_arprot			<= 3'b000;
+			dmem_axi_arvalid		<= 1'b0;
+			dmem_axi_araddr_taken	<= 1'b0;
+			dmem_axi_awaddr			<= 32'h00000000;
+			dmem_axi_awprot			<= 3'b000;
+			dmem_axi_awvalid		<= 1'b0;
+			dmem_axi_awaddr_taken	<= 1'b0;
+			dmem_axi_wdata			<= 32'h00000000;
+			dmem_axi_wvalid			<= 1'b0;
+			dmem_axi_wdata_taken	<= 1'b0;
+			PC_EX					<= 32'h00000000;
+			IR_EX					<= 32'h00000000;
+			IM_EX					<= 32'h00000000;
+			rd_addr_EX				<= 4'h0;
+			rd_data_EX				<= 32'h00000000;
+			rd_access_EX			<= 1'b0;
+			MEM_op_EX				<= 3'd0;
+			dmem_access_EX			<= 1'b0;
+			illegal_inst_EX			<= 1'b0;
+			misaligned_addr_EX		<= 1'b0;
+		end
+		
+		else if (valid_in && ready_out) begin
+			valid_reg				<= 1'b1;
+			dmem_axi_araddr			<= 32'h00000000;
+			dmem_axi_arprot			<= 3'b000;
+			dmem_axi_arvalid		<= 1'b0;
+			dmem_axi_araddr_taken	<= 1'b0;
+			dmem_axi_awaddr			<= 32'h00000000;
+			dmem_axi_awprot			<= 3'b000;
+			dmem_axi_awvalid		<= 1'b0;
+			dmem_axi_awaddr_taken	<= 1'b0;
+			dmem_axi_wdata			<= 32'h00000000;
+			dmem_axi_wvalid			<= 1'b0;
+			dmem_axi_wdata_taken	<= 1'b0;
+			PC_EX					<= PC_ID;
+			IR_EX					<= IR_ID;
+			IM_EX					<= IM_ID;
+			rd_addr_EX				<= rd_addr_ID;
+			rd_data_EX				<= rd_data;
+			rd_access_EX			<= rd_access_ID;
+			MEM_op_EX				<= MEM_op_ID;
+			dmem_access_EX			<= dmem_access_ID;
+			illegal_inst_EX			<= illegal_inst_ID;
+			misaligned_addr_EX		<= misaligned_addr;
+			
+			if (dmem_access_ID) begin
+				// dmem read access (load)
+				if (rd_access_ID) begin
+					valid_reg			<= dmem_axi_arready;
+					dmem_axi_araddr		<= ALU_out;
+					dmem_axi_arprot		<= 3'b010;
+					dmem_axi_arvalid	<= 1'b1;
+				end
+				// dmem write access (store)
+				else begin
+					valid_reg			<= dmem_axi_awready && dmem_axi_wready;
+					dmem_axi_awaddr		<= ALU_out;
+					dmem_axi_awprot		<= 3'b010;
+					dmem_axi_awvalid	<= 1'b1;
+					dmem_axi_wdata		<= rs2_data;
+					dmem_axi_wvalid		<= 1'b1;
+				end
+			end
+		end
+		
+		else if (valid_out && ready_in) begin
+			valid_reg				<= 1'b0;
+			dmem_axi_araddr			<= 32'h00000000;
+			dmem_axi_arprot			<= 3'b000;
+			dmem_axi_arvalid		<= 1'b0;
+			dmem_axi_araddr_taken	<= 1'b0;
+			dmem_axi_awaddr			<= 32'h00000000;
+			dmem_axi_awprot			<= 3'b000;
+			dmem_axi_awvalid		<= 1'b0;
+			dmem_axi_awaddr_taken	<= 1'b0;
+			dmem_axi_wdata			<= 32'h00000000;
+			dmem_axi_wvalid			<= 1'b0;
+			dmem_axi_wdata_taken	<= 1'b0;
+			PC_EX					<= 32'h00000000;
+			IR_EX					<= 32'h00000000;
+			IM_EX					<= 32'h00000000;
+			rd_addr_EX				<= 4'h0;
+			rd_data_EX				<= 32'h00000000;
+			rd_access_EX			<= 1'b0;
+			MEM_op_EX				<= 3'd0;
+			dmem_access_EX			<= 1'b0;
+			illegal_inst_EX			<= 1'b0;
+			misaligned_addr_EX		<= 1'b0;
 		end
 		
 		else begin
-			PC_EX				<= PC_ID;
-			IR_EX				<= IR_ID;
-			IM_EX				<= IM_ID;
-			rd_addr_EX			<= rd_addr_ID;
-			rd_data_EX			<= rd_data;
-			rd_access_EX		<= rd_access_ID;
-			MEM_op_EX			<= MEM_op_ID;
-			dmem_access_EX		<= dmem_access_ID;
-			illegal_inst_EX		<= illegal_inst_ID;
-			misaligned_addr_EX	<= misaligned_addr;
+			if (dmem_axi_arvalid && dmem_axi_arready) begin
+				dmem_axi_arvalid		<= 1'b0;
+				dmem_axi_araddr_taken	<= 1'b1;
+			end
+			
+			if (dmem_axi_awvalid && dmem_axi_awready) begin
+				dmem_axi_awvalid		<= 1'b0;
+				dmem_axi_awaddr_taken	<= 1'b1;
+			end
+			
+			if (dmem_axi_wvalid && dmem_axi_wready) begin
+				dmem_axi_wvalid			<= 1'b0;
+				dmem_axi_wdata_taken	<= 1'b1;
+			end
 		end
 	end
 

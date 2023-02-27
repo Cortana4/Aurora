@@ -12,6 +12,9 @@ module AmberFive_pipeline
 	input	logic	[31:0]	dmem_din,
 	output	logic			dmem_ena,
 	output	logic	[3:0]	dmem_wen
+	
+	
+	
 );
 
 	// IF/ID pipeline registers
@@ -87,9 +90,9 @@ module AmberFive_pipeline
 	assign			rd_after_ld_rs2	= rs2_access_ID && |rs2_addr_ID && rd_access_EX && rs2_addr_ID == rd_addr_EX && dmem_access_EX;
 	assign			rd_after_ld_rs3	= rs3_access_ID && |rs3_addr_ID && rd_access_EX && rs3_addr_ID == rd_addr_EX && dmem_access_EX;
 	
-	assign			stall			= bubble;
-	assign			flush			= jump_taken;
-	assign			bubble			= rd_after_ld_rs1 || rd_after_ld_rs2 || !ready;
+	assign			stall_IF_ID		= bubble;
+	assign			flush_ID		= jump_taken;
+	assign			bubble_EX		= rd_after_ld_rs1 || rd_after_ld_rs2 || !ready;
 
 	IF_stage IF_stage_inst
 	(
