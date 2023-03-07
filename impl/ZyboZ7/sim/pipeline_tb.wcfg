@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="pipeline_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="axi_bram_ctrl_funcs" />
+            <top_module name="glbl" />
+            <top_module name="pipeline_tb" />
+            <top_module name="vcomponents" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="255.434 ns"></ZoomEndTime>
+      <Cursor1Time time="430.000 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="209"></NameColumnWidth>
+      <ValueColumnWidth column_width="76"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="4" />
+   <wvobject fp_name="/pipeline_tb/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/pipeline_tb/reset" type="logic">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="group151" type="group">
+      <obj_property name="label">mem interface</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="group105" type="group">
+         <obj_property name="label">imem write address ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/imem_axi_awaddr" type="array">
+            <obj_property name="ElementShortName">imem_axi_awaddr[31:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_awaddr[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_awprot" type="array">
+            <obj_property name="ElementShortName">imem_axi_awprot[2:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_awprot[2:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_awvalid" type="logic">
+            <obj_property name="ElementShortName">imem_axi_awvalid</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_awvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_awready" type="logic">
+            <obj_property name="ElementShortName">imem_axi_awready</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_awready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group106" type="group">
+         <obj_property name="label">imem write data ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/imem_axi_wdata" type="array">
+            <obj_property name="ElementShortName">imem_axi_wdata[31:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_wdata[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_wstrb" type="array">
+            <obj_property name="ElementShortName">imem_axi_wstrb[3:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_wstrb[3:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_wvalid" type="logic">
+            <obj_property name="ElementShortName">imem_axi_wvalid</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_wvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_wready" type="logic">
+            <obj_property name="ElementShortName">imem_axi_wready</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_wready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group107" type="group">
+         <obj_property name="label">imem write resp ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/imem_axi_bresp" type="array">
+            <obj_property name="ElementShortName">imem_axi_bresp[1:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_bresp[1:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_bvalid" type="logic">
+            <obj_property name="ElementShortName">imem_axi_bvalid</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_bvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_bready" type="logic">
+            <obj_property name="ElementShortName">imem_axi_bready</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_bready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group108" type="group">
+         <obj_property name="label">imem read address ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/imem_axi_araddr" type="array">
+            <obj_property name="ElementShortName">imem_axi_araddr[31:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_araddr[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_arprot" type="array">
+            <obj_property name="ElementShortName">imem_axi_arprot[2:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_arprot[2:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_arvalid" type="logic">
+            <obj_property name="ElementShortName">imem_axi_arvalid</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_arvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_arready" type="logic">
+            <obj_property name="ElementShortName">imem_axi_arready</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_arready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group143" type="group">
+         <obj_property name="label">imem read data ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/imem_axi_rresp" type="array">
+            <obj_property name="ElementShortName">imem_axi_rresp[1:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_rresp[1:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_rvalid" type="logic">
+            <obj_property name="ElementShortName">imem_axi_rvalid</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_rvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_rready" type="logic">
+            <obj_property name="ElementShortName">imem_axi_rready</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_rready</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/imem_axi_rdata" type="array">
+            <obj_property name="ElementShortName">imem_axi_rdata[31:0]</obj_property>
+            <obj_property name="ObjectShortName">imem_axi_rdata[31:0]</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group144" type="group">
+         <obj_property name="label">bram a</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/bram_clk_a" type="logic">
+            <obj_property name="ElementShortName">bram_clk_a</obj_property>
+            <obj_property name="ObjectShortName">bram_clk_a</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_en_a" type="logic">
+            <obj_property name="ElementShortName">bram_en_a</obj_property>
+            <obj_property name="ObjectShortName">bram_en_a</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_we_a" type="array">
+            <obj_property name="ElementShortName">bram_we_a[3:0]</obj_property>
+            <obj_property name="ObjectShortName">bram_we_a[3:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_addr_a" type="array">
+            <obj_property name="ElementShortName">bram_addr_a[15:0]</obj_property>
+            <obj_property name="ObjectShortName">bram_addr_a[15:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_wrdata_a" type="array">
+            <obj_property name="ElementShortName">bram_wrdata_a[31:0]</obj_property>
+            <obj_property name="ObjectShortName">bram_wrdata_a[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_rddata_a" type="array">
+            <obj_property name="ElementShortName">bram_rddata_a[31:0]</obj_property>
+            <obj_property name="ObjectShortName">bram_rddata_a[31:0]</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group145" type="group">
+         <obj_property name="label">dmem write address ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_awaddr" type="array">
+            <obj_property name="ElementShortName">dmem_axi_awaddr[31:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_awaddr[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_awprot" type="array">
+            <obj_property name="ElementShortName">dmem_axi_awprot[2:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_awprot[2:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_awvalid" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_awvalid</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_awvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_awready" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_awready</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_awready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group146" type="group">
+         <obj_property name="label">dmem write data ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_wdata" type="array">
+            <obj_property name="ElementShortName">dmem_axi_wdata[31:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_wdata[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_wstrb" type="array">
+            <obj_property name="ElementShortName">dmem_axi_wstrb[3:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_wstrb[3:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_wvalid" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_wvalid</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_wvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_wready" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_wready</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_wready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group147" type="group">
+         <obj_property name="label">dmem write resp ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_bresp" type="array">
+            <obj_property name="ElementShortName">dmem_axi_bresp[1:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_bresp[1:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_bvalid" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_bvalid</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_bvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_bready" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_bready</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_bready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group148" type="group">
+         <obj_property name="label">dmem read addr ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_araddr" type="array">
+            <obj_property name="ElementShortName">dmem_axi_araddr[31:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_araddr[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_arprot" type="array">
+            <obj_property name="ElementShortName">dmem_axi_arprot[2:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_arprot[2:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_arvalid" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_arvalid</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_arvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_arready" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_arready</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_arready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group149" type="group">
+         <obj_property name="label">dmem read data ch</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_rdata" type="array">
+            <obj_property name="ElementShortName">dmem_axi_rdata[31:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_rdata[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_rresp" type="array">
+            <obj_property name="ElementShortName">dmem_axi_rresp[1:0]</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_rresp[1:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_rvalid" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_rvalid</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_rvalid</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/dmem_axi_rready" type="logic">
+            <obj_property name="ElementShortName">dmem_axi_rready</obj_property>
+            <obj_property name="ObjectShortName">dmem_axi_rready</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group150" type="group">
+         <obj_property name="label">bram b</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/bram_clk_b" type="logic">
+            <obj_property name="ElementShortName">bram_clk_b</obj_property>
+            <obj_property name="ObjectShortName">bram_clk_b</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_en_b" type="logic">
+            <obj_property name="ElementShortName">bram_en_b</obj_property>
+            <obj_property name="ObjectShortName">bram_en_b</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_we_b" type="array">
+            <obj_property name="ElementShortName">bram_we_b[3:0]</obj_property>
+            <obj_property name="ObjectShortName">bram_we_b[3:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_addr_b" type="array">
+            <obj_property name="ElementShortName">bram_addr_b[15:0]</obj_property>
+            <obj_property name="ObjectShortName">bram_addr_b[15:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_wrdata_b" type="array">
+            <obj_property name="ElementShortName">bram_wrdata_b[31:0]</obj_property>
+            <obj_property name="ObjectShortName">bram_wrdata_b[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/bram_rddata_b" type="array">
+            <obj_property name="ElementShortName">bram_rddata_b[31:0]</obj_property>
+            <obj_property name="ObjectShortName">bram_rddata_b[31:0]</obj_property>
+         </wvobject>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group192" type="group">
+      <obj_property name="label">pipeline</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject fp_name="group429" type="group">
+         <obj_property name="label">PC</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/aurora/IF_stage_inst/PC_IF" type="array">
+            <obj_property name="ElementShortName">PC_IF[31:0]</obj_property>
+            <obj_property name="ObjectShortName">PC_IF[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/ID_stage_inst/PC_ID" type="array">
+            <obj_property name="ElementShortName">PC_ID[31:0]</obj_property>
+            <obj_property name="ObjectShortName">PC_ID[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/PC_EX" type="array">
+            <obj_property name="ElementShortName">PC_EX[31:0]</obj_property>
+            <obj_property name="ObjectShortName">PC_EX[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/MEM_stage_inst/PC_MEM" type="array">
+            <obj_property name="ElementShortName">PC_MEM[31:0]</obj_property>
+            <obj_property name="ObjectShortName">PC_MEM[31:0]</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group430" type="group">
+         <obj_property name="label">IR</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="isExpanded"></obj_property>
+         <wvobject fp_name="/pipeline_tb/aurora/IF_stage_inst/IR_IF" type="array">
+            <obj_property name="ElementShortName">IR_IF[31:0]</obj_property>
+            <obj_property name="ObjectShortName">IR_IF[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/ID_stage_inst/IR_ID" type="array">
+            <obj_property name="ElementShortName">IR_ID[31:0]</obj_property>
+            <obj_property name="ObjectShortName">IR_ID[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/IR_EX" type="array">
+            <obj_property name="ElementShortName">IR_EX[31:0]</obj_property>
+            <obj_property name="ObjectShortName">IR_EX[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/MEM_stage_inst/IR_MEM" type="array">
+            <obj_property name="ElementShortName">IR_MEM[31:0]</obj_property>
+            <obj_property name="ObjectShortName">IR_MEM[31:0]</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="/pipeline_tb/aurora/ID_stage_inst/reg_file_inst/registers" type="array">
+         <obj_property name="ElementShortName">registers[63:1][31:0]</obj_property>
+         <obj_property name="ObjectShortName">registers[63:1][31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="group303" type="group">
+         <obj_property name="label">hazards</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/bypass_rs1_EX" type="logic">
+            <obj_property name="ElementShortName">bypass_rs1_EX</obj_property>
+            <obj_property name="ObjectShortName">bypass_rs1_EX</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/bypass_rs1_MEM" type="logic">
+            <obj_property name="ElementShortName">bypass_rs1_MEM</obj_property>
+            <obj_property name="ObjectShortName">bypass_rs1_MEM</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/bypass_rs2_EX" type="logic">
+            <obj_property name="ElementShortName">bypass_rs2_EX</obj_property>
+            <obj_property name="ObjectShortName">bypass_rs2_EX</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/bypass_rs2_MEM" type="logic">
+            <obj_property name="ElementShortName">bypass_rs2_MEM</obj_property>
+            <obj_property name="ObjectShortName">bypass_rs2_MEM</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/bypass_rs3_EX" type="logic">
+            <obj_property name="ElementShortName">bypass_rs3_EX</obj_property>
+            <obj_property name="ObjectShortName">bypass_rs3_EX</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/bypass_rs3_MEM" type="logic">
+            <obj_property name="ElementShortName">bypass_rs3_MEM</obj_property>
+            <obj_property name="ObjectShortName">bypass_rs3_MEM</obj_property>
+         </wvobject>
+         <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/rd_after_ld_hazard" type="logic">
+            <obj_property name="ElementShortName">rd_after_ld_hazard</obj_property>
+            <obj_property name="ObjectShortName">rd_after_ld_hazard</obj_property>
+         </wvobject>
+      </wvobject>
+   </wvobject>
+</wave_config>

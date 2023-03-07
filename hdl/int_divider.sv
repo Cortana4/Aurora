@@ -1,4 +1,4 @@
-`include "AmberFive_constants.svh"
+`include "CPU_constants.svh"
 
 module int_divider
 #(
@@ -8,17 +8,18 @@ module int_divider
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			load,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
 
 	input	logic	[1:0]	op,
 
 	input	logic	[n-1:0]	a,
 	input	logic	[n-1:0]	b,
 
-	output	logic	[n-1:0]	y,
-
-	output	logic			busy,
-	output	logic			ready
+	output	logic	[n-1:0]	y
 );
 
 	logic	[1:0]	prev_op;
@@ -33,12 +34,17 @@ module int_divider
 
 	logic	[n:0]	acc [m:0];
 	logic	[m-1:0]	q;
+	
+	logic			stall;
 
 	integer			counter;
 
 	enum	logic	{IDLE, CALC} state;
 
-	assign			prev_op	= reg_op;
+	assign			prev_op		= reg_op;
+	
+	assign			ready_out	= ready_in && !stall;
+	assign			stall		= state != IDLE;
 
 	always_comb begin
 		case (reg_op)
@@ -51,41 +57,37 @@ module int_divider
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin
-			prev_a	<= 0;
-			prev_b	<= 0;
-			reg_op	<= 2'b00;
-			reg_b	<= 0;
-			reg_res	<= 0;
-			reg_rem	<= 0;
-			reg_sgn	<= 1'b0;
-			counter	<= 0;
-			state	<= IDLE;
-			busy	<= 1'b0;
-			ready	<= 1'b0;
+			valid_out	<= 1'b0;
+			prev_a		<= 0;
+			prev_b		<= 0;
+			reg_op		<= 2'b00;
+			reg_b		<= 0;
+			reg_res		<= 0;
+			reg_rem		<= 0;
+			reg_sgn		<= 1'b0;
+			counter		<= 0;
+			state		<= IDLE;
 		end
 
-		else if (load) begin
+		else if (valid_in && ready_out) begin
 			prev_a	<= a;
 			prev_b	<= b;
 			reg_op	<= op;
-			
 			
 			if ((prev_op == `UDIV && op == `UREM  ||
 				 prev_op == `UREM && op == `UDIV  ||
 				 prev_op == `SDIV && op == `SREM  ||
 				 prev_op == `SREM && op == `SDIV) &&
 				 prev_a == a && prev_b == b) begin
-				state	<= IDLE;
-				busy	<= 1'b0;
-				ready	<= 1'b1;
+				valid_out	<= 1'b1;
+				state		<= IDLE;
 			end
 			
 			else begin
-				reg_rem	<= 0;
-				counter	<= 0;
-				state	<= CALC;
-				busy	<= 1'b1;
-				ready	<= 1'b0;
+				valid_out	<= 1'b0;
+				reg_rem		<= 0;
+				counter		<= 0;
+				state		<= CALC;
 
 				case (op)
 				`UDIV,
@@ -109,18 +111,16 @@ module int_divider
 		end
 
 		else case (state)
-			IDLE:	begin
-						busy	<= 1'b0;
-						ready	<= 1'b0;
+			IDLE:	if (valid_out && ready_in) begin
+						valid_out	<= 1'b0;
 					end
 			CALC:	begin
 						reg_res	<= (reg_res << m) | q;
 						reg_rem	<= acc[m];
 
 						if (counter == n/m-1) begin
-							state	<= IDLE;
-							busy	<= 1'b0;
-							ready	<= 1'b1;
+							valid_out	<= 1'b1;
+							state		<= IDLE;
 						end
 
 						else

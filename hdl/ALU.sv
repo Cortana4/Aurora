@@ -1,4 +1,4 @@
-`include "AmberFive_constants.svh"
+`include "CPU_constants.svh"
 
 module ALU
 (
