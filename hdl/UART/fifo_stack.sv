@@ -39,7 +39,7 @@ module fifo_stack
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin
 			for (i = 0; i < 2**ADDR_WIDTH; i = i+1)
-				stack[i] <= 0;
+				stack[i]	<= 0;
 
 			read_ptr			<= 0;
 			write_ptr			<= 0;
@@ -49,7 +49,7 @@ module fifo_stack
 
 		else if (clear) begin
 			for (i = 0; i < 2**ADDR_WIDTH; i = i+1)
-				stack[i] <= 0;
+				stack[i]	<= 0;
 
 			read_ptr			<= 0;
 			write_ptr			<= 0;
@@ -70,7 +70,7 @@ module fifo_stack
 			empty				<= 1'b0;
 
 			if (write_ptr_next == read_ptr)
-				full <= 1'b1;
+				full	<= 1'b1;
 		end
 
 		else if (pop && !empty) begin
@@ -79,7 +79,7 @@ module fifo_stack
 			full				<= 1'b0;
 
 			if (read_ptr_next == write_ptr)
-				empty <= 1'b1;
+				empty	<= 1'b1;
 		end
 	end
 

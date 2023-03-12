@@ -1,4 +1,4 @@
-`include "CPU_constants.svh"
+import CPU_pkg::*;
 
 module int_multiplier
 #(
@@ -46,10 +46,10 @@ module int_multiplier
 
 	always_comb begin
 		case (reg_op)
-		`UMULL:		y	= reg_res[n-1:0];
-		`UMULH:		y	= reg_res[2*n-1:n];
-		`SMULH,
-		`SUMULH:	y	= reg_sgn ? -reg_res[2*n-1:n] : reg_res[2*n-1:n];
+		UMULL:	y	= reg_res[n-1:0];
+		UMULH:	y	= reg_res[2*n-1:n];
+		SMULH,
+		SUMULH:	y	= reg_sgn ? -reg_res[2*n-1:n] : reg_res[2*n-1:n];
 		endcase
 	end
 
@@ -71,8 +71,8 @@ module int_multiplier
 			prev_b		<= b;
 			reg_op		<= op;
 			
-			if ((prev_op != `UMULL && op == `UMULL  ||
-				 prev_op == `UMULL && op == `UMULH) &&
+			if ((prev_op != UMULL && op == UMULL  ||
+				 prev_op == UMULL && op == UMULH) &&
 				 prev_a == a && prev_b == b) begin
 				valid_out	<= 1'b1;
 				state		<= IDLE;
@@ -84,18 +84,18 @@ module int_multiplier
 				state		<= CALC;
 
 				case (op)
-				`UMULL,
-				`UMULH:		begin
+				UMULL,
+				UMULH:		begin
 								reg_b	<= b;
 								reg_res	<= {{n{1'b0}}, a};
 								reg_sgn	<= 1'b0;
 							end
-				`SMULH:		begin
+				SMULH:		begin
 								reg_b	<= b[n-1] ? -b : b;
 								reg_res	<= {{n{1'b0}}, a[n-1] ? -a : a};
 								reg_sgn	<= a[n-1] ^ b[n-1];
 							end
-				`SUMULH:	begin
+				SUMULH:	begin
 								reg_b	<= b;
 								reg_res	<= {{n{1'b0}}, a[n-1] ? -a : a};
 								reg_sgn	<= a[n-1];
@@ -127,7 +127,7 @@ module int_multiplier
 
 		for (integer i = 0; i < m; i = i+1) begin
 			if (reg_res[i])
-				acc = acc + ({{m{1'b0}}, reg_b} << i);
+				acc = acc + (reg_b << i);
 		end
 	end
 

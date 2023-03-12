@@ -1,4 +1,4 @@
-`include "CPU_constants.svh"
+import CPU_pkg::*;
 `include "FPU/FPU_constants.svh"
 
 module inst_decoder
@@ -74,358 +74,358 @@ module inst_decoder
 	
 		casez (inst)
 		// RV32I instructions
-		`RV32I_LUI:			begin
+		RV32I_LUI:			begin
 								immediate	= immediate_U;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_ADD;
+								ALU_op		= ALU_ADD;
 							end
-		`RV32I_AUIPC:		begin
+		RV32I_AUIPC:		begin
 								immediate	= immediate_U;
 								rd_access	= 1'b1;
 								sel_PC		= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_ADD;
+								ALU_op		= ALU_ADD;
 							end
-		`RV32I_JAL:			begin
+		RV32I_JAL:			begin
 								immediate	= immediate_J;
 								rd_access	= 1'b1;
 								sel_PC		= 1'b1;
-								ALU_op		= `ALU_INC;
+								ALU_op		= ALU_INC;
 								jump_ena	= 1'b1;
 								jump_alw	= 1'b1;
 							end
-		`RV32I_JALR:		begin
+		RV32I_JALR:		begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_PC		= 1'b1;
-								ALU_op		= `ALU_INC;
+								ALU_op		= ALU_INC;
 								jump_ena	= 1'b1;
 								jump_ind	= 1'b1;
 								jump_alw	= 1'b1;
 							end
-		`RV32I_BEQ:			begin
+		RV32I_BEQ:			begin
 								immediate	= immediate_B;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
-								ALU_op		= `ALU_SEQ;
+								ALU_op		= ALU_SEQ;
 								jump_ena	= 1'b1;
 							end
-		`RV32I_BNE:			begin
+		RV32I_BNE:			begin
 								immediate	= immediate_B;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
-								ALU_op		= `ALU_SNE;
+								ALU_op		= ALU_SNE;
 								jump_ena	= 1'b1;
 							end
-		`RV32I_BLT:			begin
+		RV32I_BLT:			begin
 								immediate	= immediate_B;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
-								ALU_op		= `ALU_SLT;
+								ALU_op		= ALU_SLT;
 								jump_ena	= 1'b1;
 							end
-		`RV32I_BGE:			begin
+		RV32I_BGE:			begin
 								immediate	= immediate_B;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
-								ALU_op		= `ALU_SGE;
+								ALU_op		= ALU_SGE;
 								jump_ena	= 1'b1;
 							end
-		`RV32I_BLTU:		begin
+		RV32I_BLTU:		begin
 								immediate	= immediate_B;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
-								ALU_op		= `ALU_SLTU;
+								ALU_op		= ALU_SLTU;
 								jump_ena	= 1'b1;
 							end
-		`RV32I_BGEU:		begin
+		RV32I_BGEU:		begin
 								immediate	= immediate_B;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
-								ALU_op		= `ALU_SGEU;
+								ALU_op		= ALU_SGEU;
 								jump_ena	= 1'b1;
 							end
-		`RV32I_LB:			begin
+		RV32I_LB:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_LB;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_LB;
 							end
-		`RV32I_LH:			begin
+		RV32I_LH:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_LH;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_LH;
 							end
-		`RV32I_LW:			begin
+		RV32I_LW:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_LW;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_LW;
 							end
-		`RV32I_LBU:			begin
+		RV32I_LBU:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_LBU;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_LBU;
 							end
-		`RV32I_LHU:			begin
+		RV32I_LHU:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_LHU;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_LHU;
 							end
-		`RV32I_SB:			begin
+		RV32I_SB:			begin
 								immediate	= immediate_S;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_SB;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_SB;
 							end
-		`RV32I_SH:			begin
+		RV32I_SH:			begin
 								immediate	= immediate_S;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_SH;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_SH;
 							end
-		`RV32I_SW:			begin
+		RV32I_SW:			begin
 								immediate	= immediate_S;
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_SW;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_SW;
 							end
-		`RV32I_ADDI:		begin
+		RV32I_ADDI:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_ADD;
+								ALU_op		= ALU_ADD;
 							end
-		`RV32I_SLTI:		begin
+		RV32I_SLTI:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_SLT;
+								ALU_op		= ALU_SLT;
 							end
-		`RV32I_SLTIU:		begin
+		RV32I_SLTIU:		begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_SLTU;
+								ALU_op		= ALU_SLTU;
 							end
-		`RV32I_XORI:		begin
+		RV32I_XORI:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_XOR;
+								ALU_op		= ALU_XOR;
 							end
-		`RV32I_ORI:			begin
+		RV32I_ORI:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_OR;
+								ALU_op		= ALU_OR;
 							end
-		`RV32I_ANDI:		begin
+		RV32I_ANDI:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_AND;
+								ALU_op		= ALU_AND;
 							end
-		`RV32I_SLLI:		begin
+		RV32I_SLLI:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_SLL;
+								ALU_op		= ALU_SLL;
 							end
-		`RV32I_SRLI:		begin
+		RV32I_SRLI:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_SRL;
+								ALU_op		= ALU_SRL;
 							end
-		`RV32I_SRAI:		begin
+		RV32I_SRAI:			begin
 								immediate	= immediate_I;
 								rs1_access	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								ALU_op		= `ALU_SRA;
+								ALU_op		= ALU_SRA;
 							end
-		`RV32I_ADD:			begin
+		RV32I_ADD:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_ADD;
+								ALU_op		= ALU_ADD;
 							end
-		`RV32I_SUB:			begin
+		RV32I_SUB:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_SUB;
+								ALU_op		= ALU_SUB;
 							end
-		`RV32I_SLL:			begin
+		RV32I_SLL:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_SLL;
+								ALU_op		= ALU_SLL;
 							end
-		`RV32I_SLT:			begin
+		RV32I_SLT:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_SLT;
+								ALU_op		= ALU_SLT;
 							end
-		`RV32I_SLTU:		begin
+		RV32I_SLTU:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_SLTU;
+								ALU_op		= ALU_SLTU;
 							end
-		`RV32I_XOR:			begin
+		RV32I_XOR:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_XOR;
+								ALU_op		= ALU_XOR;
 							end
-		`RV32I_SRL:			begin
+		RV32I_SRL:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_SRL;
+								ALU_op		= ALU_SRL;
 							end
-		`RV32I_SRA:			begin
+		RV32I_SRA:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_SRA;
+								ALU_op		= ALU_SRA;
 							end
-		`RV32I_OR:			begin
+		RV32I_OR:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_OR;
+								ALU_op		= ALU_OR;
 							end
-		`RV32I_AND:			begin
+		RV32I_AND:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_AND;
+								ALU_op		= ALU_AND;
 							end
-		`RV32I_FENCE:		;
-		`RV32I_ECALL:		;
-		`RV32I_EBREAK:		;
+		RV32I_FENCE:		;
+		RV32I_ECALL:		;
+		RV32I_EBREAK:		;
 		// RV32M instructions
-		`RV32M_MUL:			begin
+		RV32M_MUL:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_MUL;
-								MUL_op		= `UMULL;
+								wb_src		= SEL_MUL;
+								MUL_op		= UMULL;
 							end
-		`RV32M_MULH:		begin
+		RV32M_MULH:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_MUL;
-								MUL_op		= `SMULH;
+								wb_src		= SEL_MUL;
+								MUL_op		= SMULH;
 							end
-		`RV32M_MULHSU:		begin
+		RV32M_MULHSU:		begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_MUL;
-								MUL_op		= `SUMULH;
+								wb_src		= SEL_MUL;
+								MUL_op		= SUMULH;
 							end
-		`RV32M_MULHU:		begin
+		RV32M_MULHU:		begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_MUL;
-								MUL_op		= `UMULH;
+								wb_src		= SEL_MUL;
+								MUL_op		= UMULH;
 							end
-		`RV32M_DIV:			begin
+		RV32M_DIV:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_DIV;
-								DIV_op		= `SDIV;
+								wb_src		= SEL_DIV;
+								DIV_op		= SDIV;
 							end
-		`RV32M_DIVU:		begin
+		RV32M_DIVU:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_DIV;
-								DIV_op		= `UDIV;
+								wb_src		= SEL_DIV;
+								DIV_op		= UDIV;
 							end
-		`RV32M_REM:			begin
+		RV32M_REM:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_DIV;
-								DIV_op		= `SREM;
+								wb_src		= SEL_DIV;
+								DIV_op		= SREM;
 							end
-		`RV32M_REMU:		begin
+		RV32M_REMU:			begin
 								rs1_access	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_DIV;
-								DIV_op		= `UREM;
+								wb_src		= SEL_DIV;
+								DIV_op		= UREM;
 							end
-		// RV32F instructions
-		`RV32F_FLW:			begin
+/*	// RV32F instructions
+		RV32F_FLW:			begin
 								immediate	= immediate_I;
 								rs1_addr[5]	= 1'b0;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_LW;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_LW;
 							end
-		`RV32F_FSW:			begin
+		RV32F_FSW:			begin
 								immediate	= immediate_S;
 								rs1_addr[5]	= 1'b0;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								sel_IM		= 1'b1;
-								wb_src		= `SEL_MEM;
-								ALU_op		= `ALU_ADD;
-								MEM_op		= `MEM_SW;
+								wb_src		= SEL_MEM;
+								ALU_op		= ALU_ADD;
+								MEM_op		= MEM_SW;
 							end
-		`RV32F_FMADD:		begin
+		RV32F_FMADD:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
@@ -434,10 +434,10 @@ module inst_decoder
 								rs3_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_MADD;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_MADD;
 							end
-		`RV32F_FMSUB:		begin
+		RV32F_FMSUB:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
@@ -446,10 +446,10 @@ module inst_decoder
 								rs3_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_MSUB;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_MSUB;
 							end
-		`RV32F_FNMSUB:		begin
+		RV32F_FNMSUB:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
@@ -458,10 +458,10 @@ module inst_decoder
 								rs3_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_NMSUB;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_NMSUB;
 							end
-		`RV32F_FNMADD:		begin
+		RV32F_FNMADD:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
@@ -470,191 +470,191 @@ module inst_decoder
 								rs3_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_NMADD;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_NMADD;
 							end
-		`RV32F_FADD:		begin
+		RV32F_FADD:			begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_ADD;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_ADD;
 							end
-		`RV32F_FSUB:		begin
+		RV32F_FSUB:			begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_SUB;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_SUB;
 							end
-		`RV32F_FMUL:		begin
+		RV32F_FMUL:			begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_MUL;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_MUL;
 							end
-		`RV32F_FDIV:		begin
+		RV32F_FDIV:			begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_DIV;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_DIV;
 							end
-		`RV32F_FSQRT:		begin
+		RV32F_FSQRT:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_SQRT;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_SQRT;
 							end
-		`RV32F_FSGNJ:		begin
-								rs1_addr[5]	= 1'b1;
-								rs1_access	= 1'b1;
-								rs2_addr[5]	= 1'b1;
-								rs2_access	= 1'b1;
-								rd_addr[5]	= 1'b1;
-								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_SGNJ;
-							end
-		`RV32F_FSGNJN:		begin
+		RV32F_FSGNJ:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_SGNJN;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_SGNJ;
 							end
-		`RV32F_FSGNJX:		begin
+		RV32F_FSGNJN:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_SGNJX;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_SGNJN;
 							end
-		`RV32F_FMIN:		begin
+		RV32F_FSGNJX:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_MIN;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_SGNJX;
 							end
-		`RV32F_FMAX:		begin
+		RV32F_FMIN:			begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_MAX;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_MIN;
 							end
-		`RV32F_FCVT_W_S:	begin
+		RV32F_FMAX:			begin
+								rs1_addr[5]	= 1'b1;
+								rs1_access	= 1'b1;
+								rs2_addr[5]	= 1'b1;
+								rs2_access	= 1'b1;
+								rd_addr[5]	= 1'b1;
+								rd_access	= 1'b1;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_MAX;
+							end
+		RV32F_FCVT_W_S:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b0;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_CVTFI;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_CVTFI;
 							end
-		`RV32F_FCVT_WU_S:	begin
+		RV32F_FCVT_WU_S:	begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b0;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_CVTFU;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_CVTFU;
 							end
-		`RV32F_FMV_X_W:		begin
+		RV32F_FMV_X_W:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b0;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_ADD;
+								ALU_op		= ALU_ADD;
 							end
-		`RV32F_FEQ_S:		begin
-								rs1_addr[5]	= 1'b1;
-								rs1_access	= 1'b1;
-								rs2_addr[5]	= 1'b1;
-								rs2_access	= 1'b1;
-								rd_addr[5]	= 1'b0;
-								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_SEQ;
-							end
-		`RV32F_FLT_S:		begin
+		RV32F_FEQ_S:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b0;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_SLT;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_SEQ;
 							end
-		`RV32F_FLE_S:		begin
+		RV32F_FLT_S:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rs2_addr[5]	= 1'b1;
 								rs2_access	= 1'b1;
 								rd_addr[5]	= 1'b0;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_SLE;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_SLT;
 							end
-		`RV32F_FCLASS_S:	begin
+		RV32F_FLE_S:		begin
+								rs1_addr[5]	= 1'b1;
+								rs1_access	= 1'b1;
+								rs2_addr[5]	= 1'b1;
+								rs2_access	= 1'b1;
+								rd_addr[5]	= 1'b0;
+								rd_access	= 1'b1;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_SLE;
+							end
+		RV32F_FCLASS_S:		begin
 								rs1_addr[5]	= 1'b1;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b0;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_CLASS;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_CLASS;
 							end
-		`RV32F_FCVT_S_W:	begin
+		RV32F_FCVT_S_W:		begin
 								rs1_addr[5]	= 1'b0;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_CVTIF;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_CVTIF;
 							end
-		`RV32F_FCVT_S_WU:	begin
+		RV32F_FCVT_S_WU:	begin
 								rs1_addr[5]	= 1'b0;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								wb_src		= `SEL_FPU;
-								FPU_op		= `FPU_OP_CVTUF;
+								wb_src		= SEL_FPU;
+								FPU_op		= FPU_OP_CVTUF;
 							end
-		`RV32F_FMV_W_X:		begin
+		RV32F_FMV_W_X:		begin
 								rs1_addr[5]	= 1'b0;
 								rs1_access	= 1'b1;
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
-								ALU_op		= `ALU_ADD;
-							end
+								ALU_op		= ALU_ADD;
+							end*/
 		default:			illegal_inst	= 1'b1;
 		endcase
 	end

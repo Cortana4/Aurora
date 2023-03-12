@@ -1,4 +1,4 @@
-`include "CPU_constants.svh"
+import CPU_pkg::*;
 
 module EX_stage
 (
@@ -16,6 +16,7 @@ module EX_stage
 	output	logic			ready_out_DIV,
 	input	logic			valid_in_FPU,
 	output	logic			ready_out_FPU,
+
 	// write address channel
 	output	logic	[31:0]	dmem_axi_awaddr,
 	output	logic	[2:0]	dmem_axi_awprot,
@@ -58,8 +59,8 @@ module EX_stage
 	input	logic			jump_ena_ID,
 	input	logic			jump_ind_ID,
 	input	logic			jump_alw_ID,
-	input	logic			illegal_inst_ID,
 	input	logic	[1:0]	imem_axi_rresp_ID,
+	input	logic			illegal_inst_ID,
 
 	output	logic			jump_taken,
 	output	logic	[31:0]	jump_addr,
@@ -72,10 +73,12 @@ module EX_stage
 	output	logic			rd_access_EX,
 	output	logic	[2:0]	wb_src_EX,
 	output	logic	[2:0]	MEM_op_EX,
-	output	logic			illegal_inst_EX,
-	output	logic			maligned_data_addr_EX,
-	output	logic			maligned_inst_addr_EX,
+	// exceptions
 	output	logic	[1:0]	imem_axi_rresp_EX,
+	output	logic			illegal_inst_EX,
+	output	logic			maligned_inst_addr_EX,
+	output	logic			maligned_load_addr_EX,
+	output	logic			maligned_store_addr_EX,
 
 	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM,
@@ -111,8 +114,9 @@ module EX_stage
 	logic	[31:0]	FPU_out;
 	logic			valid_out_FPU;
 
-	logic			maligned_data_addr;
 	logic			maligned_inst_addr;
+	logic			maligned_load_addr;
+	logic			maligned_store_addr;
 
 	logic			stall;
 
@@ -125,7 +129,7 @@ module EX_stage
 	assign			bypass_rs3_EX		= rs3_access_ID && |rs3_addr_ID && rd_access_EX  && rs3_addr_ID == rd_addr_EX;
 	assign			bypass_rs3_MEM		= rs3_access_ID && |rs3_addr_ID && rd_access_MEM && rs3_addr_ID == rd_addr_MEM;
 
-	assign			rd_after_ld_hazard	= (bypass_rs1_EX || bypass_rs2_EX || bypass_rs3_EX) && wb_src_EX == `SEL_MEM;
+	assign			rd_after_ld_hazard	= (bypass_rs1_EX || bypass_rs2_EX || bypass_rs3_EX) && wb_src_EX == SEL_MEM;
 
 	assign			a					= sel_PC_ID ? PC_ID : rs1_data;
 	assign			b					= sel_IM_ID ? IM_ID : rs2_data;
@@ -136,9 +140,9 @@ module EX_stage
 
 	assign			ready_out			= ready_in && !stall;
 	assign			stall				= rd_after_ld_hazard ||
-										  (wb_src_ID == `SEL_MUL && !valid_out_MUL) ||
-										  (wb_src_ID == `SEL_DIV && !valid_out_DIV) ||
-										  (wb_src_ID == `SEL_FPU && !valid_out_FPU);
+										  (wb_src_ID == SEL_MUL && !valid_out_MUL) ||
+										  (wb_src_ID == SEL_DIV && !valid_out_DIV) ||
+										  (wb_src_ID == SEL_FPU && !valid_out_FPU);
 
 	// byte enable computation
 	always_comb begin
@@ -146,24 +150,25 @@ module EX_stage
 
 		if (dmem_axi_awvalid) begin
 			case (MEM_op_EX)
-			`MEM_SB:	dmem_axi_wstrb	= 4'b0001 << dmem_axi_awaddr[1:0];
-			`MEM_SH:	dmem_axi_wstrb	= 4'b0011 << dmem_axi_awaddr[1:0];
-			`MEM_SW:	dmem_axi_wstrb	= 4'b1111 << dmem_axi_awaddr[1:0];
+			MEM_SB:	dmem_axi_wstrb	= 4'b0001 << dmem_axi_awaddr[1:0];
+			MEM_SH:	dmem_axi_wstrb	= 4'b0011 << dmem_axi_awaddr[1:0];
+			MEM_SW:	dmem_axi_wstrb	= 4'b1111 << dmem_axi_awaddr[1:0];
 			endcase
 		end
 	end
 
 	// check for maligned data address exception
 	always_comb begin
-		maligned_data_addr	= 1'b0;
+		maligned_load_addr	= 1'b0;
+		maligned_store_addr	= 1'b0;
 
-		if (wb_src_ID == `SEL_MEM) begin
+		if (wb_src_ID == SEL_MEM) begin
 			case (MEM_op_ID)
-			`MEM_LH,
-			`MEM_LHU,
-			`MEM_SH:	maligned_data_addr	= &ALU_out[1:0];
-			`MEM_LW,
-			`MEM_SW:	maligned_data_addr	= |ALU_out[1:0];
+			MEM_LH,
+			MEM_LHU:	maligned_load_addr	= &ALU_out[1:0];
+			MEM_LW:		maligned_load_addr	= |ALU_out[1:0];
+			MEM_SH:		maligned_store_addr	= &ALU_out[1:0];
+			MEM_SW:		maligned_store_addr	= |ALU_out[1:0];
 			endcase
 		end
 	end
@@ -233,10 +238,11 @@ module EX_stage
 			rd_access_EX			<= 1'b0;
 			wb_src_EX				<= 3'd0;
 			MEM_op_EX				<= 3'd0;
-			illegal_inst_EX			<= 1'b0;
-			maligned_data_addr_EX	<= 1'b0;
-			maligned_inst_addr_EX	<= 1'b0;
 			imem_axi_rresp_EX		<= 2'b00;
+			illegal_inst_EX			<= 1'b0;
+			maligned_inst_addr_EX	<= 1'b0;
+			maligned_load_addr_EX	<= 1'b0;
+			maligned_store_addr_EX	<= 1'b0;
 		end
 
 		else if (valid_in && ready_out) begin
@@ -257,13 +263,14 @@ module EX_stage
 			rd_access_EX			<= rd_access_ID;
 			wb_src_EX				<= wb_src_ID;
 			MEM_op_EX				<= MEM_op_ID;
-			illegal_inst_EX			<= illegal_inst_ID;
-			maligned_data_addr_EX	<= maligned_data_addr;
-			maligned_inst_addr_EX	<= maligned_inst_addr;
 			imem_axi_rresp_EX		<= imem_axi_rresp_ID;
+			illegal_inst_EX			<= illegal_inst_ID;
+			maligned_inst_addr_EX	<= maligned_inst_addr;
+			maligned_load_addr_EX	<= maligned_load_addr;
+			maligned_store_addr_EX	<= maligned_store_addr;
 			
 			case (wb_src_ID)
-			`SEL_MEM:	begin
+			SEL_MEM:	begin
 							// dmem read access (load)
 							if (rd_access_ID) begin
 								dmem_axi_araddr		<= ALU_out;
@@ -279,9 +286,9 @@ module EX_stage
 								dmem_axi_wvalid		<= 1'b1;
 							end
 						end
-			`SEL_MUL:	rd_data_EX	<= MUL_out;
-			`SEL_DIV:	rd_data_EX	<= DIV_out;
-			`SEL_FPU:	rd_data_EX	<= FPU_out;
+			SEL_MUL:	rd_data_EX	<= MUL_out;
+			SEL_DIV:	rd_data_EX	<= DIV_out;
+			SEL_FPU:	rd_data_EX	<= FPU_out;
 			default:	rd_data_EX	<= ALU_out;
 			endcase
 		end
@@ -304,10 +311,11 @@ module EX_stage
 			rd_access_EX			<= 1'b0;
 			wb_src_EX				<= 3'd0;
 			MEM_op_EX				<= 3'd0;
-			illegal_inst_EX			<= 1'b0;
-			maligned_data_addr_EX	<= 1'b0;
-			maligned_inst_addr_EX	<= 1'b0;
 			imem_axi_rresp_EX		<= 2'b00;
+			illegal_inst_EX			<= 1'b0;
+			maligned_inst_addr_EX	<= 1'b0;
+			maligned_load_addr_EX	<= 1'b0;
+			maligned_store_addr_EX	<= 1'b0;
 		end
 
 		else begin
@@ -350,7 +358,7 @@ module EX_stage
 		.y(MUL_out)
 	);
 
-	int_divider #(32, 4) int_divider_inst
+	int_divider #(32, 2) int_divider_inst
 	(
 		.clk(clk),
 		.reset(reset),

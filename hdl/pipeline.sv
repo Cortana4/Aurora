@@ -98,8 +98,9 @@ module pipeline
 	logic			jump_ena_ID;
 	logic			jump_ind_ID;
 	logic			jump_alw_ID;
-	logic			illegal_inst_ID;
 	logic	[1:0]	imem_axi_rresp_ID;
+	logic			illegal_inst_ID;
+	
 
 	// EX signals / EX/MEM pipeline registers
 	logic			valid_out_EX;
@@ -114,10 +115,12 @@ module pipeline
 	logic			rd_access_EX;
 	logic	[2:0]	wb_src_EX;
 	logic	[2:0]	MEM_op_EX;
-	logic			illegal_inst_EX;
-	logic			maligned_data_addr_EX;
-	logic			maligned_inst_addr_EX;
 	logic	[1:0]	imem_axi_rresp_EX;
+	logic			illegal_inst_EX;
+	logic			maligned_inst_addr_EX;
+	logic			maligned_load_addr_EX;
+	logic			maligned_store_addr_EX;
+	
 	
 	// MEM signals / MEM/WB pipeline registers
 	logic	[31:0]	PC_MEM;
@@ -126,10 +129,11 @@ module pipeline
 	logic	[5:0]	rd_addr_MEM;
 	logic	[31:0]	rd_data_MEM;
 	logic			rd_access_MEM;
-	logic			illegal_inst_MEM;
-	logic			maligned_data_addr_MEM;
-	logic			maligned_inst_addr_MEM;
 	logic	[1:0]	imem_axi_rresp_MEM;
+	logic			illegal_inst_MEM;
+	logic			maligned_inst_addr_MEM;
+	logic			maligned_load_addr_MEM;
+	logic			maligned_store_addr_MEM;
 	logic	[1:0]	dmem_axi_bresp_MEM;
 	logic	[1:0]	dmem_axi_rresp_MEM;
 
@@ -220,8 +224,8 @@ module pipeline
 		.jump_ena_ID(jump_ena_ID),
 		.jump_ind_ID(jump_ind_ID),
 		.jump_alw_ID(jump_alw_ID),
-		.illegal_inst_ID(illegal_inst_ID),
 		.imem_axi_rresp_ID(imem_axi_rresp_ID),
+		.illegal_inst_ID(illegal_inst_ID),
 
 		.rd_addr_MEM(rd_addr_MEM),
 		.rd_data_MEM(rd_data_MEM),
@@ -286,8 +290,8 @@ module pipeline
 		.jump_ena_ID(jump_ena_ID),
 		.jump_ind_ID(jump_ind_ID),
 		.jump_alw_ID(jump_alw_ID),
-		.illegal_inst_ID(illegal_inst_ID),
 		.imem_axi_rresp_ID(imem_axi_rresp_ID),
+		.illegal_inst_ID(illegal_inst_ID),
 
 		.jump_taken(jump_taken),
 		.jump_addr(jump_addr),
@@ -300,10 +304,11 @@ module pipeline
 		.rd_access_EX(rd_access_EX),
 		.wb_src_EX(wb_src_EX),
 		.MEM_op_EX(MEM_op_EX),
-		.illegal_inst_EX(illegal_inst_EX),
-		.maligned_data_addr_EX(maligned_data_addr_EX),
-		.maligned_inst_addr_EX(maligned_inst_addr_EX),
 		.imem_axi_rresp_EX(imem_axi_rresp_EX),
+		.illegal_inst_EX(illegal_inst_EX),
+		.maligned_inst_addr_EX(maligned_inst_addr_EX),
+		.maligned_load_addr_EX(maligned_load_addr_EX),
+		.maligned_store_addr_EX(maligned_store_addr_EX),
 
 		.rd_addr_MEM(rd_addr_MEM),
 		.rd_data_MEM(rd_data_MEM),
@@ -339,10 +344,11 @@ module pipeline
 		.rd_access_EX(rd_access_EX),
 		.wb_src_EX(wb_src_EX),
 		.MEM_op_EX(MEM_op_EX),
-		.illegal_inst_EX(illegal_inst_EX),
-		.maligned_data_addr_EX(maligned_data_addr_EX),
-		.maligned_inst_addr_EX(maligned_inst_addr_EX),
 		.imem_axi_rresp_EX(imem_axi_rresp_EX),
+		.illegal_inst_EX(illegal_inst_EX),
+		.maligned_inst_addr_EX(maligned_inst_addr_EX),
+		.maligned_load_addr_EX(maligned_load_addr_EX),
+		.maligned_store_addr_EX(maligned_store_addr_EX),
 
 		.PC_MEM(PC_MEM),
 		.IR_MEM(IR_MEM),
@@ -350,10 +356,11 @@ module pipeline
 		.rd_addr_MEM(rd_addr_MEM),
 		.rd_data_MEM(rd_data_MEM),
 		.rd_access_MEM(rd_access_MEM),
-		.illegal_inst_MEM(illegal_inst_MEM),
-		.maligned_data_addr_MEM(maligned_data_addr_MEM),
-		.maligned_inst_addr_MEM(maligned_inst_addr_MEM),
 		.imem_axi_rresp_MEM(imem_axi_rresp_MEM),
+		.illegal_inst_MEM(illegal_inst_MEM),
+		.maligned_inst_addr_MEM(maligned_inst_addr_MEM),
+		.maligned_load_addr_MEM(maligned_load_addr_MEM),
+		.maligned_store_addr_MEM(maligned_store_addr_MEM),
 		.dmem_axi_bresp_MEM(dmem_axi_bresp_MEM),
 		.dmem_axi_rresp_MEM(dmem_axi_rresp_MEM)
 	);

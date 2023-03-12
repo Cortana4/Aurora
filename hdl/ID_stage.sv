@@ -1,4 +1,4 @@
-`include "CPU_constants.svh"
+import CPU_pkg::*;
 
 module ID_stage
 (
@@ -47,8 +47,9 @@ module ID_stage
 	output	logic			jump_ena_ID,
 	output	logic			jump_ind_ID,
 	output	logic			jump_alw_ID,
-	output	logic			illegal_inst_ID,
+	// exceptions
 	output	logic	[1:0]	imem_axi_rresp_ID,
+	output	logic			illegal_inst_ID,
 	
 	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM,
@@ -116,15 +117,15 @@ module ID_stage
 			jump_ena_ID			<= 1'b0;
 			jump_ind_ID			<= 1'b0;
 			jump_alw_ID			<= 1'b0;
-			illegal_inst_ID		<= 1'b0;
 			imem_axi_rresp_ID	<= 2'b00;
+			illegal_inst_ID		<= 1'b0;
 		end
 		
 		else if (valid_in && ready_out) begin
 			valid_out			<= 1'b1;
-			valid_out_MUL		<= wb_src == `SEL_MUL;
-			valid_out_DIV		<= wb_src == `SEL_DIV;
-			valid_out_FPU		<= wb_src == `SEL_FPU;
+			valid_out_MUL		<= wb_src == SEL_MUL;
+			valid_out_DIV		<= wb_src == SEL_DIV;
+			valid_out_FPU		<= wb_src == SEL_FPU;
 			PC_ID				<= PC_IF;
 			IR_ID				<= IR_IF;
 			IM_ID				<= immediate;
@@ -151,8 +152,8 @@ module ID_stage
 			jump_ena_ID			<= jump_ena;
 			jump_ind_ID			<= jump_ind;
 			jump_alw_ID			<= jump_alw;
-			illegal_inst_ID		<= illegal_inst;
 			imem_axi_rresp_ID	<= imem_axi_rresp_IF;
+			illegal_inst_ID		<= illegal_inst;
 		end
 		
 		else if (valid_out && ready_in) begin
@@ -186,8 +187,8 @@ module ID_stage
 			jump_ena_ID			<= 1'b0;
 			jump_ind_ID			<= 1'b0;
 			jump_alw_ID			<= 1'b0;
-			illegal_inst_ID		<= 1'b0;
 			imem_axi_rresp_ID	<= 2'b00;
+			illegal_inst_ID		<= 1'b0;
 		end
 		
 		else begin

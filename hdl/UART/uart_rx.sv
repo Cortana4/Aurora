@@ -28,8 +28,7 @@ module uart_rx
 	output	logic					overflow_error
 );
 
-	logic				rx_metastable;
-	logic				rx_stable;
+	logic		[1:0]	rx_stable;
 
 	logic		[24:0]	counter;
 	logic		[2:0]	samples;
@@ -53,15 +52,11 @@ module uart_rx
 
 	// remove metastability
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
-			rx_metastable	<= 1'b1;
-			rx_stable		<= 1'b1;
-		end
+		if (reset)
+			rx_stable		<= 2'b11;
 
-		else begin
-			rx_metastable	<= rx;
-			rx_stable		<= rx_metastable;
-		end
+		else
+			rx_stable		<= {rx_stable[0], rx};
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
@@ -88,8 +83,8 @@ module uart_rx
 							abort			<= 1'b0;
 							data			<= 8'h00;
 
-							if (!rx_stable)
-								state <= START;
+							if (!rx_stable[1])
+								state	<= START;
 						end
 			START:		begin
 							// wait until start bit is finished
@@ -111,15 +106,15 @@ module uart_rx
 							else begin
 								// c_bit / 2 - c_bit / 16
 								if (counter == (baud_reg >> 1) - (baud_reg >> 4))
-									samples[0] <= rx_stable;
+									samples[0]	<= rx_stable[1];
 								// c_bit / 2
 								if (counter == baud_reg >> 1)
-									samples[1] <= rx_stable;
+									samples[1]	<= rx_stable[1];
 								// c_bit / 2 + c_bit / 16
 								if (counter == (baud_reg >> 1) + (baud_reg >> 4))
-									samples[2] <= rx_stable;
+									samples[2]	<= rx_stable[1];
 
-								counter <= counter + 25'd1;
+								counter	<= counter + 25'd1;
 							end
 						end
 			DATA:		begin
@@ -136,21 +131,21 @@ module uart_rx
 
 								// receive next data bit
 								else
-									bit_idx <= bit_idx + 3'd1;
+									bit_idx	<= bit_idx + 3'd1;
 							end
 							// read 3 samples around the middle of each data bit
 							else begin
 								// c_bit / 2 - c_bit / 16
 								if (counter == (baud_reg >> 1) - (baud_reg >> 4))
-									samples[0] <= rx_stable;
+									samples[0]	<= rx_stable[1];
 								// c_bit / 2
 								if (counter == baud_reg >> 1)
-									samples[1] <= rx_stable;
+									samples[1]	<= rx_stable[1];
 								// c_bit / 2 + c_bit / 16
 								if (counter == (baud_reg >> 1) + (baud_reg >> 4))
-									samples[2] <= rx_stable;
+									samples[2]	<= rx_stable[1];
 
-								counter <= counter + 25'd1;
+								counter	<= counter + 25'd1;
 							end
 						end
 			PARITY:		begin
@@ -166,54 +161,54 @@ module uart_rx
 							else begin
 								// c_bit / 2 - c_bit / 16
 								if (counter == (baud_reg >> 1) - (baud_reg >> 4))
-									samples[0] <= rx_stable;
+									samples[0]	<= rx_stable[1];
 								// c_bit / 2
 								if (counter == baud_reg >> 1)
-									samples[1] <= rx_stable;
+									samples[1]	<= rx_stable[1];
 								// c_bit / 2 + c_bit / 16
 								if (counter == (baud_reg >> 1) + (baud_reg >> 4))
-									samples[2] <= rx_stable;
+									samples[2]	<= rx_stable[1];
 
-								counter <= counter + 25'd1;
+								counter	<= counter + 25'd1;
 							end
 						end
 			STOP:		begin
 							if (push) begin
-								push		<= 1'b0;
-								counter		<= 25'd0;
-								state		<= IDLE;
+								push	<= 1'b0;
+								counter	<= 25'd0;
+								state	<= IDLE;
 							end
 
 							else begin
 								if ((!stop_bits	&& counter == baud_reg - 24'd2) ||
 									(stop_bits	&& counter == (baud_reg << 1) - 24'd2)) begin
 									// because LSB is received first, data has to be aligned
-									push			<= 1'b1;
-									data			<= data >> !data_bits;
+									push		<= 1'b1;
+									data		<= data >> !data_bits;
 								end
 								// read 3 samples around the middle of the stop bit
 								// c_bit / 2 - c_bit / 16
 								// 2 * (c_bit / 2 - c_bit / 16) = c_bit - c_bit / 8
 								if ((!stop_bits	&& counter == (baud_reg >> 1) - (baud_reg >> 4)) ||
 									(stop_bits	&& counter == baud_reg - (baud_reg >> 3)))
-									samples[0] <= rx_stable;
+									samples[0]	<= rx_stable[1];
 
 								// c_bit / 2
 								// 2 * (c_bit / 2) = c_bit
 								if ((!stop_bits	&& counter == baud_reg >> 1) ||
 									(stop_bits	&& counter == baud_reg))
-									samples[1] <= rx_stable;
+									samples[1]	<= rx_stable[1];
 
 								// c_bit / 2 + c_bit / 16
 								// 2 * (c_bit / 2 + c_bit / 16) = c_bit + c_bit / 8
 								if ((!stop_bits	&& counter == (baud_reg >> 1) + (baud_reg >> 4)) ||
 									(stop_bits	&& counter == baud_reg + (baud_reg >> 3)))
-									samples[2] <= rx_stable;
+									samples[2]	<= rx_stable[1];
 
-								counter <= counter + 25'd1;
+								counter	<= counter + 25'd1;
 							end
 						end
-			default:	state <= IDLE;
+			default:	state	<= IDLE;
 		endcase
 	end
 

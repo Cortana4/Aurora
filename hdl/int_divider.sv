@@ -1,4 +1,4 @@
-`include "CPU_constants.svh"
+import CPU_pkg::*;
 
 module int_divider
 #(
@@ -21,7 +21,7 @@ module int_divider
 
 	output	logic	[n-1:0]	y
 );
-
+	
 	logic	[1:0]	prev_op;
 	logic	[n-1:0]	prev_a;
 	logic	[n-1:0]	prev_b;
@@ -48,10 +48,10 @@ module int_divider
 
 	always_comb begin
 		case (reg_op)
-		`UDIV:	y	= reg_res;
-		`SDIV:	y	= reg_sgn ? -reg_res : reg_res;
-		`UREM:	y	= reg_rem;
-		`SREM:	y	= reg_sgn ? -reg_rem : reg_rem;
+		UDIV:	y	= reg_res;
+		SDIV:	y	= reg_sgn ? -reg_res : reg_res;
+		UREM:	y	= reg_rem;
+		SREM:	y	= reg_sgn ? -reg_rem : reg_rem;
 		endcase
 	end
 
@@ -74,10 +74,10 @@ module int_divider
 			prev_b	<= b;
 			reg_op	<= op;
 			
-			if ((prev_op == `UDIV && op == `UREM  ||
-				 prev_op == `UREM && op == `UDIV  ||
-				 prev_op == `SDIV && op == `SREM  ||
-				 prev_op == `SREM && op == `SDIV) &&
+			if ((prev_op == UDIV && op == UREM  ||
+				 prev_op == UREM && op == UDIV  ||
+				 prev_op == SDIV && op == SREM  ||
+				 prev_op == SREM && op == SDIV) &&
 				 prev_a == a && prev_b == b) begin
 				valid_out	<= 1'b1;
 				state		<= IDLE;
@@ -90,18 +90,18 @@ module int_divider
 				state		<= CALC;
 
 				case (op)
-				`UDIV,
-				`UREM:	begin
+				UDIV,
+				UREM:	begin
 							reg_b	<= b;
 							reg_res	<= a;
 							reg_sgn	<= 1'b0;
 						end
-				`SDIV:	begin
+				SDIV:	begin
 							reg_b	<= b[n-1] ? -b : b;
 							reg_res	<= a[n-1] ? -a : a;
 							reg_sgn	<= a[n-1] ^ b[n-1];
 						end
-				`SREM:	begin
+				SREM:	begin
 							reg_b	<= b[n-1] ? -b : b;
 							reg_res	<= a[n-1] ? -a : a;
 							reg_sgn	<= a[n-1];
@@ -133,9 +133,9 @@ module int_divider
 		acc[0]	= reg_rem;
 
 		for (integer i = 1; i <= m; i = i+1) begin
-			acc[i]	= {acc[i-1][n-1:0], reg_res[n-i]} - {1'b0, reg_b};
+			acc[i]	= ((acc[i-1] << 1) | reg_res[n-i]) - reg_b;
 			q[m-i]	= !acc[i][n];
-			acc[i]	= acc[i][n] ? {acc[i-1][n-1:0], reg_res[n-i]} : acc[i];
+			acc[i]	= q[m-i] ? acc[i] : ((acc[i-1] << 1) | reg_res[n-i]);
 		end
 	end
 

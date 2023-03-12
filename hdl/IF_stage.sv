@@ -1,4 +1,4 @@
-`include "CPU_constants.svh"
+import CPU_pkg::*;
 
 module IF_stage
 (
@@ -7,6 +7,7 @@ module IF_stage
 
 	output	logic			valid_out,
 	input	logic			ready_in,
+	
 	// write address channel
 	output	logic	[31:0]	imem_axi_awaddr,
 	output	logic	[2:0]	imem_axi_awprot,
@@ -37,6 +38,7 @@ module IF_stage
 
 	output	logic	[31:0]	PC_IF,
 	output	logic	[31:0]	IR_IF,
+	// exceptions
 	output	logic	[1:0]	imem_axi_rresp_IF
 );
 
@@ -48,6 +50,7 @@ module IF_stage
 	logic			jump_pend;
 	logic	[31:0]	jump_addr_reg;
 
+	// imem is read only
 	assign			imem_axi_awaddr		= 32'h00000000;
 	assign			imem_axi_awprot		= 3'b110;
 	assign			imem_axi_awvalid	= 1'b0;
@@ -68,7 +71,7 @@ module IF_stage
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset)
-			PC	<= `RESET_VEC;
+			PC	<= RESET_VEC;
 
 		else if (imem_axi_arvalid) begin
 			if (imem_axi_arready) begin
@@ -104,7 +107,7 @@ module IF_stage
 			jump_pend			<= 1'b0;
 			jump_addr_reg		<= 32'h00000000;
 			PC_IF				<= 32'h00000000;
-			IR_IF				<= `RV32I_NOP;
+			IR_IF				<= 32'h00000000;
 			imem_axi_rresp_IF	<= 2'b00;
 		end
 
@@ -113,7 +116,7 @@ module IF_stage
 			jump_pend			<= 1'b1;
 			jump_addr_reg		<= jump_addr;
 			PC_IF				<= 32'h00000000;
-			IR_IF				<= `RV32I_NOP;
+			IR_IF				<= 32'h00000000;
 			imem_axi_rresp_IF	<= 2'b00;
 		end
 
@@ -121,14 +124,14 @@ module IF_stage
 			valid_reg			<= jump_pend ? jump_addr_reg == imem_addr_reg : 1'b1;
 			jump_pend			<= jump_pend ? jump_addr_reg != imem_addr_reg : 1'b0;
 			PC_IF				<= imem_addr_reg;
-			IR_IF				<= imem_axi_rdata;
+			IR_IF				<= imem_axi_rresp[1] ? RV32I_NOP : imem_axi_rdata;
 			imem_axi_rresp_IF	<= imem_axi_rresp;
 		end
 
 		else if (valid_reg && ready_in) begin
 			valid_reg			<= 1'b0;
 			PC_IF				<= 32'h00000000;
-			IR_IF				<= `RV32I_NOP;
+			IR_IF				<= 32'h00000000;
 			imem_axi_rresp_IF	<= 2'b00;
 		end
 	end

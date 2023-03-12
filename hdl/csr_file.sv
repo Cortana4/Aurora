@@ -8,10 +8,10 @@ module csr_file
 	input	logic	[1:0]	op
 	
 	input	logic	[11:0]	csr_addr,
-	output	logic	[31:0]	csr_dout,
-	input	logic	[31:0]	csr_din,
-	input	logic			csr_ena,
-	input	logic			csr_wen
+	input	logic			csr_wena,
+	input	logic	[31:0]	csr_wdata,
+	input	logic			csr_ren,
+	output	logic	[31:0]	csr_rdata
 );
 	
 	logic	[31:0]	misa;
@@ -19,7 +19,7 @@ module csr_file
 	logic			F_ext_ena;
 	assign			misa =
 					{
-						2'b01,			// MXL
+						2'b01,			// MXL (machine XLEN = 32)
 						4'b0000,
 						13'h0000,		// N-Z disabled
 						M_ext_ena,
@@ -29,80 +29,164 @@ module csr_file
 					};
 	
 	logic	[31:0]	mvendorid;
-	assign			mvendorid =
-						32'h00000000;	// non-commercial implementation
+	assign			mvendorid =			// (non-commercial implementation)
+					{
+						25'h0000000,	// bank
+						7'h00			// offset
+					};
 	
-	logic	[31:0]	marchid;
-	assign			marchid =
-						32'h00000000;
-	
-	logic	[31:0]	mimpid;
-	assign			mimpid =
-						32'h00000000;
-	
-	logic	[31:0]	mhartid;
-	assign			mhartid =
-						32'h00000000;
+	logic	[31:0]	marchid;	assign	archid		= 32'h00000000;
+	logic	[31:0]	mimpid;		assign	mimpid		= 32'h00000000;
+	logic	[31:0]	mhartid;	assign	mhartid		= 32'h00000000;
 	
 	logic	[31:0]	mstatus;
-	logic			SD;
-	logic			TSR;
-	logic			TW;
-	logic			TVM;
-	logic			MXR;
-	logic			SUM;
-	logic			MPRV;
-	logic	[1:0]	XS;
 	logic	[1:0]	FS;
-	logic	[1:0]	MPP;
-	logic	[1:0]	VS;
-	logic			SPP;
+	logic	[1:0]	XS;			assign	XS			= FS;
+	logic			SD;			assign	SD			= &XS;
+	logic	[1:0]	MPP;		assign	MPP			= 2'b11;
 	logic			MPIE;
-	logic			UBE;
-	logic			SPIE;
 	logic			MIE;
-	logic			SIE;	// immer 0, da nur M mode
 	assign			mstatus =
 					{
-						SD,
+						SD,				// SD	(some registers dirty)
 						8'h00,
-						TSR,
-						TW,
-						TVM,
-						MXR,
-						SUM,
-						MPRV,
-						
-						XS,
-						FS,
-						MPP,
-						VS,
-						SPP,
-						MPIE,
-						UBE,
-						SPIE,
+						1'b0,			// TSR	(trap SRET instruction)
+						1'b0,			// TW	(timeout wait)
+						1'b0,			// TVM	(trap virtual memory management operations in S-mode)
+						1'b0,			// MXR	(modify privilege of virtual load)
+						1'b0,			// SUM	(modify privilege of virtual load/store in S-mode)
+						1'b0,			// MPRV	(modify privilege of load/store)
+						XS,				// XS	(register status summary of all ext.)
+						FS,				// FS	(status of F-ext. registers)
+						MPP,			// MPP	(previous privilege mode when in M-mode)
+						2'b00,			// VS	(status of V-ext. registers)
+						1'b0,			// SPP	(previous privilege mode when in S-mode)
+						MPIE,			// MPIE	(MIE prior trap)
+						1'b0,			// UBE	(U-mode little-/big-endian)
+						1'b0,			// SPIE	(SIE prior trap)
 						1'b0,
-						MIE,
+						MIE,			// MIE	(M-mode interrupt enable)
 						1'b0,
-						SIE,
+						1'b0,			// SIE	(S-mode interrupt enable)
 						1'b0
 					};
 	
+	logic	[31:0]	mstatush;
+	assign			mstatush =
+					{
+						26'h0000000,
+						1'b0,			// MBE	(M-mode little-/big-endian)
+						1'b0,			// SBE	(S-mode little-/big-endian)
+						4'h0
+					};
 	
+	logic	[31:0]	mtvec;
+	logic	[31:2]	base;
+	logic	[1:0]	mode;
+	assign			mtvec =				// trap vector base address
+					{
+						base,
+						mode			// 0: PC=base 1: PC=base+4*cause (only interrupts)
+					};
+	
+	logic	[31:0]	mip;				// individual interrupt pending bits
+	logic	[31:0]	mie;				// individual interrupt enable bits
+	logic	[63:0]	mcycle;				// cycle counter
+	logic	[63:0]	minstret;			// instruction counter
+	
+	logic	[31:0]	mcountinhibit;
+	logic			IR;
+	logic			CY;
+	assign			mcountinhibit =
+					{
+						29'h00000000,	// mhpcounter3 - mhpcounter31 disabled 
+						IR,				// instruction counter disable
+						1'b0,
+						CY				// cycle counter disable
+					};
+	
+	logic	[31:0]	mscratch;			// ???
+	logic	[31:0]	mepc;				// PC of the instruction that was interrupted or caused the exception
+	
+	logic	[31:0]	mcause;				// code indicating the event that caused the trap
+	logic	[31:0]	mtval;				// ???
+	logic	[31:0]	mconfigptr;	assign	mconfigptr	= 32'h00000000;
+	logic	[31:0]	mseccfg;	assign	mseccfg		= 32'h00000000;
+	
+	logic	[31:0]	fcsr;
+	logic	[2:0]	frm;
+	logic	[4:0]	fflags;
+	assign			fcsr =
+					{
+						24'h000000,
+						frm,
+						fflags
+					};
+	
+	logic	[31:0]	rdata;
+	logic	[31:0]	wdata;
+	
+	always_comb begin
+		case (op)
+		`CSR_RS:		wdata	= rdata |  csr_wdata;
+		`CSR_RC:		wdata	= rdata & ~csr_wdata;
+		default:		wdata	= csr_wdata;
+		endcase
+	end
+	
+	always_comb begin
+		case (csr_addr)
+		`CSR_ADDR_MVENDORID:		rdata	= mvendorid;
+		`CSR_ADDR_MARCHID:			rdata	= marchid;
+		`CSR_ADDR_MIMPID:			rdata	= mimpid;
+		`CSR_ADDR_MHARTID:			rdata	= mhartid;
+		`CSR_ADDR_MSTATUS:			rdata	= mstatus;
+		`CSR_ADDR_MSTATUSH:			rdata	= mstatush;
+		`CSR_ADDR_MTVEC:			rdata	= mtvec;
+		`CSR_ADDR_MIP:				rdata	= mip;
+		`CSR_ADDR_MIE:				rdata	= mie;
+		`CSR_ADDR_MCYCLE:			rdata	= mcycle;
+		`CSR_ADDR_MCYCLEH:			rdata	= mcycleh;
+		`CSR_ADDR_MINSTRET:			rdata	= minstret;
+		`CSR_ADDR_MINSTRETH:		rdata	= minstreth;
+		`CSR_ADDR_MCOUNTINHIBIT:	rdata	= mcountinhibit;
+		`CSR_ADDR_MSCRATCH:			rdata	= mscratch;
+		`CSR_ADDR_MEPC:				rdata	= mepc;
+		`CSR_ADDR_MCAUSE:			rdata	= mcause;
+		`CSR_ADDR_MTVAL:			rdata	= mtval;
+		`CSR_ADDR_MCONFIGPTR:		rdata	= mconfigptr;
+		`CSR_ADDR_MSECCFG:			rdata	= ;
+		`CSR_ADDR_MSECCFGH:			rdata	= ;
+		`CSR_ADDR_FFLAGS,
+		`CSR_ADDR_FRM,
+		`CSR_ADDR_FCSR:				rdata	= fcsr;
+		default:					rdata	= 32'h00000000;
+		endcase
+	end
+	
+	always_comb begin
+		csr_rdata	= 32'h00000000;
+		
+		if (csr_ren) begin
+			case (csr_addr)
+			`CSR_ADDR_FFLAGS:	csr_rdata	= {27'h0000000, fflags};
+			`CSR_ADDR_FRM:		csr_rdata	= {29'h00000000, frm};
+			default:			csr_rdata	= rdata;
+			endcase
+		end
+	end
 	
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin
-			M_ext_ena	<= 1'b1;
-			F_ext_ena	<= 1'b1;
+			
 		end
 		
-		else if (csr_ena) begin
+		else if (csr_wena) begin
 			// write access
 			if (csr_wen) begin
 				case (csr_addr)
 				`MISA_ADDR:	begin
-								M_ext_ena	<= wdata[12];
-								F_ext_ena	<= wdata[5];
+								
 							end
 				endcase
 			end
@@ -114,82 +198,6 @@ module csr_file
 			end
 		end
 	end
-	
-	always_comb begin
-		case (op)
-		`CSR_RS:		wdata	= rdata | csr_din;
-		`CSR_RC:		wdata	= rdata & ~csr_din;
-		default:		wdata	= csr_din;
-		endcase
-	end
-	
-	always_comb begin
-		case (csr_addr)
-		`MISA_ADDR:		rdata	= misa;
-		default:		rdata	= 32'h00000000;
-		endcase
-	end
-	
-	
 
-	
-	logic	[31:0]	mstatush;
-	logic			MBE;
-	logic			SBE;
-	
-	logic			mtvec;
-	logic	[31:2]	base;
-	logic	[1:0]	mode;
-	
-	logic	[31:0]	mdeleg;
-	logic	[31:0]	mideleg;
-	
-	logic	[31:0]	mip;
-	logic			MEIP;
-	logic			SEIP;
-	logic			MTIP;
-	logic			STIP;
-	logic			MSIP;
-	logic			SSIP;
-	
-	logic	[31:0]	mie;
-	logic			MEIE;
-	logic			SEIE;
-	logic			MTIE;
-	logic			STIE;
-	logic			MSIE;
-	logic			SSIE;
-	
-	logic	[31:0]	mcycle;
-	logic	[31:0]	minstret;
-	logic	[31:0]	mhpmcounter		[31:3];
-	logic	[31:0]	mhpmevent		[31:3];
-	
-	logic	[31:0]	mcycleh;
-	logic	[31:0]	minstreth;
-	logic	[31:0]	mhpmcounterh	[31:3];
-	
-	logic	[31:0]	mcounteren;
-	logic	[28:0]	HPM;
-	logic			IR;
-	logic			TM;
-	logic			CY;
-	
-	logic	[31:0]	mcountinhibit;
-	logic	[31:0]	mscratch;
-	logic	[31:0]	mepc;
-	
-	logic	[31:0]	mcause
-	logic			interrupt;
-	logic	[30:0]	code;
-	
-	logic	[31:0]	mtval;
-	logic	[31:0]	mconfigptr;
-	
-	logic	[31:0]	mtime;
-	logic	[31:0]	mtimeh;
-
-	logic	[31:0]	mtimecmp;
-	logic	[31:0]	mtimecmph;
 
 endmodule

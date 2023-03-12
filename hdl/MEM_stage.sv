@@ -1,4 +1,4 @@
-`include "CPU_constants.svh"
+import CPU_pkg::*;
 
 module MEM_stage
 (
@@ -9,6 +9,7 @@ module MEM_stage
 	output	logic			ready_out,
 	output	logic			valid_out,
 	input	logic			ready_in,
+	
 	// write response channel
 	input	logic	[1:0]	dmem_axi_bresp,
 	input	logic			dmem_axi_bvalid,
@@ -29,10 +30,11 @@ module MEM_stage
 	input	logic			rd_access_EX,
 	input	logic	[2:0]	wb_src_EX,
 	input	logic	[2:0]	MEM_op_EX,
-	input	logic			illegal_inst_EX,
-	input	logic			maligned_data_addr_EX,
-	input	logic			maligned_inst_addr_EX,
 	input	logic	[1:0]	imem_axi_rresp_EX,
+	input	logic			illegal_inst_EX,
+	input	logic			maligned_inst_addr_EX,
+	input	logic			maligned_load_addr_EX,
+	input	logic			maligned_store_addr_EX,
 
 	output	logic	[31:0]	PC_MEM,
 	output	logic	[31:0]	IR_MEM,
@@ -40,10 +42,12 @@ module MEM_stage
 	output	logic	[5:0]	rd_addr_MEM,
 	output	logic	[31:0]	rd_data_MEM,
 	output	logic			rd_access_MEM,
-	output	logic			illegal_inst_MEM,
-	output	logic			maligned_data_addr_MEM,
-	output	logic			maligned_inst_addr_MEM,
+	// exceptions
 	output	logic	[1:0]	imem_axi_rresp_MEM,
+	output	logic			illegal_inst_MEM,
+	output	logic			maligned_inst_addr_MEM,
+	output	logic			maligned_load_addr_MEM,
+	output	logic			maligned_store_addr_MEM,
 	output	logic	[1:0]	dmem_axi_bresp_MEM,
 	output	logic	[1:0]	dmem_axi_rresp_MEM
 );
@@ -57,7 +61,7 @@ module MEM_stage
 	assign			dmem_axi_rready			= ready_in;
 
 	assign			ready_out				= ready_in && !stall;
-	assign			stall					= wb_src_EX == `SEL_MEM && ((rd_access_EX && !dmem_axi_rvalid) || (!rd_access_EX && !dmem_axi_bvalid));
+	assign			stall					= wb_src_EX == SEL_MEM && ((rd_access_EX && !dmem_axi_rvalid) || (!rd_access_EX && !dmem_axi_bvalid));
 
 	// MEM/WB pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
@@ -69,10 +73,11 @@ module MEM_stage
 			rd_addr_MEM				<= 6'd0;
 			rd_data_MEM				<= 32'h00000000;
 			rd_access_MEM			<= 1'b0;
-			illegal_inst_MEM		<= 1'b0;
-			maligned_data_addr_MEM	<= 1'b0;
-			maligned_inst_addr_MEM	<= 1'b0;
 			imem_axi_rresp_MEM		<= 2'b00;
+			illegal_inst_MEM		<= 1'b0;
+			maligned_inst_addr_MEM	<= 1'b0;
+			maligned_load_addr_MEM	<= 1'b0;
+			maligned_store_addr_MEM	<= 1'b0;
 			dmem_axi_bresp_MEM		<= 2'b00;
 			dmem_axi_rresp_MEM		<= 2'b00;
 		end
@@ -85,19 +90,20 @@ module MEM_stage
 			rd_addr_MEM				<= rd_addr_EX;
 			rd_data_MEM				<= rd_data_EX;
 			rd_access_MEM			<= rd_access_EX;
+			imem_axi_rresp_MEM		<= imem_axi_rresp_EX;
 			illegal_inst_MEM		<= illegal_inst_EX;
-			maligned_data_addr_MEM	<= maligned_data_addr_EX;
 			maligned_inst_addr_MEM	<= maligned_inst_addr_EX;
-			imem_axi_rresp_MEM		<= 2'b00;
+			maligned_load_addr_MEM	<= maligned_load_addr_EX;
+			maligned_store_addr_MEM	<= maligned_store_addr_EX;
 			dmem_axi_bresp_MEM		<= 2'b00;
 			dmem_axi_rresp_MEM		<= 2'b00;
 
-			if (wb_src_EX == `SEL_MEM) begin
+			if (wb_src_EX == SEL_MEM) begin
 				// dmem read access (load)
 				if (rd_access_EX) begin
 					case (MEM_op_EX)
-					`MEM_LB:	rd_data_MEM	<= dmem_axi_rdata_aligned | {24{dmem_axi_rdata_aligned[7]}};
-					`MEM_LH:	rd_data_MEM	<= dmem_axi_rdata_aligned | {16{dmem_axi_rdata_aligned[15]}};
+					MEM_LB:		rd_data_MEM	<= dmem_axi_rdata_aligned | {24{dmem_axi_rdata_aligned[7]}};
+					MEM_LH:		rd_data_MEM	<= dmem_axi_rdata_aligned | {16{dmem_axi_rdata_aligned[15]}};
 					default:	rd_data_MEM	<= dmem_axi_rdata_aligned;
 					endcase
 
@@ -119,10 +125,11 @@ module MEM_stage
 			rd_addr_MEM				<= 6'd0;
 			rd_data_MEM				<= 32'h00000000;
 			rd_access_MEM			<= 1'b0;
-			illegal_inst_MEM		<= 1'b0;
-			maligned_data_addr_MEM	<= 1'b0;
-			maligned_inst_addr_MEM	<= 1'b0;
 			imem_axi_rresp_MEM		<= 2'b00;
+			illegal_inst_MEM		<= 1'b0;
+			maligned_inst_addr_MEM	<= 1'b0;
+			maligned_load_addr_MEM	<= 1'b0;
+			maligned_store_addr_MEM	<= 1'b0;
 			dmem_axi_bresp_MEM		<= 2'b00;
 			dmem_axi_rresp_MEM		<= 2'b00;
 		end

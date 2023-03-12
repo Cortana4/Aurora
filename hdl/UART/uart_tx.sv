@@ -23,8 +23,7 @@ module uart_tx
 	output	logic					full
 );
 
-	logic			cts_metastable;
-	logic			cts_stable;
+	logic	[1:0]	cts_stable;
 
 	logic	[24:0]	counter;
 	logic	[2:0]	bit_idx;
@@ -34,17 +33,13 @@ module uart_tx
 
 	enum	logic	[2:0]	{IDLE, START, DATA, PARITY, STOP}	state;
 
-	// remove metastability
+	// cross clock domain
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
-			cts_metastable	<= 1'b1;
-			cts_stable		<= 1'b1;
-		end
+		if (reset)
+			cts_stable		<= 2'b11;
 
-		else begin
-			cts_metastable	<= cts;
-			cts_stable		<= cts_metastable;
-		end
+		else
+			cts_stable		<= {cts_stable[0], cts};
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
@@ -62,7 +57,7 @@ module uart_tx
 							counter	<= 25'd1;
 							bit_idx	<= 3'b000;
 							// beginn transmission in IDLE state to compensate delay
-							if (!empty && (!flow_ctrl || (flow_ctrl && !cts_stable))) begin
+							if (!empty && (!flow_ctrl || (flow_ctrl && !cts_stable[1]))) begin
 								tx		<= 1'b0;
 								state	<= START;
 							end
@@ -128,11 +123,11 @@ module uart_tx
 		.reset(reset),
 		.clear(clear),
 		.clk(clk),
-
+		
 		// write port
 		.push(push),
 		.data_in(data_in),
-
+		
 		// read port
 		.pop(pop),
 		.data_out(data),

@@ -1,12 +1,9 @@
-`include "AmberFive_constants.svh"
+import CPU_pkg::*;
 
 module FPGA_top
 (
 	input	logic			ref_clk,
 	input	logic			reset_btn,
-
-	input	logic			mode_btn,
-	output	logic			mode_led,
 
 	output	logic			tx,
 	input	logic			rx,
@@ -19,207 +16,254 @@ module FPGA_top
 
 	logic			clk;
 	logic			reset;
-	logic			mode;		// 0: run, 1: prog
+	
+// imem port
+	// write address channel
+	logic	[31:0]	imem_axi_awaddr;
+	logic	[2:0]	imem_axi_awprot;
+	logic			imem_axi_awvalid;
+	logic			imem_axi_awready;
+	// write data channel
+	logic	[31:0]	imem_axi_wdata;
+	logic	[3:0]	imem_axi_wstrb;
+	logic			imem_axi_wvalid;
+	logic			imem_axi_wready;
+	// write response channel
+	logic	[1:0]	imem_axi_bresp;
+	logic			imem_axi_bvalid;
+	logic			imem_axi_bready;
+	// read address channel
+	logic	[31:0]	imem_axi_araddr;
+	logic	[2:0]	imem_axi_arprot;
+	logic			imem_axi_arvalid;
+	logic			imem_axi_arready;
+	// read data channel
+	logic	[31:0]	imem_axi_rdata;
+	logic	[1:0]	imem_axi_rresp;
+	logic			imem_axi_rvalid;
+	logic			imem_axi_rready;
+	
+	logic			bram_clk_a;
+	logic			bram_en_a;
+	logic	[3:0]	bram_we_a;
+	logic	[15:0]	bram_addr_a;
+	logic	[31:0]	bram_wrdata_a;
+	logic	[31:0]	bram_rddata_a;
 
-	// CPU signals
-	logic	[31:0]	imem_addr;
-	logic	[31:0]	imem_addr_reg;
-	logic	[31:0]	imem_dout;
-	logic			imem_ena;
-
-	logic	[31:0]	dmem_addr;
-	logic	[31:0]	dmem_addr_reg;
-	logic	[31:0]	dmem_din;
-	logic	[31:0]	dmem_dout;
-	logic			dmem_ena;
-	logic	[3:0]	dmem_wen;
-
-	// memory
-	logic	[31:0]	ROM_dout_a;
-	logic	[31:0]	ROM_dout_b;
-	logic	[31:0]	RAM_dout_a;
-	logic	[31:0]	RAM_dout_b;
-	logic	[31:0]	RAM_din_b;
-
-	// UART
-	logic	[31:0]	UART_dout;
-	logic			UART_int;
-
-	// enable signals
-	logic			read_ROM_a;
-	logic			read_ROM_b;
-	logic			read_RAM_a;
-	logic			read_RAM_b;
-	logic			read_UART;
-
-	assign			read_ROM_a	= imem_addr_reg >= `ROM_BEG		&& imem_addr_reg <= `ROM_END;
-	assign			read_ROM_b	= dmem_addr_reg >= `ROM_BEG		&& dmem_addr_reg <= `ROM_END;
-	assign			read_RAM_a	= imem_addr_reg >= `RAM_BEG		&& imem_addr_reg <= `RAM_END;
-	assign			read_RAM_b	= dmem_addr_reg >= `RAM_BEG		&& dmem_addr_reg <= `RAM_END;
-	assign			read_UART	= dmem_addr_reg >= `UART_BEG	&& dmem_addr_reg <= `UART_END;
-
-	assign			mode_led	= mode;
-	assign			tx_led		= !tx;
-	assign			rx_led		= !rx;
+// dmem port
+	// write address channel
+	logic	[31:0]	dmem_axi_awaddr;
+	logic	[2:0]	dmem_axi_awprot;
+	logic			dmem_axi_awvalid;
+	logic			dmem_axi_awready;
+	// write data channel
+	logic	[31:0]	dmem_axi_wdata;
+	logic	[3:0]	dmem_axi_wstrb;
+	logic			dmem_axi_wvalid;
+	logic			dmem_axi_wready;
+	// write response channel
+	logic	[1:0]	dmem_axi_bresp;
+	logic			dmem_axi_bvalid;
+	logic			dmem_axi_bready;
+	// read address channel
+	logic	[31:0]	dmem_axi_araddr;
+	logic	[2:0]	dmem_axi_arprot;
+	logic			dmem_axi_arvalid;
+	logic			dmem_axi_arready;
+	// read data channel
+	logic	[31:0]	dmem_axi_rdata;
+	logic	[1:0]	dmem_axi_rresp;
+	logic			dmem_axi_rvalid;
+	logic			dmem_axi_rready;
+	
+	logic			bram_clk_b;
+	logic			bram_en_b;
+	logic	[3:0]	bram_we_b;
+	logic	[15:0]	bram_addr_b;
+	logic	[31:0]	bram_wrdata_b;
+	logic	[31:0]	bram_rddata_b;
 
 	logic	[23:0]	counter;
 	logic	[3:0]	reset_btn_samples;
-	logic	[3:0]	mode_btn_samples;
+	
+	assign			tx_led	= !tx;
+	assign			rx_led	= !rx;
 
-	// button debounce and prog/run mode switching logic
+	// button debounce
 	always_ff @(negedge clk) begin
 		// take one sample every 3 ms (1s = 16e6 cycles -> 3ms = 48000 cycles)
 		if (counter == 24'd47999) begin
 			reset_btn_samples	<= {reset_btn_samples[2:0], reset_btn};
-			mode_btn_samples	<= {mode_btn_samples[2:0], mode_btn};
 			counter				<= 24'h000000;
 
 			// reset = 1 as long as reset button is pressed
-			if (reset_btn_samples == 4'b1111) begin
+			if (reset_btn_samples == 4'b1111)
 				reset	<= 1'b1;
-				mode	<= 1'b0;
-			end
 			// reset = 0 on falling reset button edge
 			else if (reset_btn_samples == 4'b1000)
-				reset	<= 1'b0;
-			// switch between run and prog mode on rising mode button edge
-			else if (mode_btn_samples == 4'b0111) begin
-				mode	<= !mode;
-				reset	<= 1'b1;
-			end
-			// reset = 0 on falling prog button edge
-			else if (mode_btn_samples == 4'b1000)
 				reset	<= 1'b0;
 		end
 
 		else
 			counter	<= counter + 24'd1;
 	end
-
-	// imem_dout multiplexer
-	always_comb begin
-		if (read_ROM_a)
-			imem_dout	= ROM_dout_a;
-
-		else if (read_RAM_a)
-			imem_dout	= RAM_dout_a;
-
-		else
-			imem_dout	= 32'h00000000;
-	end
-
-	// dmem_dout multiplexer
-	always_comb begin
-		if (read_ROM_b)
-			dmem_dout = ROM_dout_b;
-
-		else if (read_RAM_b)
-			dmem_dout = RAM_dout_b;
-
-		else if (read_UART)
-			dmem_dout = UART_dout;
-
-		else if (dmem_addr_reg == `MODE_SW)
-			dmem_dout = {31'h00000000, mode};
-
-		else
-			dmem_dout = 32'h00000000;
-	end
-
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
-			dmem_addr_reg <= 32'h00000000;
-			imem_addr_reg <= 32'h00000000;
-		end
-
-		else begin
-			dmem_addr_reg <= dmem_addr;
-			imem_addr_reg <= imem_addr;
-		end
-	end
-
+	
 	// ip cores
-	// clock divider
 	MMCM MMCM_inst
 	(
 		.clk_in1(ref_clk),
 		.clk_out1(clk)
 	);
 
-	// dual port ROM
-	// port a: instructions
-	// port b: data
-	ROM ROM_inst
+	BRAM_Controller imem_controller
 	(
-		.clka(clk),
-		.addra(imem_addr[11:0]),
-		.douta(ROM_dout_a),
-		.ena(imem_ena),
+		.s_axi_aclk(clk),
+		.s_axi_aresetn(!reset),
 		
-		.clkb(clk),
-		.addrb(dmem_addr[11:0]),
-		.doutb(ROM_dout_b),
-		.enb(dmem_ena)
-	);
-
-	// dual port SRAM
-	// port a: instructions
-	// port b: data
-	RAM RAM_inst
-	(
-		.clka(clk),
-		.addra(imem_addr[12:0]),
-		.dina(32'h00000000),
-		.douta(RAM_dout_a),
-		.ena(imem_ena),
-		.wea(4'b0000),
+		.s_axi_awaddr(imem_axi_awaddr[15:0]),
+		.s_axi_awprot(imem_axi_awprot),
+		.s_axi_awvalid(imem_axi_awvalid),
+		.s_axi_awready(imem_axi_awready),
 		
-		.clkb(clk),
-		.addrb(dmem_addr[12:0]),
-		.dinb(dmem_din),
-		.doutb(RAM_dout_b),
-		.enb(dmem_ena),
-		.web(dmem_addr >= `RAM_BEG && dmem_addr <= `RAM_END ? dmem_wen : 4'b0000)
+		.s_axi_wdata(imem_axi_wdata),
+		.s_axi_wstrb(imem_axi_wstrb),
+		.s_axi_wvalid(imem_axi_wvalid),
+		.s_axi_wready(imem_axi_wready),
+		
+		.s_axi_bresp(imem_axi_bresp),
+		.s_axi_bvalid(imem_axi_bvalid),
+		.s_axi_bready(imem_axi_bready),
+		
+		.s_axi_araddr(imem_axi_araddr[15:0]),
+		.s_axi_arprot(imem_axi_arprot),
+		.s_axi_arvalid(imem_axi_arvalid),
+		.s_axi_arready(imem_axi_arready),
+		
+		.s_axi_rdata(imem_axi_rdata),
+		.s_axi_rresp(imem_axi_rresp),
+		.s_axi_rvalid(imem_axi_rvalid),
+		.s_axi_rready(imem_axi_rready),
+		
+		.bram_rst_a(),
+		.bram_clk_a(bram_clk_a),
+		.bram_en_a(bram_en_a),
+		.bram_we_a(bram_we_a),
+		.bram_addr_a(bram_addr_a),
+		.bram_wrdata_a(bram_wrdata_a),
+		.bram_rddata_a(bram_rddata_a)
 	);
 	
-	AmberFive_pipeline AmberFive
+	BRAM_Controller dmem_controller
 	(
-		.clk(clk),
-		.reset(reset),
-
-		.imem_addr(imem_addr),
-		.imem_din(imem_dout),
-		.imem_ena(imem_ena),
-
-		.dmem_addr(dmem_addr),
-		.dmem_dout(dmem_din),
-		.dmem_din(dmem_dout),
-		.dmem_ena(dmem_ena),
-		.dmem_wen(dmem_wen)
+		.s_axi_aclk(clk),
+		.s_axi_aresetn(!reset),
+		
+		.s_axi_awaddr(dmem_axi_awaddr[15:0]),
+		.s_axi_awprot(dmem_axi_awprot),
+		.s_axi_awvalid(dmem_axi_awvalid),
+		.s_axi_awready(dmem_axi_awready),
+		
+		.s_axi_wdata(dmem_axi_wdata),
+		.s_axi_wstrb(dmem_axi_wstrb),
+		.s_axi_wvalid(dmem_axi_wvalid),
+		.s_axi_wready(dmem_axi_wready),
+		
+		.s_axi_bresp(dmem_axi_bresp),
+		.s_axi_bvalid(dmem_axi_bvalid),
+		.s_axi_bready(dmem_axi_bready),
+		
+		.s_axi_araddr(dmem_axi_araddr[15:0]),
+		.s_axi_arprot(dmem_axi_arprot),
+		.s_axi_arvalid(dmem_axi_arvalid),
+		.s_axi_arready(dmem_axi_arready),
+		
+		.s_axi_rdata(dmem_axi_rdata),
+		.s_axi_rresp(dmem_axi_rresp),
+		.s_axi_rvalid(dmem_axi_rvalid),
+		.s_axi_rready(dmem_axi_rready),
+		
+		.bram_rst_a(),
+		.bram_clk_a(bram_clk_b),
+		.bram_en_a(bram_en_b),
+		.bram_we_a(bram_we_b),
+		.bram_addr_a(bram_addr_b),
+		.bram_wrdata_a(bram_wrdata_b),
+		.bram_rddata_a(bram_rddata_b)
 	);
-
-	// UART
-	uart
-	#(
-		.BASE_ADDR(`UART_BEG),
-		.TX_ADDR_WIDTH(5),
-		.RX_ADDR_WIDTH(5)
-	)
-	uart_inst
+	
+	RAM RAM_inst
+	(
+		.clka(bram_clk_a),
+		.addra(bram_addr_a[15:2]),
+		.dina(bram_wrdata_a),
+		.douta(bram_rddata_a),
+		.ena(bram_en_a),
+		.wea(bram_we_a),
+		
+		.clkb(bram_clk_b),
+		.addrb(bram_addr_b[15:2]),
+		.dinb(bram_wrdata_b),
+		.doutb(bram_rddata_b),
+		.enb(bram_en_b),
+		.web(bram_we_b)
+	);
+	
+	CPU aurora
 	(
 		.clk(clk),
 		.reset(reset),
+
+		.imem_axi_awaddr(imem_axi_awaddr),
+		.imem_axi_awprot(imem_axi_awprot),
+		.imem_axi_awvalid(imem_axi_awvalid),
+		.imem_axi_awready(imem_axi_awready),
+
+		.imem_axi_wdata(imem_axi_wdata),
+		.imem_axi_wstrb(imem_axi_wstrb),
+		.imem_axi_wvalid(imem_axi_wvalid),
+		.imem_axi_wready(imem_axi_wready),
+
+		.imem_axi_bresp(imem_axi_bresp),
+		.imem_axi_bvalid(imem_axi_bvalid),
+		.imem_axi_bready(imem_axi_bready),
+
+		.imem_axi_araddr(imem_axi_araddr),
+		.imem_axi_arprot(imem_axi_arprot),
+		.imem_axi_arvalid(imem_axi_arvalid),
+		.imem_axi_arready(imem_axi_arready),
+
+		.imem_axi_rdata(imem_axi_rdata),
+		.imem_axi_rresp(imem_axi_rresp),
+		.imem_axi_rvalid(imem_axi_rvalid),
+		.imem_axi_rready(imem_axi_rready),
+
+		.dmem_axi_awaddr(dmem_axi_awaddr),
+		.dmem_axi_awprot(dmem_axi_awprot),
+		.dmem_axi_awvalid(dmem_axi_awvalid),
+		.dmem_axi_awready(dmem_axi_awready),
+
+		.dmem_axi_wdata(dmem_axi_wdata),
+		.dmem_axi_wstrb(dmem_axi_wstrb),
+		.dmem_axi_wvalid(dmem_axi_wvalid),
+		.dmem_axi_wready(dmem_axi_wready),
+
+		.dmem_axi_bresp(dmem_axi_bresp),
+		.dmem_axi_bvalid(dmem_axi_bvalid),
+		.dmem_axi_bready(dmem_axi_bready),
+
+		.dmem_axi_araddr(dmem_axi_araddr),
+		.dmem_axi_arprot(dmem_axi_arprot),
+		.dmem_axi_arvalid(dmem_axi_arvalid),
+		.dmem_axi_arready(dmem_axi_arready),
+
+		.dmem_axi_rdata(dmem_axi_rdata),
+		.dmem_axi_rresp(dmem_axi_rresp),
+		.dmem_axi_rvalid(dmem_axi_rvalid),
+		.dmem_axi_rready(dmem_axi_rready),
 
 		.tx(tx),
 		.rx(rx),
 		.cts(cts),
-		.rts(rts),
-
-		.Int(),
-
-		.dmem_addr(dmem_addr),
-		.dmem_din(dmem_din),
-		.dmem_dout(UART_dout),
-		.write(|dmem_wen)
+		.rts(rts)
 	);
 endmodule
