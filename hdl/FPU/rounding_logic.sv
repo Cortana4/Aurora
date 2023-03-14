@@ -1,4 +1,4 @@
-`include "FPU_constants.svh"
+import FPU_pkg::*;
 
 module rounding_logic
 #(
@@ -28,28 +28,28 @@ module rounding_logic
 	assign	r_and_not_s		= round_bit && !sticky_bit;
 	assign	r_or_s			= round_bit || sticky_bit;
 	assign	inexact			= r_or_s;
+	
+	assign	{carry, out}	= in + inc;
 
 	always_comb begin
 		case (rm)
-						// round to nearest, ties to even
-		`FPU_RM_RNE:	inc	= r_and_s || (r_and_not_s && in[0]);
+					// round to nearest, ties to even
+		FPU_RM_RNE:	inc	= r_and_s || (r_and_not_s && in[0]);
 
-						// round to nearest, ties to max magnitude
-		`FPU_RM_RMM:	inc	= r_and_s || (r_and_not_s && !in[0]);
+					// round to nearest, ties to max magnitude
+		FPU_RM_RMM:	inc	= r_and_s || (r_and_not_s && !in[0]);
 
-						// round towards zero (truncate fraction)
-		`FPU_RM_RTZ:	inc	= 1'b0;
+					// round towards zero (truncate fraction)
+		FPU_RM_RTZ:	inc	= 1'b0;
 
-						// round down (towards -inf)
-		`FPU_RM_RDN:	inc	= r_or_s && sgn;
+					// round down (towards -inf)
+		FPU_RM_RDN:	inc	= r_or_s && sgn;
 
-						// round up (towards +inf)
-		`FPU_RM_RUP:	inc	= r_or_s && !sgn;
+					// round up (towards +inf)
+		FPU_RM_RUP:	inc	= r_or_s && !sgn;
 
-		default:		inc	= 1'b0;
+		default:	inc	= 1'b0;
 		endcase
 	end
-
-	assign	{carry, out}	= in + inc;
 
 endmodule

@@ -1,11 +1,18 @@
+import FPU_pkg::*;
+
 module float_divider
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			load,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
 
-	input	logic			op_div,
-
+	input	logic	[4:0]	op,
+	input	logic			rm,
+	
 	input	logic	[23:0]	man_a,
 	input	logic	[9:0]	exp_a,
 	input	logic			sgn_a,
@@ -32,8 +39,8 @@ module float_divider
 	output	logic			IV,
 	output	logic			DZ,
 
-	output	logic			final_res,
-	output	logic			ready
+	output	logic			rm_out,
+	output	logic			skip_round
 );
 
 	logic	[23:0]	reg_man_b;
@@ -44,16 +51,21 @@ module float_divider
 	logic	[3:0]	counter;
 
 	logic			IV_int;
+	
+	logic			stall;
 
 	logic	[26:0]	acc [2:0];
 	logic	[1:0]	q;
 
 	enum	logic	{IDLE, CALC} state;
 
-	assign			IV_int	= sNaN_a || sNaN_b || (zero_a && zero_b) || (inf_a && inf_b);
-
+	assign			IV_int		= sNaN_a || sNaN_b || (zero_a && zero_b) || (inf_a && inf_b);
+	
+	assign			ready_out	= ready_in && !stall && op == FPU_OP_DIV;
+	assign			stall		= state != IDLE;
+	
 	always_comb begin
-		if (reg_res[25] || final_res) begin
+		if (reg_res[25] || skip_round) begin
 			sgn_y		= reg_sgn_y;
 			exp_y		= reg_exp_y;
 			man_y		= reg_res[25:2];
@@ -71,7 +83,8 @@ module float_divider
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || (load && !op_div)) begin
+		if (reset) begin
+			valid_out	<= 1'b0;
 			reg_man_b	<= 24'h000000;
 			reg_res		<= {24'hc00000, 2'b00};
 			reg_rem		<= 27'h0000000;
@@ -79,76 +92,87 @@ module float_divider
 			reg_sgn_y	<= 1'b0;
 			IV			<= 1'b0;
 			DZ			<= 1'b0;
+			rm_out		<= 3'b000;
+			skip_round	<= 1'b0;
 			counter		<= 4'd0;
-			final_res	<= 1'b0;
 			state		<= IDLE;
-			ready		<= 1'b0;
 		end
 
-		else if (load) begin
+		else if (valid_in && ready_out) begin
+			valid_out	<= 1'b0;
+			reg_man_b	<= man_b;
+			reg_res		<= 26'd0;
+			reg_rem		<= {1'b0, man_a, 2'b00};
+			reg_exp_y	<= exp_a - exp_b;
+			reg_sgn_y	<= sgn_a ^ sgn_b;
 			IV			<= IV_int;
 			DZ			<= zero_b;
+			rm_out		<= rm;
+			skip_round	<= 1'b0;
 			counter		<= 4'd0;
+			state		<= CALC;
+
 			// NaN
 			if (IV_int || qNaN_a || qNaN_b) begin
+				valid_out	<= 1'b1;
 				reg_man_b	<= 24'h000000;
 				reg_res		<= {24'hc00000, 2'b00};
 				reg_rem		<= 27'h0000000;
 				reg_exp_y	<= 10'h0ff;
 				reg_sgn_y	<= 1'b0;
-				final_res	<= 1'b1;
+				skip_round	<= 1'b1;
 				state		<= IDLE;
-				ready		<= 1'b1;
 			end
 			// inf
 			else if (inf_a || zero_b) begin
+				valid_out	<= 1'b1;
 				reg_man_b	<= 24'h000000;
 				reg_res		<= {24'h800000, 2'b00};
 				reg_rem		<= 27'h0000000;
 				reg_exp_y	<= 10'h0ff;
 				reg_sgn_y	<= sgn_a ^ sgn_b;
-				final_res	<= 1'b1;
+				skip_round	<= 1'b1;
 				state		<= IDLE;
-				ready		<= 1'b1;
 			end
 			// zero
 			else if (zero_a || inf_b) begin
+				valid_out	<= 1'b1;
 				reg_man_b	<= 24'h000000;
 				reg_res		<= {24'h000000, 2'b00};
 				reg_rem		<= 27'h0000000;
 				reg_exp_y	<= 10'h000;
 				reg_sgn_y	<= sgn_a ^ sgn_b;
-				final_res	<= 1'b1;
+				skip_round	<= 1'b1;
 				state		<= IDLE;
-				ready		<= 1'b1;
-			end
-
-			else begin
-				reg_man_b	<= man_b;
-				reg_res		<= 26'd0;
-				reg_rem		<= {1'b0, man_a, 2'b00};
-				reg_exp_y	<= exp_a - exp_b;
-				reg_sgn_y	<= sgn_a ^ sgn_b;
-				final_res	<= 1'b0;
-				state		<= CALC;
-				ready		<= 1'b0;
 			end
 		end
 
 		else case (state)
-			IDLE:	ready	<= 1'b0;
+			IDLE:	if (valid_out && ready_in) begin
+						valid_out	<= 1'b0;
+						reg_man_b	<= 24'h000000;
+						reg_res		<= {24'hc00000, 2'b00};
+						reg_rem		<= 27'h0000000;
+						reg_exp_y	<= 10'h000;
+						reg_sgn_y	<= 1'b0;
+						IV			<= 1'b0;
+						DZ			<= 1'b0;
+						rm_out		<= 3'b000;
+						skip_round	<= 1'b0;
+						counter		<= 4'd0;
+					end
 
 			CALC:	begin
 						reg_res		<= (reg_res << 2) | q;
 						reg_rem		<= acc[2];
 
 						if (counter == 4'd12) begin
-							state	<= IDLE;
-							ready	<= 1'b1;
+							valid_out	<= 1'b1;
+							state		<= IDLE;
 						end
 
 						else
-							counter	<= counter + 4'd1;
+							counter		<= counter + 4'd1;
 					end
 		endcase
 	end
@@ -157,7 +181,7 @@ module float_divider
 		acc[0]	= reg_rem;
 
 		for (integer i = 1; i <= 2; i = i+1) begin
-			acc[i]	= acc[i-1] - {1'b0, reg_man_b, 2'b00};
+			acc[i]	= acc[i-1] - (reg_man_b << 2);
 			q[2-i]	= !acc[i][26];
 			acc[i]	= (acc[i][26] ? acc[i-1] : acc[i]) << 1;
 		end

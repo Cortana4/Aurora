@@ -1,13 +1,16 @@
-`include "FPU_constants.svh"
+import FPU_pkg::*;
 
 module ftoi_converter
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			load,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
 
-	input	logic			op_cvtfi,
-	input	logic			op_cvtfu,
+	input	logic	[4:0]	op,
 	input	logic	[2:0]	rm,
 
 	input	logic	[23:0]	man,
@@ -21,9 +24,7 @@ module ftoi_converter
 	output	logic	[31:0]	int_out,
 
 	output	logic			IV,
-	output	logic			IE,
-
-	output	logic			ready
+	output	logic			IE
 );
 
 	logic	[31:0]	cmp_min;
@@ -44,7 +45,7 @@ module ftoi_converter
 	logic			reg_IV;
 	logic			reg_IE;
 	logic			negate;
-	logic			final_res;
+	logic			skip_round;
 
 	logic	[31:0]	int_rounded;
 	logic			inexact;
@@ -55,10 +56,10 @@ module ftoi_converter
 
 	assign			lower_limit_exc	= inf && sgn;
 	assign			upper_limit_exc	= (inf && !sgn) || sNaN || qNaN;
-	assign			rounded_zero	= op_cvtfu && sgn;
+	assign			rounded_zero	= op == FPU_OP_CVTFU && sgn;
 
 	assign			offset			= 8'h9e - Exp;
-
+	
 	/* calculate offset:
 	 *   31 - exp_unbiased
 	 * = 31 + bias - (exp_unbiased + bias)
@@ -66,8 +67,10 @@ module ftoi_converter
 	 * = 31 + 127 - exp_biased
 	 */
 
+	assign			ready_out		= ready_in && (op == FPU_OP_CVTFI || op == FPU_OP_CVTFU);
+
 	always_comb begin
-		if (final_res) begin
+		if (skip_round) begin
 			int_out	= reg_int;
 			IV		= reg_IV;
 			IE		= reg_IE;
@@ -81,7 +84,8 @@ module ftoi_converter
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || (load && !(op_cvtfi || op_cvtfu))) begin
+		if (reset) begin
+			valid_out		<= 1'b0;
 			reg_rm			<= 3'b000;
 			reg_int			<= 32'h00000000;
 			reg_sgn			<= 1'b0;
@@ -90,34 +94,41 @@ module ftoi_converter
 			reg_IV			<= 1'b0;
 			reg_IE			<= 1'b0;
 			negate			<= 1'b0;
-			final_res		<= 1'b0;
-			ready			<= 1'b0;
+			skip_round		<= 1'b0;
 		end
 
-		else if (load) begin
-			reg_rm	<= rm;
-			reg_sgn	<= sgn;
-			ready	<= 1'b1;
+		else if (valid_in && ready_out) begin
+			valid_out		<= 1'b1;
+			reg_rm			<= rm;
+			reg_int			<= shifter_out[32:1];
+			reg_sgn			<= sgn;
+			reg_round_bit	<= shifter_out[0];
+			reg_sticky_bit	<= sticky_bit;
+			reg_IV			<= 1'b0;
+			reg_IE			<= 1'b0;
+			negate			<= op_cvtfi && sgn;
+			skip_round		<= 1'b0;
+
 			// implemented non signaling IE (IEEE 754 2019 p. 39f)
 			// input is below lower limit
 			if (less || lower_limit_exc) begin
-				reg_int			<= op_cvtfi ? 32'h80000000 : 32'h00000000;
+				reg_int			<= op == FPU_OP_CVTFI ? 32'h80000000 : 32'h00000000;
 				reg_round_bit	<= 1'b0;
 				reg_sticky_bit	<= 1'b0;
 				reg_IV			<= 1'b1;
 				reg_IE			<= lower_limit_exc;
 				negate			<= 1'b0;
-				final_res		<= 1'b1;
+				skip_round		<= 1'b1;
 			end
 			// input is above upper limit or NaN
 			else if (greater || upper_limit_exc) begin
-				reg_int			<= op_cvtfi ? 32'h7fffffff : 32'hffffffff;
+				reg_int			<= op == FPU_OP_CVTFI ? 32'h7fffffff : 32'hffffffff;
 				reg_round_bit	<= 1'b0;
 				reg_sticky_bit	<= 1'b0;
 				reg_IV			<= 1'b1;
 				reg_IE			<= upper_limit_exc;
 				negate			<= 1'b0;
-				final_res		<= 1'b1;
+				skip_round		<= 1'b1;
 			end
 			// rounded input is zero
 			else if (zero || rounded_zero) begin
@@ -127,27 +138,27 @@ module ftoi_converter
 				reg_IV			<= 1'b0;
 				reg_IE			<= rounded_zero;
 				negate			<= 1'b0;
-				final_res		<= 1'b1;
-			end
-
-			else begin
-				reg_int			<= shifter_out[32:1];
-				reg_round_bit	<= shifter_out[0];
-				reg_sticky_bit	<= sticky_bit;
-				reg_IV			<= 1'b0;
-				reg_IE			<= 1'b0;
-				negate			<= op_cvtfi && sgn;
-				final_res		<= 1'b0;
+				skip_round		<= 1'b1;
 			end
 		end
 
-		else
-			ready			<= 1'b0;
+		else begin
+			valid_out		<= 1'b0;
+			reg_rm			<= 3'b000;
+			reg_int			<= 32'h00000000;
+			reg_sgn			<= 1'b0;
+			reg_round_bit	<= 1'b0;
+			reg_sticky_bit	<= 1'b0;
+			reg_IV			<= 1'b0;
+			reg_IE			<= 1'b0;
+			negate			<= 1'b0;
+			skip_round		<= 1'b0;
+		end
 	end
 
 	always_comb begin
 		// set min and max valid int value to compare
-		if (op_cvtfi) begin
+		if (op == FPU_OP_CVTFI) begin
 			cmp_min	= 32'hcf000000;
 			cmp_max	= 32'h4effffff;
 		end
@@ -157,11 +168,11 @@ module ftoi_converter
 			// inputs less than 0.0 but greater than -1.0
 			// can be valid if rounded to 0.0
 			case (rm)
-			`FPU_RM_RNE:	cmp_min = 32'hbf700000; // < -0.5
-			`FPU_RM_RTZ,
-			`FPU_RM_RUP:	cmp_min = 32'hbf7fffff; // < -0.99...
-			`FPU_RM_RMM:	cmp_min = 32'hbeffffff; // < -0.49...
-			default:		cmp_min = 32'h00000000; // <  0.0
+			FPU_RM_RNE:	cmp_min = 32'hbf700000; // < -0.5
+			FPU_RM_RTZ,
+			FPU_RM_RUP:	cmp_min = 32'hbf7fffff; // < -0.99...
+			FPU_RM_RMM:	cmp_min = 32'hbeffffff; // < -0.49...
+			default:	cmp_min = 32'h00000000; // <  0.0
 			endcase
 
 			cmp_max	= 32'h4f7fffff;

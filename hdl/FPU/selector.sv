@@ -1,8 +1,16 @@
+import FPU_pkg::*;
+
 module selector
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			load,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
+	
+	input	logic	[4:0]	op,
 
 	input	logic			op_min,
 	input	logic			op_max,
@@ -11,9 +19,7 @@ module selector
 	input	logic	[31:0]	b,
 
 	output	logic	[31:0]	float_out,
-	output	logic			IV,
-
-	output	logic			ready
+	output	logic			IV
 );
 
 	logic	greater;
@@ -23,52 +29,59 @@ module selector
 	logic	qNaN_a;
 	logic	sNaN_b;
 	logic	qNaN_b;
+	
+	assign	ready_out	= ready_in && (op == FPU_OP_MIN || op == FPU_OP_MAX);
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || (load && !(op_min || op_max))) begin
+		if (reset) begin
+			valid_out	<= 1'b0;
 			float_out	<= 32'h00000000;
 			IV			<= 1'b0;
-			ready		<= 1'b0;
 		end
 
 		else if (load) begin
-			if (op_min) begin
-				if ((qNaN_a || sNaN_a) && (qNaN_b || sNaN_b))
-					float_out	<= 32'h7fc00000;
-
-				else if (less)
-					float_out	<= a;
-
-				else if (greater || qNaN_a || sNaN_a)
-					float_out	<= b;
-
-				else if (equal)	// -0.0f < 0.0f
-					float_out	<= {a[31] | b[31], a[30:0]};
-
-				else			// less
-					float_out	<= a;
-			end
-
-			else if (op_max) begin
-				if ((qNaN_a || sNaN_a) && (qNaN_b || sNaN_b))
-					float_out	<= 32'h7fc00000;
-
-				else if (less || qNaN_a || sNaN_a)
-					float_out	<= b;
-
-				else if (equal)	// -0.0f < 0.0f
-					float_out	<= {a[31] & b[31], a[30:0]};
-
-				else			// greater
-					float_out	<= a;
-			end
+			valid_out	<= 1'b1;
+			float_out	<= 32'h00000000;
+			IV			<= sNaN_a || sNaN_b;
 			
-			IV		<= sNaN_a || sNaN_b;
-			ready	<= 1'b1;
+			case (op)
+			FPU_OP_MIN:	begin
+							if ((qNaN_a || sNaN_a) && (qNaN_b || sNaN_b))
+								float_out	<= 32'h7fc00000;
+
+							else if (less)
+								float_out	<= a;
+
+							else if (greater || qNaN_a || sNaN_a)
+								float_out	<= b;
+
+							else if (equal)	// -0.0f < 0.0f
+								float_out	<= {a[31] | b[31], a[30:0]};
+
+							else			// less
+								float_out	<= a;
+						end
+			FPU_OP_MAX:	begin
+							if ((qNaN_a || sNaN_a) && (qNaN_b || sNaN_b))
+								float_out	<= 32'h7fc00000;
+
+							else if (less || qNaN_a || sNaN_a)
+								float_out	<= b;
+
+							else if (equal)	// -0.0f < 0.0f
+								float_out	<= {a[31] & b[31], a[30:0]};
+
+							else			// greater
+								float_out	<= a;
+						end
+			endcase
 		end
 
-		else
-			ready	<= 1'b0;
+		else if (valid_out && ready_in) begin
+			valid_out	<= 1'b0;
+			float_out	<= 32'h00000000;
+			IV			<= 1'b0;
+		end
 	end
 
 	float_comparator_comb float_comparator_inst

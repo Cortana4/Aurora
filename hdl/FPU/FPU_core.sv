@@ -2,27 +2,13 @@ module FPU_core
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			load,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
 
-	input	logic			op_add,
-	input	logic			op_sub,
-	input	logic			op_mul,
-	input	logic			op_div,
-	input	logic			op_sqrt,
-	input	logic			op_sgnj,
-	input	logic			op_sgnjn,
-	input	logic			op_sgnjx,
-	input	logic			op_cvtfi,
-	input	logic			op_cvtfu,
-	input	logic			op_cvtif,
-	input	logic			op_cvtuf,
-	input	logic			op_seq,
-	input	logic			op_slt,
-	input	logic			op_sle,
-	input	logic			op_class,
-	input	logic			op_min,
-	input	logic			op_max,
-
+	input	logic	[4:0]	op,
 	input	logic	[2:0]	rm,
 
 	input	logic	[31:0]	a,
@@ -34,9 +20,7 @@ module FPU_core
 	output	logic			DZ,
 	output	logic			OF,
 	output	logic			UF,
-	output	logic			IE,
-
-	output	logic			ready
+	output	logic			IE
 );
 
 	// input a
@@ -64,124 +48,122 @@ module FPU_core
 	logic 	[9:0]	exp_b_norm;
 
 	// arithmetic
+	logic			ready_out_arith;
+	logic			valid_out_arith;
 	logic 	[31:0]	result_arith;
 	logic			IV_arith;
 	logic			DZ_arith;
 	logic			OF_arith;
 	logic			UF_arith;
 	logic			IE_arith;
-	logic			ready_arith;
-	logic			sel_arith;
 
 	// sign modifier
+	logic			ready_out_sgn_mod;
+	logic			valid_out_sgn_mod;
 	logic	[31:0]	result_sgn_mod;
-	logic			ready_sgn_mod;
-	logic			sel_sgn_mod;
 
 	// ftoi converter
+	logic			ready_out_ftoi;
+	logic			valid_out_ftoi;
 	logic	[31:0]	result_ftoi;
 	logic			IV_ftoi;
 	logic			IE_ftoi;
-	logic			ready_ftoi;
-	logic			sel_ftoi;
 
 	// itof converter
+	logic			ready_out_itof;
+	logic			valid_out_itof;
 	logic	[31:0]	result_itof;
 	logic			IE_itof;
-	logic			ready_itof;
-	logic			sel_itof;
 
 	// comparator
+	logic			ready_out_cmp;
+	logic			valid_out_cmp;
 	logic	[31:0]	result_cmp;
 	logic			IV_cmp;
-	logic			ready_cmp;
-	logic			sel_cmp;
 
 	// selector
+	logic			ready_out_sel;
+	logic			valid_out_sel;
 	logic	[31:0]	result_sel;
 	logic			IV_sel;
-	logic			ready_sel;
-	logic			sel_sel;
 
 	// classifier
+	logic			ready_out_class;
+	logic			valid_out_class;
 	logic	[31:0]	result_class;
-	logic			ready_class;
-	logic			sel_class;
-
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
-			sel_arith	<= 1'b0;
-			sel_sgn_mod	<= 1'b0;
-			sel_ftoi	<= 1'b0;
-			sel_itof	<= 1'b0;
-			sel_cmp		<= 1'b0;
-			sel_sel		<= 1'b0;
-			sel_class	<= 1'b0;
-		end
-
-		else if (load) begin
-			sel_arith	<= op_add || op_sub || op_mul || op_div || op_sqrt;
-			sel_sgn_mod	<= op_sgnj || op_sgnjn || op_sgnjx;
-			sel_ftoi	<= op_cvtfi || op_cvtfu;
-			sel_itof	<= op_cvtif || op_cvtuf;
-			sel_cmp		<= op_seq || op_slt || op_sle;
-			sel_sel		<= op_min || op_max;
-			sel_class	<= op_class;
-		end
-	end
+	
+	assign			ready_out	= ready_out_arith	|| ready_out_sgn_mod	||
+								  ready_out_ftoi	|| ready_out_itof		||
+								  ready_out_cmp 	|| ready_out_sel 		||
+								  ready_out_class;
 
 	always_comb begin
-		result		= 32'h00000000;
-		IV			= 1'b0;
-		DZ			= 1'b0;
-		OF			= 1'b0;
-		UF			= 1'b0;
-		IE			= 1'b0;
-		ready		= 1'b0;
+		valid_out	= valid_out_arith;
+		result		= result_arith;
+		IV			= IV_arith;
+		DZ			= DZ_arith;
+		OF			= OF_arith;
+		UF			= UF_arith;
+		IE			= IE_arith;
 
-		if (sel_arith) begin
-			result	= result_arith;
-			IV		= IV_arith;
-			DZ		= DZ_arith;
-			OF		= OF_arith;
-			UF		= UF_arith;
-			IE		= IE_arith;
-			ready	= ready_arith;
+		if (valid_out_sgn_mod) begin
+			valid_out	= valid_out_sgn_mod;
+			result		= result_sgn_mod;
+			IV			= 1'b0;
+			DZ			= 1'b0;
+			OF			= 1'b0;
+			UF			= 1'b0;
+			IE			= 1'b0;
 		end
 
-		else if (sel_sgn_mod) begin
-			result	= result_sgn_mod;
-			ready	= ready_sgn_mod;
+		else if (valid_out_ftoi) begin
+			valid_out	= valid_out_ftoi;
+			result		= result_ftoi;
+			IV			= IV_ftoi;
+			DZ			= 1'b0;
+			OF			= 1'b0;
+			UF			= 1'b0;
+			IE			= IE_ftoi;
 		end
 
-		else if (sel_ftoi) begin
-			result	= result_ftoi;
-			IV		= IV_ftoi;
-			IE		= IE_ftoi;
-			ready	= ready_ftoi;
+		else if (valid_out_itof) begin
+			valid_out	= valid_out_itof;
+			result		= result_itof;
+			IV			= 1'b0;
+			DZ			= 1'b0;
+			OF			= 1'b0;
+			UF			= 1'b0;
+			IE			= IE_itof;
 		end
 
-		else if (sel_itof) begin
-			result	= result_itof;
-			IE		= IE_itof;
-			ready	= ready_itof;
+		else if (valid_out_cmp) begin
+			valid_out	= valid_out_cmp;
+			result		= result_cmp;
+			IV			= IV_cmp;
+			DZ			= 1'b0;
+			OF			= 1'b0;
+			UF			= 1'b0;
+			IE			= 1'b0;
 		end
 
-		else if (sel_cmp) begin
-			result	= result_cmp;
-			IV		= IV_cmp;
-			ready	= ready_cmp;
+		else if (valid_out_sel) begin
+			valid_out	= valid_out_sel;
+			result		= result_sel;
+			IV			= IV_sel;
+			DZ			= 1'b0;
+			OF			= 1'b0;
+			UF			= 1'b0;
+			IE			= 1'b0;
 		end
 
-		else if (sel_sel) begin
-			result	= result_sel;
-			IV		= IV_sel;
-			ready	= ready_sel;
-		end
-
-		else if (sel_class) begin
-			result	= result_class;
-			ready	= ready_class;
+		else if (valid_out_class) begin
+			valid_out	= valid_out_class;
+			result		= result_class;
+			IV			= 1'b0;
+			DZ			= 1'b0;
+			OF			= 1'b0;
+			UF			= 1'b0;
+			IE			= 1'b0;
 		end
 	end
 
@@ -243,14 +225,13 @@ module FPU_core
 	(
 		.clk(clk),
 		.reset(reset),
-		.load(load),
 
-		.op_add(op_add),
-		.op_sub(op_sub),
-		.op_mul(op_mul),
-		.op_div(op_div),
-		.op_sqrt(op_sqrt),
-
+		.valid_in(valid_in),
+		.ready_out(ready_out_arith),
+		.valid_out(valid_out_arith),
+		.ready_in(ready_in),
+		
+		.op(op),
 		.rm(rm),
 
 		.man_a(man_a_norm),
@@ -275,37 +256,38 @@ module FPU_core
 		.DZ(DZ_arith),
 		.OF(OF_arith),
 		.UF(UF_arith),
-		.IE(IE_arith),
-
-		.ready(ready_arith)
+		.IE(IE_arith)
 	);
 
 	sign_modifier sign_modifier_inst
 	(
 		.clk(clk),
 		.reset(reset),
-		.load(load),
 
-		.op_sgnj(op_sgnj),
-		.op_sgnjn(op_sgnjn),
-		.op_sgnjx(op_sgnjx),
+		.valid_in(valid_in),
+		.ready_out(ready_out_sgn_mod),
+		.valid_out(valid_out_sgn_mod),
+		.ready_in(ready_in),
+		
+		.op(op),
 
 		.a(a),
 		.sgn_b(b[31]),
 
-		.float_out(result_sgn_mod),
-
-		.ready(ready_sgn_mod)
+		.float_out(result_sgn_mod)
 	);
 
 	ftoi_converter ftoi_converter_inst
 	(
 		.clk(clk),
 		.reset(reset),
-		.load(load),
 
-		.op_cvtfi(op_cvtfi),
-		.op_cvtfu(op_cvtfu),
+		.valid_in(valid_in),
+		.ready_out(ready_out_ftoi),
+		.valid_out(valid_out_ftoi),
+		.ready_in(ready_in),
+		
+		.op(op),
 		.rm(rm),
 
 		.man(man_a),
@@ -319,72 +301,76 @@ module FPU_core
 		.int_out(result_ftoi),
 
 		.IV(IV_ftoi),
-		.IE(IE_ftoi),
-
-		.ready(ready_ftoi)
+		.IE(IE_ftoi)
 	);
 
 	itof_converter itof_converter_inst
 	(
 		.clk(clk),
 		.reset(reset),
-		.load(load),
 
-		.op_cvtif(op_cvtif),
-		.op_cvtuf(op_cvtuf),
+		.valid_in(valid_in),
+		.ready_out(ready_out_itof),
+		.valid_out(valid_out_itof),
+		.ready_in(ready_in),
+		
+		.op(op),
 		.rm(rm),
 
 		.int_in(a),
 		.float_out(result_itof),
-		.IE(IE_itof),
-
-		.ready(ready_itof)
+		.IE(IE_itof)
 	);
 
 	float_comparator_seq float_comparator_inst
 	(
 		.clk(clk),
 		.reset(reset),
-		.load(load),
 
-		.op_seq(op_seq),
-		.op_slt(op_slt),
-		.op_sle(op_sle),
+		.valid_in(valid_in),
+		.ready_out(ready_out_cmp),
+		.valid_out(valid_out_cmp),
+		.ready_in(ready_in),
+		
+		.op(op),
 
 		.a(a),
 		.b(b),
 
 		.int_out(result_cmp),
-		.IV(IV_cmp),
-
-		.ready(ready_cmp)
+		.IV(IV_cmp)
 	);
 
 	selector selector_inst
 	(
 		.clk(clk),
 		.reset(reset),
-		.load(load),
 
-		.op_min(op_min),
-		.op_max(op_max),
+		.valid_in(valid_in),
+		.ready_out(ready_out_sel),
+		.valid_out(valid_out_sel),
+		.ready_in(ready_in),
+		
+		.op(op),
 
 		.a(a),
 		.b(b),
 
 		.float_out(result_sel),
-		.IV(IV_sel),
-
-		.ready(ready_sel)
+		.IV(IV_sel)
 	);
 
 	classifier classifier_inst
 	(
 		.clk(clk),
 		.reset(reset),
-		.load(load),
 
-		.op_class(op_class),
+		.valid_in(valid_in),
+		.ready_out(ready_out_class),
+		.valid_out(valid_out_class),
+		.ready_in(ready_in),
+		
+		.op(op),
 
 		.sgn(sgn_a),
 		.zero(zero_a),
@@ -393,9 +379,7 @@ module FPU_core
 		.qNaN(qNaN_a),
 		.denormal(denormal_a),
 
-		.int_out(result_class),
-
-		.ready(ready_class)
+		.int_out(result_class)
 	);
 
 endmodule

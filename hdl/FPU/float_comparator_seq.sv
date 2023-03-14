@@ -1,20 +1,22 @@
+import FPU_pkg::*;
+
 module float_comparator_seq
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			load,
-
-	input	logic			op_seq,
-	input	logic			op_slt,
-	input	logic			op_sle,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
+	
+	input	logic	[4:0]	op,
 
 	input	logic	[31:0]	a,
 	input	logic	[31:0]	b,
 
 	output	logic	[31:0]	int_out,
-	output	logic			IV,
-
-	output	logic			ready
+	output	logic			IV
 );
 
 	logic	y;
@@ -27,36 +29,43 @@ module float_comparator_seq
 	logic	equal;
 	logic	less;
 
-	assign	int_out	= {31'h00000000, y};
+	assign	int_out		= {31'h00000000, y};
+	
+	assign	ready_out	= ready_in && (op == FPU_OP_SEQ || op == FPU_OP_SLE || op == FPU_OP_SLT);
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset ||(load && !(op_seq || op_sle || op_slt))) begin
-			y		<= 1'b0;
-			IV		<= 1'b0;
-			ready	<= 1'b0;
+		if (reset) begin
+			valid_out	<= 1'b0;
+			y			<= 1'b0;
+			IV			<= 1'b0;
 		end
 
-		else if (load) begin
-			if (op_seq) begin
-				y	<= equal;
-				IV	<= sNaN_a || sNaN_b;
-			end
-
-			else if (op_slt) begin
-				y	<= less;
-				IV	<= sNaN_a || qNaN_a || sNaN_b || qNaN_b;
-			end
-
-			else if (op_sle) begin
-				y	<= less || equal;
-				IV	<= sNaN_a || qNaN_a || sNaN_b || qNaN_b;
-			end
-
-			ready	<= 1'b1;
+		else if (valid_in && ready_out) begin
+			valid_out	<= 1'b1;
+			y			<= 1'b0;
+			IV			<= 1'b0;
+			
+			case (op)
+			FPU_OP_SEQ:	begin
+							y	<= equal;
+							IV	<= sNaN_a || sNaN_b;
+						end
+			FPU_OP_SLT:	begin
+							y	<= less;
+							IV	<= sNaN_a || qNaN_a || sNaN_b || qNaN_b;
+						end
+			FPU_OP_SLE:	begin
+							y	<= less || equal;
+							IV	<= sNaN_a || qNaN_a || sNaN_b || qNaN_b;
+						end
+			endcase
 		end
 
-		else
-			ready	<= 1'b0;
+		else if (valid_out && ready_in) begin
+			valid_out	<= 1'b0;
+			y			<= 1'b0;
+			IV			<= 1'b0;
+		end
 	end
 
 	float_comparator_comb float_comparator_inst

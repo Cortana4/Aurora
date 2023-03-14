@@ -61,29 +61,24 @@ module IF_stage
 
 	assign			imem_axi_bready		= 1'b0;
 
-	assign			imem_axi_araddr		= jump_taken ? jump_addr : PC;
+	assign			imem_axi_araddr		= PC;
 	assign			imem_axi_arprot		= 3'b110;
 	assign			imem_axi_arvalid	= !start_cycle;
 
 	assign			imem_axi_rready		= ready_in;
 
 	assign			valid_out			= valid_reg && !jump_taken;
-
+	
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset)
 			PC	<= RESET_VEC;
 
 		else if (imem_axi_arvalid) begin
-			if (imem_axi_arready) begin
-				if (jump_taken)
-					PC	<= jump_addr + 32'd4;
-
-				else
-					PC	<= PC + 32'd4;
-			end
-
-			else if (jump_taken)
+			if (jump_taken)
 				PC	<= jump_addr;
+			
+			else if (imem_axi_arready)
+				PC	<= PC + 32'd4;
 		end
 	end
 

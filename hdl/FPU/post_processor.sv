@@ -1,11 +1,14 @@
-`include "FPU_constants.svh"
+import FPU_pkg::*;
 
-module post_processing
+module post_processor
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			clear,
-	input	logic			load,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
 
 	input	logic	[2:0]	rm,
 
@@ -19,7 +22,7 @@ module post_processing
 	input	logic			IV_in,
 	input	logic			DZ_in,
 
-	input	logic			final_res,
+	input	logic			skip_round,
 
 	output	logic	[31:0]	float_out,
 
@@ -27,9 +30,7 @@ module post_processing
 	output	logic			DZ,
 	output	logic			OF,
 	output	logic			UF,
-	output	logic			IE,
-
-	output	logic			ready
+	output	logic			IE
 );
 
 	logic	[2:0]	reg_rm;
@@ -38,7 +39,7 @@ module post_processing
 	logic			reg_sgn;
 	logic			reg_round_bit;
 	logic			reg_sticky_bit;
-	logic			reg_final_res;
+	logic			reg_skip_round;
 	logic			reg_equal;
 	logic			reg_less;
 
@@ -59,9 +60,11 @@ module post_processing
 	logic			RDN;
 	logic			RUP;
 
-	assign			RTZ	= reg_rm == `FPU_RM_RTZ;
-	assign			RDN	= reg_rm == `FPU_RM_RDN;
-	assign			RUP	= reg_rm == `FPU_RM_RUP;
+	assign			RTZ			= reg_rm == FPU_RM_RTZ;
+	assign			RDN			= reg_rm == FPU_RM_RDN;
+	assign			RUP			= reg_rm == FPU_RM_RUP;
+	
+	assign			ready_out	= ready_in;
 
 	// input logic
 	always_comb begin
@@ -98,7 +101,7 @@ module post_processing
 		UF			= 1'b0;
 		IE			= 1'b0;
 
-		if (!reg_final_res) begin
+		if (!reg_skip_round) begin
 			// rounding can cause a carry to the exponent
 			exp_rounded = reg_exp + inc_exp;
 
@@ -141,7 +144,8 @@ module post_processing
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || clear) begin
+		if (reset) begin
+			valid_out		<= 1'b0;
 			reg_rm			<= 3'b000;
 			reg_man			<= 23'h000000;
 			reg_exp			<= 10'h000;
@@ -152,16 +156,24 @@ module post_processing
 			reg_less		<= 1'b0;
 			IV				<= 1'b0;
 			DZ				<= 1'b0;
-			reg_final_res	<= 1'b0;
-			ready			<= 1'b0;
+			reg_skip_round	<= 1'b0;
 		end
 
-		else if (load) begin
+		else if (valid_in && ready_out) begin
+			valid_out		<= 1'b1;
 			reg_rm			<= rm;
-			reg_final_res	<= final_res;
-			ready			<= 1'b1;
+			reg_man			<= shifter_out[23:1];
+			reg_exp			<= exp_biased;
+			reg_sgn			<= sgn;
+			reg_round_bit	<= shifter_out[0];
+			reg_sticky_bit	<= sticky_bit || sticky_bitt;
+			reg_equal		<= equal;
+			reg_less		<= less;
+			IV				<= 1'b0;
+			DZ				<= 1'b0;
+			reg_skip_round	<= skip_round;
 
-			if (final_res) begin
+			if (skip_round) begin
 				reg_man			<= man[22:0];
 				reg_exp			<= Exp;
 				reg_sgn			<= sgn;
@@ -172,22 +184,22 @@ module post_processing
 				IV				<= IV_in;
 				DZ				<= DZ_in;
 			end
-
-			else begin
-				reg_man			<= shifter_out[23:1];
-				reg_exp			<= exp_biased;
-				reg_sgn			<= sgn;
-				reg_round_bit	<= shifter_out[0];
-				reg_sticky_bit	<= sticky_bit || sticky_bitt;
-				reg_equal		<= equal;
-				reg_less		<= less;
-				IV				<= 1'b0;
-				DZ				<= 1'b0;
-			end
 		end
 
-		else
-			ready			<= 1'b0;
+		else if (valid_out && ready_in) begin
+			valid_out		<= 1'b0;
+			reg_rm			<= 3'b000;
+			reg_man			<= 23'h000000;
+			reg_exp			<= 10'h000;
+			reg_sgn			<= 1'b0;
+			reg_round_bit	<= 1'b0;
+			reg_sticky_bit	<= 1'b0;
+			reg_equal		<= 1'b0;
+			reg_less		<= 1'b0;
+			IV				<= 1'b0;
+			DZ				<= 1'b0;
+			reg_skip_round	<= 1'b0;
+		end
 	end
 
 	rshifter #(25, 5) rshifter_inst

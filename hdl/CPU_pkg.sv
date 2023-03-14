@@ -182,5 +182,4 @@ package CPU_pkg;
 	localparam UART_BASE_ADDR			= 32'h10000000;
 	localparam UART_LEN					= 32'h00000028;	// = 10 * 32 bit * 1 byte / 8 bit
 
-
 endpackage

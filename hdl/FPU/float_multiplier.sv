@@ -1,10 +1,17 @@
+import FPU_pkg::*;
+
 module float_multiplier
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			load,
-
-	input	logic			op_mul,
+	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
+	
+	input	logic	[4:0]	op,
+	input	logic			rm,
 
 	input	logic	[23:0]	man_a,
 	input	logic	[9:0]	exp_a,
@@ -31,8 +38,8 @@ module float_multiplier
 
 	output	logic			IV,
 
-	output	logic			final_res,
-	output	logic			ready
+	output	logic			rm_out,
+	output	logic			skip_round
 );
 
 	logic	[23:0]	reg_man_b;
@@ -44,15 +51,20 @@ module float_multiplier
 	logic			IV_int;
 
 	logic	[29:0]	acc;
+	
+	logic			stall;
 
 	enum	logic	{IDLE, CALC} state;
 
-	assign			IV_int	= sNaN_a || sNaN_b || (zero_a && inf_b) || (inf_a && zero_b);
-
+	assign			IV_int		= sNaN_a || sNaN_b || (zero_a && inf_b) || (inf_a && zero_b);
+	
+	assign			ready_out	= ready_in && !stall && op == FPU_OP_MUL;
+	assign			stall		= state != IDLE;
+	
 	always_comb begin
-		if (reg_res[47] || final_res) begin
+		if (reg_res[47] || skip_round) begin
 			sgn_y		= reg_sgn_y;
-			exp_y		= reg_exp_y + !final_res;
+			exp_y		= reg_exp_y + !skip_round;
 			man_y		= reg_res[47:24];
 			round_bit	= reg_res[23];
 			sticky_bit	= |reg_res[22:0];
@@ -68,76 +80,86 @@ module float_multiplier
 	end
 
 	always @(posedge clk, posedge reset) begin
-		if (reset || (load && !op_mul)) begin
+		if (reset) begin
+			valid_out	<= 1'b0;
 			reg_man_b	<= 24'h000000;
 			reg_res		<= 48'h000000000000;
 			reg_exp_y	<= 10'h000;
 			reg_sgn_y	<= 1'b0;
 			IV			<= 1'b0;
+			rm_out		<= 3'b000;
+			skip_round	<= 1'b0;
 			counter		<= 2'd0;
-			final_res	<= 1'b0;
 			state		<= IDLE;
-			ready		<= 1'b0;
 		end
 
-		else if (load) begin
+		else if (valid_in && ready_out) begin
+			valid_out	<= 1'b0;
+			reg_man_b	<= man_b;
+			reg_res		<= {24'h000000, man_a};
+			reg_exp_y	<= exp_a + exp_b;
+			reg_sgn_y	<= sgn_a ^ sgn_b;
 			IV			<= IV_int;
+			rm_out		<= rm;
+			skip_round	<= 1'b0;
 			counter		<= 2'd0;
+			state		<= CALC;
+
 			// NaN
 			if (IV_int || qNaN_a || qNaN_b) begin
+				valid_out	<= 1'b1;
 				reg_man_b	<= 24'h000000;
 				reg_res		<= {24'hc00000, 24'h000000};
 				reg_exp_y	<= 10'h0ff;
 				reg_sgn_y	<= 1'b0;
-				final_res	<= 1'b1;
+				skip_round	<= 1'b1;
 				state		<= IDLE;
-				ready		<= 1'b1;
 			end
 			// inf
 			else if (inf_a || inf_b) begin
+				valid_out	<= 1'b1;
 				reg_man_b	<= 24'h000000;
 				reg_res		<= {24'h800000, 24'h000000};
 				reg_exp_y	<= 10'h0ff;
 				reg_sgn_y	<= sgn_a ^ sgn_b;
-				final_res	<= 1'b1;
+				skip_round	<= 1'b1;
 				state		<= IDLE;
-				ready		<= 1'b1;
 			end
 			// zero
 			else if (zero_a || zero_b) begin
+				valid_out	<= 1'b1;
 				reg_man_b	<= 24'h000000;
 				reg_res		<= {24'h000000, 24'h000000};
 				reg_exp_y	<= 10'h000;
 				reg_sgn_y	<= sgn_a ^ sgn_b;
-				final_res	<= 1'b1;
+				skip_round	<= 1'b1;
 				state		<= IDLE;
-				ready		<= 1'b1;
-			end
-
-			else begin
-				reg_man_b	<= man_b;
-				reg_res		<= {24'h000000, man_a};
-				reg_exp_y	<= exp_a + exp_b;
-				reg_sgn_y	<= sgn_a ^ sgn_b;
-				final_res	<= 1'b0;
-				state		<= CALC;
-				ready		<= 1'b0;
 			end
 		end
 
 		else case (state)
-			IDLE:	ready <= 1'b0;
+			IDLE:	if (valid_out && ready_in) begin
+						valid_out	<= 1'b0;
+						reg_man_b	<= 24'h000000;
+						reg_res		<= 48'h000000000000;
+						reg_exp_y	<= 10'h000;
+						reg_sgn_y	<= 1'b0;
+						IV			<= 1'b0;
+						rm_out		<= 3'b000;
+						skip_round	<= 1'b0;
+						counter		<= 2'd0;
+					end
 
 			CALC:	begin
-						reg_res	<= {acc, reg_res[23:6]};
+						reg_res		<= {acc, reg_res[23:6]};
 
 						if (counter == 2'd3) begin
-							state	<= IDLE;
-							ready	<= 1'b1;
+							valid_out	<= 1'b1;
+							state		<= IDLE;
 						end
 
 						else
-							counter <= counter + 2'd1;
+							counter		<= counter + 2'd1;
 					end
 		endcase
 	end
@@ -147,7 +169,7 @@ module float_multiplier
 
 		for (integer i = 0; i < 6; i = i+1) begin
 			if (reg_res[i])
-				acc = acc + ({6'b000000, reg_man_b} << i);
+				acc = acc + (reg_man_b << i);
 		end
 	end
 

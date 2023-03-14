@@ -1,18 +1,21 @@
+import FPU_pkg::*;
+
 module itof_converter
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			load,
 
-	input	logic			op_cvtif,
-	input	logic			op_cvtuf,
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
+
+	input	logic	[4:0]	op,
 	input	logic	[2:0]	rm,
 
 	input	logic	[31:0]	int_in,
 	output	logic	[31:0]	float_out,
-	output	logic			IE,
-
-	output	logic			ready
+	output	logic			IE
 );
 
 	logic	[31:0]	man_denorm;
@@ -29,37 +32,41 @@ module itof_converter
 	logic	[2:0]	reg_rm;
 	logic			reg_sgn;
 
-	assign			sgn			= int_in[31] && op_cvtif;
+	assign			sgn			= int_in[31] && op == FPU_OP_CVTIF;
 	assign			man_denorm	= sgn ? -int_in : int_in;
 	assign			float_out	= {reg_sgn, Exp + inc_exp, man};
+	
+	assign			ready_out	= ready_in && (op == FPU_OP_CVTIF || op == FPU_OP_CVTUF);
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || (load && !(op_cvtif || op_cvtuf))) begin
+		if (reset) begin
+			valid_out	<= 1'b0;
 			reg_rm		<= 3'b000;
 			man_norm	<= 32'h00000000;
 			Exp			<= 8'h00;
 			reg_sgn		<= 1'b0;
-			ready		<= 1'b0;
 		end
 
-		else if (load) begin
+		else if (valid_in && ready_out) begin
+			valid_out	<= 1'b1;
 			reg_rm		<= rm;
+			man_norm	<= 32'h00000000;
+			Exp			<= 8'h00;
 			reg_sgn		<= sgn;
-			ready		<= 1'b1;
 
 			if (|int_in) begin
 				man_norm	<= man_denorm << leading_zeros;
 				Exp			<= 8'h9e - leading_zeros;
 			end
-
-			else begin
-				man_norm	<= 32'h00000000;
-				Exp			<= 8'h00;
-			end
 		end
 
-		else
-			ready		<= 1'b0;
+		else if (valid_out && ready_in) begin
+			valid_out	<= 1'b0;
+			reg_rm		<= 3'b000;
+			man_norm	<= 32'h00000000;
+			Exp			<= 8'h00;
+			reg_sgn		<= 1'b0;
+		end
 	end
 
 	leading_zero_counter_32 LZC_32_inst
