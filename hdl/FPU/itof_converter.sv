@@ -23,18 +23,18 @@ module itof_converter
 
 	logic	[4:0]	leading_zeros;
 
-	logic	[22:0]	man;
-	logic	[7:0]	Exp;
-	logic			sgn;
+	logic	[22:0]	man_y;
+	logic	[7:0]	exp_y;
+	logic			sgn_y;
 
 	logic			inc_exp;
 
 	logic	[2:0]	reg_rm;
-	logic			reg_sgn;
+	logic			reg_sgn_y;
 
-	assign			sgn			= int_in[31] && op == FPU_OP_CVTIF;
-	assign			man_denorm	= sgn ? -int_in : int_in;
-	assign			float_out	= {reg_sgn, Exp + inc_exp, man};
+	assign			sgn_y		= int_in[31] && op == FPU_OP_CVTIF;
+	assign			man_denorm	= sgn_y ? -int_in : int_in;
+	assign			float_out	= {reg_sgn_y, exp_y + inc_exp, man_y};
 	
 	assign			ready_out	= ready_in && (op == FPU_OP_CVTIF || op == FPU_OP_CVTUF);
 
@@ -43,20 +43,20 @@ module itof_converter
 			valid_out	<= 1'b0;
 			reg_rm		<= 3'b000;
 			man_norm	<= 32'h00000000;
-			Exp			<= 8'h00;
-			reg_sgn		<= 1'b0;
+			exp_y		<= 8'h00;
+			reg_sgn_y	<= 1'b0;
 		end
 
 		else if (valid_in && ready_out) begin
 			valid_out	<= 1'b1;
 			reg_rm		<= rm;
 			man_norm	<= 32'h00000000;
-			Exp			<= 8'h00;
-			reg_sgn		<= sgn;
+			exp_y		<= 8'h00;
+			reg_sgn_y	<= sgn_y;
 
 			if (|int_in) begin
 				man_norm	<= man_denorm << leading_zeros;
-				Exp			<= 8'h9e - leading_zeros;
+				exp_y		<= 8'h9e - leading_zeros;
 			end
 		end
 
@@ -64,8 +64,8 @@ module itof_converter
 			valid_out	<= 1'b0;
 			reg_rm		<= 3'b000;
 			man_norm	<= 32'h00000000;
-			Exp			<= 8'h00;
-			reg_sgn		<= 1'b0;
+			exp_y		<= 8'h00;
+			reg_sgn_y	<= 1'b0;
 		end
 	end
 
@@ -84,9 +84,9 @@ module itof_converter
 		.round_bit(man_norm[7]),
 
 		.in(man_norm[30:8]),
-		.sgn(reg_sgn),
+		.sgn(reg_sgn_y),
 
-		.out(man),
+		.out(man_y),
 		.carry(inc_exp),
 
 		.inexact(IE)

@@ -94,7 +94,7 @@ module FPU_core
 	
 	assign			ready_out	= ready_out_arith	|| ready_out_sgn_mod	||
 								  ready_out_ftoi	|| ready_out_itof		||
-								  ready_out_cmp 	|| ready_out_sel 		||
+								  ready_out_cmp		|| ready_out_sel		||
 								  ready_out_class;
 
 	always_comb begin
@@ -290,13 +290,13 @@ module FPU_core
 		.op(op),
 		.rm(rm),
 
-		.man(man_a),
-		.Exp(exp_a),
-		.sgn(sgn_a),
-		.zero(zero_a),
-		.inf(inf_a),
-		.sNaN(sNaN_a),
-		.qNaN(qNaN_a),
+		.man_a(man_a),
+		.exp_a(exp_a),
+		.sgn_a(sgn_a),
+		.zero_a(zero_a),
+		.inf_a(inf_a),
+		.sNaN_a(sNaN_a),
+		.qNaN_a(qNaN_a),
 
 		.int_out(result_ftoi),
 
@@ -372,12 +372,12 @@ module FPU_core
 		
 		.op(op),
 
-		.sgn(sgn_a),
-		.zero(zero_a),
-		.inf(inf_a),
-		.sNaN(sNaN_a),
-		.qNaN(qNaN_a),
-		.denormal(denormal_a),
+		.sgn_a(sgn_a),
+		.zero_a(zero_a),
+		.inf_a(inf_a),
+		.sNaN_a(sNaN_a),
+		.qNaN_a(qNaN_a),
+		.denormal_a(denormal_a),
 
 		.int_out(result_class)
 	);

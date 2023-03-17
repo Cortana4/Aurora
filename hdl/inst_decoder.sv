@@ -1,5 +1,5 @@
 import CPU_pkg::*;
-`include "FPU/FPU_constants.svh"
+import FPU_pkg::*;
 
 module inst_decoder
 (
@@ -402,7 +402,7 @@ module inst_decoder
 								wb_src		= SEL_DIV;
 								DIV_op		= UREM;
 							end
-/*	// RV32F instructions
+		// RV32F instructions
 		RV32F_FLW:			begin
 								immediate	= immediate_I;
 								rs1_addr[5]	= 1'b0;
@@ -654,7 +654,7 @@ module inst_decoder
 								rd_addr[5]	= 1'b1;
 								rd_access	= 1'b1;
 								ALU_op		= ALU_ADD;
-							end*/
+							end
 		default:			illegal_inst	= 1'b1;
 		endcase
 	end

@@ -12,17 +12,16 @@ module post_processor
 
 	input	logic	[2:0]	rm,
 
-	input	logic	[23:0]	man,
-	input	logic	[9:0]	Exp,
-	input	logic			sgn,
+	input	logic	[23:0]	man_in,
+	input	logic	[9:0]	exp_in,
+	input	logic			sgn_in,
 
 	input	logic			round_bit,
 	input	logic			sticky_bit,
+	input	logic			skip_round,
 
 	input	logic			IV_in,
 	input	logic			DZ_in,
-
-	input	logic			skip_round,
 
 	output	logic	[31:0]	float_out,
 
@@ -69,7 +68,7 @@ module post_processor
 	// input logic
 	always_comb begin
 		// add bias to exponent
-		exp_biased	= Exp + 10'h07f;
+		exp_biased	= exp_in + 10'h07f;
 
 		// check if result is denormal
 		equal		= ~|exp_biased;		// exp_biased == 0
@@ -137,9 +136,9 @@ module post_processor
 			end
 
 			// If (before rounding) mantissa is 0 but round or sticky are 1
-			// and man is still 0 after rounding, Exp should be 0. This
+			// and man_in is still 0 after rounding, exp_in should be 0. This
 			// can only happen if result is denormal but for denormal results
-			// Exp is 0 anyway
+			// exp_in is 0 anyway
 		end
 	end
 
@@ -164,7 +163,7 @@ module post_processor
 			reg_rm			<= rm;
 			reg_man			<= shifter_out[23:1];
 			reg_exp			<= exp_biased;
-			reg_sgn			<= sgn;
+			reg_sgn			<= sgn_in;
 			reg_round_bit	<= shifter_out[0];
 			reg_sticky_bit	<= sticky_bit || sticky_bitt;
 			reg_equal		<= equal;
@@ -174,9 +173,9 @@ module post_processor
 			reg_skip_round	<= skip_round;
 
 			if (skip_round) begin
-				reg_man			<= man[22:0];
-				reg_exp			<= Exp;
-				reg_sgn			<= sgn;
+				reg_man			<= man_in[22:0];
+				reg_exp			<= exp_in;
+				reg_sgn			<= sgn_in;
 				reg_round_bit	<= 1'b0;
 				reg_sticky_bit	<= 1'b0;
 				reg_equal		<= 1'b0;
@@ -204,7 +203,7 @@ module post_processor
 
 	rshifter #(25, 5) rshifter_inst
 	(
-		.in({man, round_bit}),
+		.in({man_in, round_bit}),
 		.sel(|offset[9:5] ? 5'b11111 : offset[4:0]),
 		.sgn(1'b0),
 

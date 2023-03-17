@@ -41,7 +41,7 @@ module sign_modifier
 		end
 		
 		else if (valid_out && ready_in) begin
-			alid_out	<= 1'b0;
+			valid_out	<= 1'b0;
 			float_out	<= 32'h00000000;
 		end
 	end

@@ -13,13 +13,13 @@ module ftoi_converter
 	input	logic	[4:0]	op,
 	input	logic	[2:0]	rm,
 
-	input	logic	[23:0]	man,
-	input	logic	[7:0]	Exp,
-	input	logic			sgn,
-	input	logic			zero,
-	input	logic			inf,
-	input	logic			sNaN,
-	input	logic			qNaN,
+	input	logic	[23:0]	man_a,
+	input	logic	[7:0]	exp_a,
+	input	logic			sgn_a,
+	input	logic			zero_a,
+	input	logic			inf_a,
+	input	logic			sNaN_a,
+	input	logic			qNaN_a,
 
 	output	logic	[31:0]	int_out,
 
@@ -54,11 +54,11 @@ module ftoi_converter
 	logic			upper_limit_exc;
 	logic			rounded_zero;
 
-	assign			lower_limit_exc	= inf && sgn;
-	assign			upper_limit_exc	= (inf && !sgn) || sNaN || qNaN;
-	assign			rounded_zero	= op == FPU_OP_CVTFU && sgn;
+	assign			lower_limit_exc	= inf_a && sgn_a;
+	assign			upper_limit_exc	= (inf_a && !sgn_a) || sNaN_a || qNaN_a;
+	assign			rounded_zero	= op == FPU_OP_CVTFU && sgn_a;
 
-	assign			offset			= 8'h9e - Exp;
+	assign			offset			= 8'h9e - exp_a;
 	
 	/* calculate offset:
 	 *   31 - exp_unbiased
@@ -101,12 +101,12 @@ module ftoi_converter
 			valid_out		<= 1'b1;
 			reg_rm			<= rm;
 			reg_int			<= shifter_out[32:1];
-			reg_sgn			<= sgn;
+			reg_sgn			<= sgn_a;
 			reg_round_bit	<= shifter_out[0];
 			reg_sticky_bit	<= sticky_bit;
 			reg_IV			<= 1'b0;
 			reg_IE			<= 1'b0;
-			negate			<= op_cvtfi && sgn;
+			negate			<= op == FPU_OP_CVTFI && sgn_a;
 			skip_round		<= 1'b0;
 
 			// implemented non signaling IE (IEEE 754 2019 p. 39f)
@@ -131,7 +131,7 @@ module ftoi_converter
 				skip_round		<= 1'b1;
 			end
 			// rounded input is zero
-			else if (zero || rounded_zero) begin
+			else if (zero_a || rounded_zero) begin
 				reg_int			<= 32'h0000000;
 				reg_round_bit	<= 1'b0;
 				reg_sticky_bit	<= 1'b0;
@@ -181,7 +181,7 @@ module ftoi_converter
 
 	float_comparator_comb float_comparator_inst_1
 	(
-		.a({sgn, Exp, man[22:0]}),
+		.a({sgn_a, exp_a, man_a[22:0]}),
 		.b(cmp_min),
 
 		.sNaN_a(),
@@ -197,7 +197,7 @@ module ftoi_converter
 
 	float_comparator_comb float_comparator_inst_2
 	(
-		.a({sgn, Exp, man[22:0]}),
+		.a({sgn_a, exp_a, man_a[22:0]}),
 		.b(cmp_max),
 
 		.sNaN_a(),
@@ -213,7 +213,7 @@ module ftoi_converter
 
 	rshifter #(33, 6) rshifter_inst
 	(
-		.in({man, 9'h00}),
+		.in({man_a, 9'h00}),
 		.sel(|offset[7:6] ? 6'b111111 : offset[5:0]),
 		.sgn(1'b0),
 

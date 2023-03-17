@@ -234,7 +234,6 @@ module ID_stage
 	reg_file reg_file_inst
 	(
 		.clk(clk),
-		.reset(reset),
 
 		.rd_wena(rd_access_MEM),
 		.rd_addr(rd_addr_MEM),

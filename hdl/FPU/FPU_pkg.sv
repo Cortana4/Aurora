@@ -1,4 +1,4 @@
-package CPU_pkg;
+package FPU_pkg;
 	/*
 	// these instructions are not performed by the FPU
 	// they are only listed for completeness

@@ -4,7 +4,6 @@ module float_adder
 (
 	input	logic					clk,
 	input	logic					reset,
-	input	logic					load,
 	
 	input	logic					valid_in,
 	output	logic					ready_out,
@@ -36,11 +35,11 @@ module float_adder
 
 	output	logic					round_bit,
 	output	logic					sticky_bit,
+	output	logic					skip_round,
 
 	output	logic					IV,
 	
-	output	logic					rm_out,
-	output	logic					skip_round
+	output	logic					rm_out
 );
 
 	logic			sgn_b_int;
@@ -111,10 +110,10 @@ module float_adder
 			guard_bit	<= 1'b0;
 			round_bit	<= 1'b0;
 			sticky_bit	<= 1'b0;
+			skip_round	<= 1'b0;
 			IV			<= 1'b0;
 			sum			<= 25'h0000000;
 			rm_out		<= 3'b000;
-			skip_round	<= 1'b0;
 			state		<= IDLE;
 		end
 
@@ -131,11 +130,12 @@ module float_adder
 			guard_bit	<= 1'b0;
 			round_bit	<= 1'b0;
 			sticky_bit	<= 1'b0;
+			skip_round	<= 1'b0;
 			IV			<= IV_int;
 			sum			<= 25'h0000000;
 			rm_out		<= rm;
-			skip_round	<= 1'b0;
 			state		<= IDLE;
+			
 			// NaN
 			if (IV_int || qNaN_a || qNaN_b) begin
 				valid_out	<= 1'b1;
@@ -180,7 +180,6 @@ module float_adder
 				sgn_y		<= sgn_y_int;
 				skip_round	<= 1'b0;
 				state		<= IDLE;
-				ready		<= 1'b1;
 			end
 			// swap inputs if abs(a) < abs(b)
 			else if (swapInputs) begin
@@ -212,10 +211,10 @@ module float_adder
 						guard_bit	<= 1'b0;
 						round_bit	<= 1'b0;
 						sticky_bit	<= 1'b0;
+						skip_round	<= 1'b0;
 						IV			<= 1'b0;
 						sum			<= 25'h0000000;
 						rm_out		<= 3'b000;
-						skip_round	<= 1'b0;
 					end
 
 			ALIGN:	begin

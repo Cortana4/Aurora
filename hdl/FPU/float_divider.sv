@@ -11,7 +11,7 @@ module float_divider
 	input	logic			ready_in,
 
 	input	logic	[4:0]	op,
-	input	logic			rm,
+	input	logic	[2:0]	rm,
 	
 	input	logic	[23:0]	man_a,
 	input	logic	[9:0]	exp_a,
@@ -35,12 +35,12 @@ module float_divider
 
 	output	logic			round_bit,
 	output	logic			sticky_bit,
+	output	logic			skip_round,
 
 	output	logic			IV,
 	output	logic			DZ,
 
-	output	logic			rm_out,
-	output	logic			skip_round
+	output	logic			rm_out
 );
 
 	logic	[23:0]	reg_man_b;
@@ -90,10 +90,10 @@ module float_divider
 			reg_rem		<= 27'h0000000;
 			reg_exp_y	<= 10'h000;
 			reg_sgn_y	<= 1'b0;
+			skip_round	<= 1'b0;
 			IV			<= 1'b0;
 			DZ			<= 1'b0;
 			rm_out		<= 3'b000;
-			skip_round	<= 1'b0;
 			counter		<= 4'd0;
 			state		<= IDLE;
 		end
@@ -105,10 +105,10 @@ module float_divider
 			reg_rem		<= {1'b0, man_a, 2'b00};
 			reg_exp_y	<= exp_a - exp_b;
 			reg_sgn_y	<= sgn_a ^ sgn_b;
+			skip_round	<= 1'b0;
 			IV			<= IV_int;
 			DZ			<= zero_b;
 			rm_out		<= rm;
-			skip_round	<= 1'b0;
 			counter		<= 4'd0;
 			state		<= CALC;
 
@@ -155,10 +155,10 @@ module float_divider
 						reg_rem		<= 27'h0000000;
 						reg_exp_y	<= 10'h000;
 						reg_sgn_y	<= 1'b0;
+						skip_round	<= 1'b0;
 						IV			<= 1'b0;
 						DZ			<= 1'b0;
 						rm_out		<= 3'b000;
-						skip_round	<= 1'b0;
 						counter		<= 4'd0;
 					end
 

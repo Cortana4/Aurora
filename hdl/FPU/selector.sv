@@ -12,9 +12,6 @@ module selector
 	
 	input	logic	[4:0]	op,
 
-	input	logic			op_min,
-	input	logic			op_max,
-
 	input	logic	[31:0]	a,
 	input	logic	[31:0]	b,
 
@@ -39,7 +36,7 @@ module selector
 			IV			<= 1'b0;
 		end
 
-		else if (load) begin
+		else if (valid_in && ready_out) begin
 			valid_out	<= 1'b1;
 			float_out	<= 32'h00000000;
 			IV			<= sNaN_a || sNaN_b;

@@ -12,12 +12,12 @@ module classifier
 	
 	input	logic	[4:0]	op,
 
-	input	logic			sgn,
-	input	logic			zero,
-	input	logic			inf,
-	input	logic			sNaN,
-	input	logic			qNaN,
-	input	logic			denormal,
+	input	logic			sgn_a,
+	input	logic			zero_a,
+	input	logic			inf_a,
+	input	logic			sNaN_a,
+	input	logic			qNaN_a,
+	input	logic			denormal_a,
 
 	output	logic	[31:0]	int_out
 );
@@ -34,34 +34,34 @@ module classifier
 			int_out		<= 32'h00000000;
 			
 			// 0.0
-			if (!sgn && zero)
+			if (!sgn_a && zero_a)
 				int_out	<= 32'h00000010;
 			// -0.0
-			else if (sgn && zero)
+			else if (sgn_a && zero_a)
 				int_out	<= 32'h00000008;
 			// +inf
-			else if (!sgn && inf)
+			else if (!sgn_a && inf_a)
 				int_out	<= 32'h00000080;
 			// -inf
-			else if (sgn && inf)
+			else if (sgn_a && inf_a)
 				int_out	<= 32'h00000001;
 			// sNaN
-			else if (sNaN)
+			else if (sNaN_a)
 				int_out	<= 32'h00000100;
 			// qNaN
-			else if (qNaN)
+			else if (qNaN_a)
 				int_out	<= 32'h00000200;
 			// positive normal number
-			else if (!sgn && !denormal)
+			else if (!sgn_a && !denormal_a)
 				int_out	<= 32'h00000040;
 			// negative normal number
-			else if (sgn && !denormal)
+			else if (sgn_a && !denormal_a)
 				int_out	<= 32'h00000002;
 			// positive denormal number
-			else if (!sgn && denormal)
+			else if (!sgn_a && denormal_a)
 				int_out	<= 32'h00000020;
 			// negative denormal number
-			else if (sgn && denormal)
+			else if (sgn_a && denormal_a)
 				int_out	<= 32'h00000004;
 		end
 

@@ -1,7 +1,6 @@
 module reg_file
 (
 	input	logic			clk,
-	input	logic			reset,
 
 	input	logic			rd_wena,
 	input	logic	[5:0]	rd_addr,
@@ -26,13 +25,8 @@ module reg_file
 	assign			rs2_data	= rs2_rena && |rs2_addr ? registers[rs2_addr] : 32'h00000000;
 	assign			rs3_data	= rs3_rena && |rs3_addr ? registers[rs3_addr] : 32'h00000000;
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
-			for (integer i = 1; i <= 63; i = i + 1)
-				registers[i]	<= 32'h00000000;
-		end
-
-		else if (|rd_addr && rd_wena)
+	always_ff @(posedge clk) begin
+		if (|rd_addr && rd_wena)
 			registers[rd_addr]	<= rd_data;
 	end
 

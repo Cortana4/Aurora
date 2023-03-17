@@ -376,11 +376,15 @@ module EX_stage
 		.y(DIV_out)
 	);
 
-	/*FPU FPU_inst
+	FPU FPU_inst
 	(
 		.clk(clk),
 		.reset(reset),
-		.load(FPU_load),
+		
+		.valid_in(valid_in_FPU),
+		.ready_out(ready_out_FPU),
+		.valid_out(valid_out_FPU),
+		.ready_in(ready_in && !rd_after_ld_hazard),
 
 		.op(FPU_op_ID),
 		.rm(FPU_rm_ID),
@@ -395,10 +399,7 @@ module EX_stage
 		.DZ(),
 		.OF(),
 		.UF(),
-		.IE(),
-
-		.busy(FPU_busy),
-		.ready(FPU_ready)
-	);*/
+		.IE()
+	);
 
 endmodule
