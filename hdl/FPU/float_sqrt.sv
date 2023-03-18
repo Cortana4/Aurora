@@ -31,14 +31,14 @@ module float_sqrt
 
 	output	logic					IV,
 
-	output	logic					rm_out
+	output	logic			[2:0]	rm_out
 );
 
 	logic	[25:0]	reg_rad;
 	logic	[25:0]	reg_res;
 	logic	[27:0]	reg_rem;
 
-	logic	[28:0]	acc [1:0];
+	logic	[27:0]	acc [2:0];
 	logic	[1:0]	s;
 	
 	logic			stall;
@@ -129,7 +129,7 @@ module float_sqrt
 			CALC:	begin
 						reg_rad	<= reg_rad << 4;
 						reg_res	<= (reg_res << 2) | s;
-						reg_rem	<= acc[1][27:0];
+						reg_rem	<= acc[2]; //[27:0];
 					
 						// when the calculation is finished,
 						// the MSB of the result is always 1
@@ -142,13 +142,15 @@ module float_sqrt
 	end
 
 	always_comb begin
-		acc[0]	= ((reg_rem << 2) | reg_rad[25:24]) - {reg_res, 2'b01};
-		s[1]	= !acc[0][28];
-		acc[0]	= s[1] ? acc[0] : ((reg_rem << 2) | reg_rad[25:24]);
+		acc[0]	= reg_rem;
 
-		acc[1]	= ((acc[0] << 2) | reg_rad[23:22]) - {reg_res[23:0], s[1], 2'b01};
-		s[0]	= !acc[1][28];
-		acc[1]	= s[0] ? acc[1] : ((acc[0] << 2) | reg_rad[23:22]);
+		acc[1]	= ((acc[0] << 2) | reg_rad[25:24]) - {reg_res, 2'b01};
+		s[1]	= !acc[1][27];
+		acc[1]	= s[1] ? acc[1] : ((acc[0] << 2) | reg_rad[25:24]);
+
+		acc[2]	= ((acc[1] << 2) | reg_rad[23:22]) - {reg_res, s[1], 2'b01};
+		s[0]	= !acc[2][27];
+		acc[2]	= s[0] ? acc[2] : ((acc[1] << 2) | reg_rad[23:22]);
 	end
 
 endmodule

@@ -59,11 +59,9 @@ module EX_stage
 	input	logic			jump_ena_ID,
 	input	logic			jump_ind_ID,
 	input	logic			jump_alw_ID,
+	input	logic			jump_pred_ID,
 	input	logic	[1:0]	imem_axi_rresp_ID,
 	input	logic			illegal_inst_ID,
-
-	output	logic			jump_taken,
-	output	logic	[31:0]	jump_addr,
 
 	output	logic	[31:0]	PC_EX,
 	output	logic	[31:0]	IR_EX,
@@ -73,6 +71,11 @@ module EX_stage
 	output	logic			rd_access_EX,
 	output	logic	[2:0]	wb_src_EX,
 	output	logic	[2:0]	MEM_op_EX,
+	output	logic			jump_ena_EX,
+	output	logic			jump_alw_EX,
+	output	logic			jump_taken_EX,
+	output	logic			jump_mpred_EX,
+	output	logic	[31:0]	jump_addr_EX,
 	// exceptions
 	output	logic	[1:0]	imem_axi_rresp_EX,
 	output	logic			illegal_inst_EX,
@@ -102,6 +105,10 @@ module EX_stage
 	logic	[31:0]	a;
 	logic	[31:0]	b;
 	logic	[31:0]	c;
+	
+	logic			jump_taken;
+	logic			jump_mpred;
+	logic	[31:0]	jump_addr;
 
 	logic	[31:0]	ALU_out;
 
@@ -135,7 +142,8 @@ module EX_stage
 	assign			b					= sel_IM_ID ? IM_ID : rs2_data;
 	assign			c					= rs3_data;
 
-	assign			jump_taken			= jump_ena_ID && (ALU_out[0] || jump_alw_ID) && !rd_after_ld_hazard;
+	assign			jump_taken			= jump_ena_ID && (ALU_out[0] || jump_alw_ID);
+	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
 	assign			maligned_inst_addr	= jump_taken && |jump_addr[1:0];
 
 	assign			ready_out			= ready_in && !stall;
@@ -211,7 +219,10 @@ module EX_stage
 
 	// jump address computation
 	always_comb begin
-		if (jump_ind_ID)
+		if (!jump_taken)
+			jump_addr	= PC_ID + 32'd4;
+			
+		else if (jump_ind_ID)
 			jump_addr	= (rs1_data + IM_ID) & 32'hfffffffe;
 
 		else
@@ -238,6 +249,11 @@ module EX_stage
 			rd_access_EX			<= 1'b0;
 			wb_src_EX				<= 3'd0;
 			MEM_op_EX				<= 3'd0;
+			jump_ena_EX				<= 1'b0;
+			jump_alw_EX				<= 1'b0;
+			jump_taken_EX			<= 1'b0;
+			jump_mpred_EX			<= 1'b0;
+			jump_addr_EX			<= 32'h00000000;
 			imem_axi_rresp_EX		<= 2'b00;
 			illegal_inst_EX			<= 1'b0;
 			maligned_inst_addr_EX	<= 1'b0;
@@ -263,6 +279,11 @@ module EX_stage
 			rd_access_EX			<= rd_access_ID;
 			wb_src_EX				<= wb_src_ID;
 			MEM_op_EX				<= MEM_op_ID;
+			jump_ena_EX				<= jump_ena_ID;
+			jump_alw_EX				<= jump_alw_ID;
+			jump_taken_EX			<= jump_taken;
+			jump_mpred_EX			<= jump_mpred;
+			jump_addr_EX			<= jump_addr;
 			imem_axi_rresp_EX		<= imem_axi_rresp_ID;
 			illegal_inst_EX			<= illegal_inst_ID;
 			maligned_inst_addr_EX	<= maligned_inst_addr;
@@ -311,6 +332,11 @@ module EX_stage
 			rd_access_EX			<= 1'b0;
 			wb_src_EX				<= 3'd0;
 			MEM_op_EX				<= 3'd0;
+			jump_ena_EX				<= 1'b0;
+			jump_alw_EX				<= 1'b0;
+			jump_taken_EX			<= 1'b0;
+			jump_mpred_EX			<= 1'b0;
+			jump_addr_EX			<= 32'h00000000;
 			imem_axi_rresp_EX		<= 2'b00;
 			illegal_inst_EX			<= 1'b0;
 			maligned_inst_addr_EX	<= 1'b0;

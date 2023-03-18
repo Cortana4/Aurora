@@ -46,7 +46,7 @@ module float_arithmetic
 	logic			sticky_bit_add;
 	logic			skip_round_add;
 	logic			IV_add;
-	logic			rm_add;
+	logic	[2:0]	rm_add;
 
 	// multiplier
 	logic			ready_out_mul;
@@ -58,7 +58,7 @@ module float_arithmetic
 	logic			sticky_bit_mul;
 	logic			skip_round_mul;
 	logic			IV_mul;
-	logic			rm_mul;
+	logic	[2:0]	rm_mul;
 
 	// divider
 	logic			ready_out_div;
@@ -71,7 +71,7 @@ module float_arithmetic
 	logic			skip_round_div;
 	logic			IV_div;
 	logic			DZ_div;
-	logic			rm_div;
+	logic	[2:0]	rm_div;
 
 	// square root
 	logic			ready_out_sqrt;
@@ -83,7 +83,7 @@ module float_arithmetic
 	logic			sticky_bit_sqrt;
 	logic			skip_round_sqrt;
 	logic			IV_sqrt;
-	logic			rm_sqrt;
+	logic	[2:0]	rm_sqrt;
 	
 	// post processor
 	logic			valid_in_pp;
@@ -311,7 +311,7 @@ module float_arithmetic
 
 		.IV(IV_sqrt),
 		
-		.rm_out(rm_out_sqrt)
+		.rm_out(rm_sqrt)
 	);
 
 	post_processor post_processor_inst

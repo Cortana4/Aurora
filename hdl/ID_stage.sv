@@ -20,6 +20,8 @@ module ID_stage
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IR_IF,
 	input	logic	[1:0]	imem_axi_rresp_IF,
+	output	logic			jump_pred_IF,
+	output	logic	[31:0]	jump_addr_IF,
 	
 	output	logic	[31:0]	PC_ID,
 	output	logic	[31:0]	IR_ID,
@@ -47,9 +49,16 @@ module ID_stage
 	output	logic			jump_ena_ID,
 	output	logic			jump_ind_ID,
 	output	logic			jump_alw_ID,
+	output	logic			jump_pred_ID,
 	// exceptions
 	output	logic	[1:0]	imem_axi_rresp_ID,
 	output	logic			illegal_inst_ID,
+	
+	input	logic	[31:0]	PC_EX,
+	input	logic			jump_ena_EX,
+	input	logic			jump_alw_EX,
+	input	logic			jump_taken_EX,
+	input	logic			jump_mpred_EX,
 	
 	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM,
@@ -82,15 +91,24 @@ module ID_stage
 	logic			jump_alw;
 	logic			illegal_inst;
 	
-	assign			ready_out	= ready_in;
+	logic			valid_reg;
+	logic			valid_reg_MUL;
+	logic			valid_reg_DIV;
+	logic			valid_reg_FPU;
+
+	assign			valid_out		= valid_reg && !jump_mpred_EX;
+	assign			valid_out_MUL	= valid_reg_MUL && !jump_mpred_EX;
+	assign			valid_out_DIV	= valid_reg_DIV && !jump_mpred_EX;
+	assign			valid_out_FPU	= valid_reg_FPU && !jump_mpred_EX;
+	assign			ready_out		= ready_in;
 
 	// ID/EX pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin
-			valid_out			<= 1'b0;
-			valid_out_MUL		<= 1'b0;
-			valid_out_DIV		<= 1'b0;
-			valid_out_FPU		<= 1'b0;
+			valid_reg			<= 1'b0;
+			valid_reg_MUL		<= 1'b0;
+			valid_reg_DIV		<= 1'b0;
+			valid_reg_FPU		<= 1'b0;
 			PC_ID				<= 32'h00000000;
 			IR_ID				<= 32'h00000000;
 			IM_ID				<= 32'h00000000;
@@ -117,15 +135,16 @@ module ID_stage
 			jump_ena_ID			<= 1'b0;
 			jump_ind_ID			<= 1'b0;
 			jump_alw_ID			<= 1'b0;
+			jump_pred_ID		<= 1'b0;
 			imem_axi_rresp_ID	<= 2'b00;
 			illegal_inst_ID		<= 1'b0;
 		end
 		
 		else if (valid_in && ready_out) begin
-			valid_out			<= 1'b1;
-			valid_out_MUL		<= wb_src == SEL_MUL;
-			valid_out_DIV		<= wb_src == SEL_DIV;
-			valid_out_FPU		<= wb_src == SEL_FPU;
+			valid_reg			<= 1'b1;
+			valid_reg_MUL		<= wb_src == SEL_MUL;
+			valid_reg_DIV		<= wb_src == SEL_DIV;
+			valid_reg_FPU		<= wb_src == SEL_FPU;
 			PC_ID				<= PC_IF;
 			IR_ID				<= IR_IF;
 			IM_ID				<= immediate;
@@ -152,15 +171,16 @@ module ID_stage
 			jump_ena_ID			<= jump_ena;
 			jump_ind_ID			<= jump_ind;
 			jump_alw_ID			<= jump_alw;
+			jump_pred_ID		<= jump_pred_IF;
 			imem_axi_rresp_ID	<= imem_axi_rresp_IF;
 			illegal_inst_ID		<= illegal_inst;
 		end
 		
-		else if (valid_out && ready_in) begin
-			valid_out			<= 1'b0;
-			valid_out_MUL		<= 1'b0;
-			valid_out_DIV		<= 1'b0;
-			valid_out_FPU		<= 1'b0;
+		else if (valid_reg && ready_in) begin
+			valid_reg			<= 1'b0;
+			valid_reg_MUL		<= 1'b0;
+			valid_reg_DIV		<= 1'b0;
+			valid_reg_FPU		<= 1'b0;
 			PC_ID				<= 32'h00000000;
 			IR_ID				<= 32'h00000000;
 			IM_ID				<= 32'h00000000;
@@ -187,19 +207,20 @@ module ID_stage
 			jump_ena_ID			<= 1'b0;
 			jump_ind_ID			<= 1'b0;
 			jump_alw_ID			<= 1'b0;
+			jump_pred_ID		<= 1'b0;
 			imem_axi_rresp_ID	<= 2'b00;
 			illegal_inst_ID		<= 1'b0;
 		end
 		
 		else begin
-			if (valid_out_MUL && ready_in_MUL)
-				valid_out_MUL	<= 1'b0;
+			if (valid_reg_MUL && ready_in_MUL)
+				valid_reg_MUL	<= 1'b0;
 			
-			if (valid_out_DIV && ready_in_DIV)
-				valid_out_DIV	<= 1'b0;
+			if (valid_reg_DIV && ready_in_DIV)
+				valid_reg_DIV	<= 1'b0;
 			
-			if (valid_out_FPU && ready_in_FPU)
-				valid_out_FPU	<= 1'b0;
+			if (valid_reg_FPU && ready_in_FPU)
+				valid_reg_FPU	<= 1'b0;
 		end
 	end
 
@@ -229,6 +250,28 @@ module ID_stage
 		.jump_ind(jump_ind),
 		.jump_alw(jump_alw),
 		.illegal_inst(illegal_inst)
+	);
+	
+	branch_predictor #(2, 2) branch_predictor_inst
+	(
+		.clk(clk),
+		.reset(reset),
+		
+		.valid_in(valid_in),
+		.ready_in(ready_in),
+
+		.PC_IF(PC_IF),
+		.IM_IF(immediate),
+		.jump_ena_IF(jump_ena),
+		.jump_alw_IF(jump_alw),
+		.jump_ind_IF(jump_ind),
+		.jump_pred_IF(jump_pred_IF),
+		.jump_addr_IF(jump_addr_IF),
+
+		.PC_EX(PC_EX),
+		.jump_ena_EX(jump_ena_EX),
+		.jump_alw_EX(jump_alw_EX),
+		.jump_taken_EX(jump_taken_EX)
 	);
 	
 	reg_file reg_file_inst

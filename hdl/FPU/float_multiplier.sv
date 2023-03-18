@@ -39,7 +39,7 @@ module float_multiplier
 
 	output	logic			IV,
 
-	output	logic			rm_out
+	output	logic	[2:0]	rm_out
 );
 
 	logic	[23:0]	reg_man_b;
@@ -48,15 +48,11 @@ module float_multiplier
 	logic			reg_sgn_y;
 	logic	[1:0]	counter;
 
-	logic			IV_int;
-
 	logic	[29:0]	acc;
 	
 	logic			stall;
 
 	enum	logic	{IDLE, CALC} state;
-
-	assign			IV_int		= sNaN_a || sNaN_b || (zero_a && inf_b) || (inf_a && zero_b);
 	
 	assign			ready_out	= ready_in && !stall && op == FPU_OP_MUL;
 	assign			stall		= state != IDLE;
@@ -100,19 +96,21 @@ module float_multiplier
 			reg_exp_y	<= exp_a + exp_b;
 			reg_sgn_y	<= sgn_a ^ sgn_b;
 			skip_round	<= 1'b0;
-			IV			<= IV_int;
+			IV			<= 1'b0;
 			rm_out		<= rm;
 			counter		<= 2'd0;
 			state		<= CALC;
 
 			// NaN
-			if (IV_int || qNaN_a || qNaN_b) begin
+			if (sNaN_a || sNaN_b || qNaN_a || qNaN_b ||
+				(zero_a && inf_b) || (inf_a && zero_b)) begin
 				valid_out	<= 1'b1;
 				reg_man_b	<= 24'h000000;
 				reg_res		<= {24'hc00000, 24'h000000};
 				reg_exp_y	<= 10'h0ff;
 				reg_sgn_y	<= 1'b0;
 				skip_round	<= 1'b1;
+				IV			<= ~(qNaN_a || qNaN_b);
 				state		<= IDLE;
 			end
 			// inf

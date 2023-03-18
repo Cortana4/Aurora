@@ -1,7 +1,7 @@
 import CPU_pkg::*;
 
-//`define	JUMP_ADDR_BYPASS
-`undef	JUMP_ADDR_BYPASS
+`define	BYPASS_JUMP_ADDR
+//`undef	BYPASS_JUMP_ADDR
 
 module IF_stage
 (
@@ -36,13 +36,16 @@ module IF_stage
 	input	logic			imem_axi_rvalid,
 	output	logic			imem_axi_rready,
 
-	input	logic			jump_taken,
-	input	logic	[31:0]	jump_addr,
-
 	output	logic	[31:0]	PC_IF,
 	output	logic	[31:0]	IR_IF,
 	// exceptions
-	output	logic	[1:0]	imem_axi_rresp_IF
+	output	logic	[1:0]	imem_axi_rresp_IF,
+	
+	input	logic			jump_pred_IF,
+	input	logic	[31:0]	jump_addr_IF,
+	
+	input	logic			jump_mpred_EX,
+	input	logic	[31:0]	jump_addr_EX
 );
 
 	logic			start_cycle;
@@ -52,6 +55,12 @@ module IF_stage
 	logic			valid_reg;
 	logic			jump_pend;
 	logic	[31:0]	jump_addr_reg;
+	
+	logic			jump_taken;
+	logic	[31:0]	jump_addr;
+	
+	assign			jump_taken			= jump_mpred_EX || jump_pred_IF;
+	assign			jump_addr			= jump_mpred_EX ? jump_addr_EX : jump_addr_IF;
 
 	// imem is read only
 	assign			imem_axi_awaddr		= 32'h00000000;
@@ -70,11 +79,11 @@ module IF_stage
 
 	assign			imem_axi_rready		= ready_in;
 
-	assign			valid_out			= valid_reg && !jump_taken;
+	assign			valid_out			= valid_reg && !jump_mpred_EX;
 
-`ifndef JUMP_ADDR_BYPASS
+`ifndef BYPASS_JUMP_ADDR
 	assign			imem_axi_araddr		= PC;
-
+	
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset)
 			PC	<= RESET_VEC;
@@ -144,11 +153,20 @@ module IF_stage
 		end
 
 		else if (imem_axi_rvalid && imem_axi_rready) begin
-			valid_reg			<= jump_pend ? jump_addr_reg == imem_addr_reg : 1'b1;
-			jump_pend			<= jump_pend ? jump_addr_reg != imem_addr_reg : 1'b0;
-			PC_IF				<= imem_addr_reg;
-			IR_IF				<= imem_axi_rresp[1] ? RV32I_NOP : imem_axi_rdata;
-			imem_axi_rresp_IF	<= imem_axi_rresp;
+			if (!jump_pend) begin
+				valid_reg			<= 1'b1;
+				PC_IF				<= imem_addr_reg;
+				IR_IF				<= |imem_axi_rresp ? RV32I_NOP : imem_axi_rdata;
+				imem_axi_rresp_IF	<= imem_axi_rresp;
+			end
+			
+			else if (imem_addr_reg == jump_addr_reg) begin
+				valid_reg			<= 1'b1;
+				jump_pend			<= 1'b0;
+				PC_IF				<= imem_addr_reg;
+				IR_IF				<= |imem_axi_rresp ? RV32I_NOP : imem_axi_rdata;
+				imem_axi_rresp_IF	<= imem_axi_rresp;
+			end
 		end
 
 		else if (valid_reg && ready_in) begin

@@ -62,6 +62,8 @@ module pipeline
 	logic	[31:0]	PC_IF;
 	logic	[31:0]	IR_IF;
 	logic	[1:0]	imem_axi_rresp_IF;
+	logic			jump_pred_IF;
+	logic	[31:0]	jump_addr_IF;
 
 	// ID signals / ID/EX pipeline registers
 	logic			valid_out_ID;
@@ -98,15 +100,13 @@ module pipeline
 	logic			jump_ena_ID;
 	logic			jump_ind_ID;
 	logic			jump_alw_ID;
+	logic			jump_pred_ID;
 	logic	[1:0]	imem_axi_rresp_ID;
 	logic			illegal_inst_ID;
-	
 
 	// EX signals / EX/MEM pipeline registers
 	logic			valid_out_EX;
 	logic			ready_in_EX;
-	logic			jump_taken;
-	logic	[31:0]	jump_addr;
 	logic	[31:0]	PC_EX;
 	logic	[31:0]	IR_EX;
 	logic	[31:0]	IM_EX;
@@ -115,12 +115,16 @@ module pipeline
 	logic			rd_access_EX;
 	logic	[2:0]	wb_src_EX;
 	logic	[2:0]	MEM_op_EX;
+	logic			jump_ena_EX;
+	logic			jump_alw_EX;
+	logic			jump_taken_EX;
+	logic			jump_mpred_EX;
+	logic	[31:0]	jump_addr_EX;
 	logic	[1:0]	imem_axi_rresp_EX;
 	logic			illegal_inst_EX;
 	logic			maligned_inst_addr_EX;
 	logic			maligned_load_addr_EX;
 	logic			maligned_store_addr_EX;
-	
 	
 	// MEM signals / MEM/WB pipeline registers
 	logic	[31:0]	PC_MEM;
@@ -169,12 +173,15 @@ module pipeline
 		.imem_axi_rvalid(imem_axi_rvalid),
 		.imem_axi_rready(imem_axi_rready),
 
-		.jump_taken(jump_taken),
-		.jump_addr(jump_addr),
-
 		.PC_IF(PC_IF),
 		.IR_IF(IR_IF),
-		.imem_axi_rresp_IF(imem_axi_rresp_IF)
+		.imem_axi_rresp_IF(imem_axi_rresp_IF),
+		
+		.jump_pred_IF(jump_pred_IF),
+		.jump_addr_IF(jump_addr_IF),
+		
+		.jump_mpred_EX(jump_mpred_EX),
+		.jump_addr_EX(jump_addr_EX)
 	);
 	
 	ID_stage ID_stage_inst
@@ -197,6 +204,8 @@ module pipeline
 		.PC_IF(PC_IF),
 		.IR_IF(IR_IF),
 		.imem_axi_rresp_IF(imem_axi_rresp_IF),
+		.jump_pred_IF(jump_pred_IF),
+		.jump_addr_IF(jump_addr_IF),
 
 		.PC_ID(PC_ID),
 		.IR_ID(IR_ID),
@@ -224,8 +233,15 @@ module pipeline
 		.jump_ena_ID(jump_ena_ID),
 		.jump_ind_ID(jump_ind_ID),
 		.jump_alw_ID(jump_alw_ID),
+		.jump_pred_ID(jump_pred_ID),
 		.imem_axi_rresp_ID(imem_axi_rresp_ID),
 		.illegal_inst_ID(illegal_inst_ID),
+		
+		.PC_EX(PC_EX),
+		.jump_ena_EX(jump_ena_EX),
+		.jump_alw_EX(jump_alw_EX),
+		.jump_taken_EX(jump_taken_EX),
+		.jump_mpred_EX(jump_mpred_EX),
 
 		.rd_addr_MEM(rd_addr_MEM),
 		.rd_data_MEM(rd_data_MEM),
@@ -290,11 +306,9 @@ module pipeline
 		.jump_ena_ID(jump_ena_ID),
 		.jump_ind_ID(jump_ind_ID),
 		.jump_alw_ID(jump_alw_ID),
+		.jump_pred_ID(jump_pred_ID),
 		.imem_axi_rresp_ID(imem_axi_rresp_ID),
 		.illegal_inst_ID(illegal_inst_ID),
-
-		.jump_taken(jump_taken),
-		.jump_addr(jump_addr),
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),
@@ -304,6 +318,11 @@ module pipeline
 		.rd_access_EX(rd_access_EX),
 		.wb_src_EX(wb_src_EX),
 		.MEM_op_EX(MEM_op_EX),
+		.jump_ena_EX(jump_ena_EX),
+		.jump_alw_EX(jump_alw_EX),
+		.jump_taken_EX(jump_taken_EX),
+		.jump_mpred_EX(jump_mpred_EX),
+		.jump_addr_EX(jump_addr_EX),
 		.imem_axi_rresp_EX(imem_axi_rresp_EX),
 		.illegal_inst_EX(illegal_inst_EX),
 		.maligned_inst_addr_EX(maligned_inst_addr_EX),

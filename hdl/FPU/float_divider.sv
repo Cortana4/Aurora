@@ -40,7 +40,7 @@ module float_divider
 	output	logic			IV,
 	output	logic			DZ,
 
-	output	logic			rm_out
+	output	logic	[2:0]	rm_out
 );
 
 	logic	[23:0]	reg_man_b;
@@ -106,14 +106,15 @@ module float_divider
 			reg_exp_y	<= exp_a - exp_b;
 			reg_sgn_y	<= sgn_a ^ sgn_b;
 			skip_round	<= 1'b0;
-			IV			<= IV_int;
+			IV			<= 1'b0;
 			DZ			<= zero_b;
 			rm_out		<= rm;
 			counter		<= 4'd0;
 			state		<= CALC;
 
 			// NaN
-			if (IV_int || qNaN_a || qNaN_b) begin
+			if (sNaN_a || sNaN_b || qNaN_a || qNaN_b ||
+				(zero_a && zero_b) || (inf_a && inf_b)) begin
 				valid_out	<= 1'b1;
 				reg_man_b	<= 24'h000000;
 				reg_res		<= {24'hc00000, 2'b00};
@@ -121,6 +122,7 @@ module float_divider
 				reg_exp_y	<= 10'h0ff;
 				reg_sgn_y	<= 1'b0;
 				skip_round	<= 1'b1;
+				IV			<= ~(qNaN_a || qNaN_b);
 				state		<= IDLE;
 			end
 			// inf
