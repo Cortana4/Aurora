@@ -2,8 +2,8 @@ import CPU_pkg::*;
 
 module int_multiplier
 #(
-	parameter		n = 32,
-	parameter		m = 8
+	parameter		n = 32,	// data width
+	parameter		m = 8	// add stages per cycle
 )
 (
 	input	logic			clk,
