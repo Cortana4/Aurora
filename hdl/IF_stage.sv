@@ -7,6 +7,7 @@ module IF_stage
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 
 	output	logic			valid_out,
 	input	logic			ready_in,
@@ -35,17 +36,14 @@ module IF_stage
 	input	logic	[1:0]	imem_axi_rresp,
 	input	logic			imem_axi_rvalid,
 	output	logic			imem_axi_rready,
+	
+	input	logic			jump_taken,
+	input	logic	[31:0]	jump_addr,
 
 	output	logic	[31:0]	PC_IF,
 	output	logic	[31:0]	IR_IF,
 	// exceptions
-	output	logic	[1:0]	imem_axi_rresp_IF,
-	
-	input	logic			jump_pred_IF,
-	input	logic	[31:0]	jump_addr_IF,
-	
-	input	logic			jump_mpred_EX,
-	input	logic	[31:0]	jump_addr_EX
+	output	logic	[1:0]	imem_axi_rresp_IF
 );
 
 	logic			start_cycle;
@@ -55,12 +53,6 @@ module IF_stage
 	logic			valid_reg;
 	logic			jump_pend;
 	logic	[31:0]	jump_addr_reg;
-	
-	logic			jump_taken;
-	logic	[31:0]	jump_addr;
-	
-	assign			jump_taken			= jump_mpred_EX || jump_pred_IF;
-	assign			jump_addr			= jump_mpred_EX ? jump_addr_EX : jump_addr_IF;
 
 	// imem is read only
 	assign			imem_axi_awaddr		= 32'h00000000;
@@ -79,7 +71,7 @@ module IF_stage
 
 	assign			imem_axi_rready		= ready_in;
 
-	assign			valid_out			= valid_reg && !jump_mpred_EX;
+	assign			valid_out			= valid_reg && !flush;
 
 `ifndef BYPASS_JUMP_ADDR
 	assign			imem_axi_araddr		= PC;
@@ -155,6 +147,8 @@ module IF_stage
 		else if (imem_axi_rvalid && imem_axi_rready) begin
 			if (!jump_pend) begin
 				valid_reg			<= 1'b1;
+				jump_pend			<= 1'b0;
+				jump_addr_reg		<= 32'h00000000;
 				PC_IF				<= imem_addr_reg;
 				IR_IF				<= |imem_axi_rresp ? RV32I_NOP : imem_axi_rdata;
 				imem_axi_rresp_IF	<= imem_axi_rresp;
@@ -163,14 +157,17 @@ module IF_stage
 			else if (imem_addr_reg == jump_addr_reg) begin
 				valid_reg			<= 1'b1;
 				jump_pend			<= 1'b0;
+				jump_addr_reg		<= 32'h00000000;
 				PC_IF				<= imem_addr_reg;
 				IR_IF				<= |imem_axi_rresp ? RV32I_NOP : imem_axi_rdata;
 				imem_axi_rresp_IF	<= imem_axi_rresp;
 			end
 		end
 
-		else if (valid_reg && ready_in) begin
+		else if ((valid_reg && ready_in) || flush) begin
 			valid_reg			<= 1'b0;
+			jump_pend			<= 1'b0;
+			jump_addr_reg		<= 32'h00000000;
 			PC_IF				<= 32'h00000000;
 			IR_IF				<= 32'h00000000;
 			imem_axi_rresp_IF	<= 2'b00;

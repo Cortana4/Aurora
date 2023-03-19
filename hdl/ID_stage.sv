@@ -4,6 +4,7 @@ module ID_stage
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 	
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -20,6 +21,7 @@ module ID_stage
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IR_IF,
 	input	logic	[1:0]	imem_axi_rresp_IF,
+	
 	output	logic			jump_pred_IF,
 	output	logic	[31:0]	jump_addr_IF,
 	
@@ -58,7 +60,6 @@ module ID_stage
 	input	logic			jump_ena_EX,
 	input	logic			jump_alw_EX,
 	input	logic			jump_taken_EX,
-	input	logic			jump_mpred_EX,
 	
 	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM,
@@ -96,10 +97,10 @@ module ID_stage
 	logic			valid_reg_DIV;
 	logic			valid_reg_FPU;
 
-	assign			valid_out		= valid_reg && !jump_mpred_EX;
-	assign			valid_out_MUL	= valid_reg_MUL && !jump_mpred_EX;
-	assign			valid_out_DIV	= valid_reg_DIV && !jump_mpred_EX;
-	assign			valid_out_FPU	= valid_reg_FPU && !jump_mpred_EX;
+	assign			valid_out		= valid_reg && !flush;
+	assign			valid_out_MUL	= valid_reg_MUL && !flush;
+	assign			valid_out_DIV	= valid_reg_DIV && !flush;
+	assign			valid_out_FPU	= valid_reg_FPU && !flush;
 	assign			ready_out		= ready_in;
 
 	// ID/EX pipeline registers
@@ -176,7 +177,7 @@ module ID_stage
 			illegal_inst_ID		<= illegal_inst;
 		end
 		
-		else if (valid_reg && ready_in) begin
+		else if ((valid_reg && ready_in) || flush) begin
 			valid_reg			<= 1'b0;
 			valid_reg_MUL		<= 1'b0;
 			valid_reg_DIV		<= 1'b0;

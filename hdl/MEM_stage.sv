@@ -61,7 +61,9 @@ module MEM_stage
 	assign			dmem_axi_rready			= ready_in;
 
 	assign			ready_out				= ready_in && !stall;
-	assign			stall					= wb_src_EX == SEL_MEM && ((rd_access_EX && !dmem_axi_rvalid) || (!rd_access_EX && !dmem_axi_bvalid));
+	assign			stall					= wb_src_EX == SEL_MEM &&
+											  ((rd_access_EX && !dmem_axi_rvalid) ||
+											  (!rd_access_EX && !dmem_axi_bvalid));
 
 	// MEM/WB pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
@@ -102,8 +104,10 @@ module MEM_stage
 				// dmem read access (load)
 				if (rd_access_EX) begin
 					case (MEM_op_EX)
-					MEM_LB:		rd_data_MEM	<= dmem_axi_rdata_aligned | {24{dmem_axi_rdata_aligned[7]}};
-					MEM_LH:		rd_data_MEM	<= dmem_axi_rdata_aligned | {16{dmem_axi_rdata_aligned[15]}};
+					MEM_LB:		rd_data_MEM	<= {{24{dmem_axi_rdata_aligned[7]}}, dmem_axi_rdata_aligned[7:0]};
+					MEM_LBU:	rd_data_MEM	<= {24'h000000, dmem_axi_rdata_aligned[7:0]};
+					MEM_LH:		rd_data_MEM	<= {{16{dmem_axi_rdata_aligned[15]}}, dmem_axi_rdata_aligned[15:0]};
+					MEM_LHU:	rd_data_MEM	<= {16'h0000, dmem_axi_rdata_aligned[15:0]};
 					default:	rd_data_MEM	<= dmem_axi_rdata_aligned;
 					endcase
 

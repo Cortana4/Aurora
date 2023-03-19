@@ -41,7 +41,7 @@ module branch_predictor
 	// address is not known until the instruction reaches EX stage
 
 	assign			jump_addr_IF	= PC_IF + IM_IF;
-	assign			jump_pred_IF	= valid_in && jump_ena_IF && !jump_ind_IF &&
+	assign			jump_pred_IF	= jump_ena_IF && !jump_ind_IF && //valid_in && 
 									  (PHT[rPtr] >= 2**(n-2) || jump_alw_IF);
 
 	always_ff @(posedge clk, posedge reset) begin
