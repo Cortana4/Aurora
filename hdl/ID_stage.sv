@@ -253,7 +253,7 @@ module ID_stage
 		.illegal_inst(illegal_inst)
 	);
 	
-	branch_predictor #(2, 2) branch_predictor_inst
+	branch_predictor #(3, 2) branch_predictor_inst
 	(
 		.clk(clk),
 		.reset(reset),
