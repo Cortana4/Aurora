@@ -345,6 +345,13 @@ module inst_decoder
 		RV32I_FENCE:		;
 		RV32I_ECALL:		;
 		RV32I_EBREAK:		;
+		// RV32Zicsr instructions
+		RV32Zicsr_CSRRW:	;
+		RV32Zicsr_CSRRS:	;
+		RV32Zicsr_CSRRC:	;
+		RV32Zicsr_CSRRWI:	;
+		RV32Zicsr_CSRRSI:	;
+		RV32Zicsr_CSRRCI:	;
 		// RV32M instructions
 		RV32M_MUL:			begin
 								rs1_access	= 1'b1;
