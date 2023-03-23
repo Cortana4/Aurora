@@ -97,9 +97,10 @@ package CPU_pkg;
 	// write back sources
 	localparam SEL_ALU					= 3'd0;
 	localparam SEL_MEM					= 3'd1;
-	localparam SEL_MUL					= 3'd2;
-	localparam SEL_DIV					= 3'd3;
-	localparam SEL_FPU					= 3'd4;
+	localparam SEL_CSR					= 3'd2;
+	localparam SEL_MUL					= 3'd3;
+	localparam SEL_DIV					= 3'd4;
+	localparam SEL_FPU					= 3'd5;
 	
 	//*************************************************************************
 	// ALU operations

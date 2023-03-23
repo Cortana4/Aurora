@@ -4,6 +4,7 @@ module classifier
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 	
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -24,7 +25,7 @@ module classifier
 	assign	ready_out	=	ready_in && op == FPU_OP_CLASS;
 	
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush) begin
 			valid_out	<= 1'b0;
 			int_out		<= 32'h00000000;
 		end

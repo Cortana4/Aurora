@@ -4,6 +4,7 @@ module float_adder
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -86,7 +87,7 @@ module float_adder
 	assign	stall			= state != IDLE;
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush) begin
 			valid_out	<= 1'b0;
 			reg_man_a	<= 24'h000000;
 			reg_exp_a	<= 10'h000;

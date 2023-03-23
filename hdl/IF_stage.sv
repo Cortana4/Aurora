@@ -42,7 +42,7 @@ module IF_stage
 
 	output	logic	[31:0]	PC_IF,
 	output	logic	[31:0]	IR_IF,
-	// exceptions
+	// exception signals
 	output	logic	[1:0]	imem_axi_rresp_IF
 );
 

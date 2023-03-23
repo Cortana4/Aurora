@@ -5,12 +5,12 @@ module csr_file
 	input	logic			clk,
 	input	logic			reset,
 	
-	input	logic	[1:0]	op
+	input	logic	[1:0]	op,
 	
 	input	logic	[11:0]	csr_addr,
 	input	logic			csr_wena,
 	input	logic	[31:0]	csr_wdata,
-	input	logic			csr_ren,
+	input	logic			csr_rena,
 	output	logic	[31:0]	csr_rdata
 );
 	
@@ -167,20 +167,11 @@ module csr_file
 		end
 		
 		else if (csr_wena) begin
-			// write access
-			if (csr_wen) begin
-				case (csr_addr)
-				`MISA_ADDR:	begin
-								
-							end
-				endcase
-			end
-			// read access
-			else begin
-				case (csr_addr)
-				
-				endcase
-			end
+			case (csr_addr)
+			MISA_ADDR:	begin
+							
+						end
+			endcase
 		end
 	end
 
