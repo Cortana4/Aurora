@@ -132,6 +132,12 @@ package CPU_pkg;
 	localparam MEM_SW					= 3'd7;
 	
 	//*************************************************************************
+	// CSR operations
+	localparam CSR_RW					= 2'd0;
+	localparam CSR_RS					= 2'd1;
+	localparam CSR_RC					= 2'd2;
+	
+	//*************************************************************************
 	// MUL operations
 	localparam UMULL					= 2'd0;
 	localparam UMULH					= 2'd1;
@@ -146,11 +152,19 @@ package CPU_pkg;
 	localparam SREM						= 2'd3;
 	
 	//*************************************************************************
-	// CSR operations
-	localparam CSR_RW					= 2'd0;
-	localparam CSR_RS					= 2'd1;
-	localparam CSR_RC					= 2'd2;
-	
+	// trap causes
+	localparam CAUSE_M_SOFTWARE_INT		= 32'h80000003;
+	localparam CAUSE_M_TIMER_INT		= 32'h80000007;
+	localparam CAUSE_M_EXT_INT			= 32'h8000000b;
+	localparam CAUSE_MALIGNED_INST		= 32'h00000000;
+	localparam CAUSE_ILLEGAL_INST		= 32'h00000002;
+	localparam CAUSE_BREAKPOINT			= 32'h00000003;
+	localparam CAUSE_MALIGNED_LOAD		= 32'h00000004;
+	localparam CAUSE_MALIGNED_STORE		= 32'h00000006;
+	localparam CAUSE_ENV_CALL_FROM_M	= 32'h0000000b;
+	localparam CAUSE_IMEM_BUS_ERROR		= 32'h00000018;	// custom (24)
+	localparam CAUSE_DMEM_BUS_ERROR		= 32'h00000019;	// custom (25)
+
 	//*************************************************************************
 	// CSR addresses
 	localparam CSR_ADDR_MVENDORID		= 12'hf11;

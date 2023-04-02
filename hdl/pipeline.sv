@@ -61,7 +61,8 @@ module pipeline
 	logic			ready_in_IF;
 	logic	[31:0]	PC_IF;
 	logic	[31:0]	IR_IF;
-	logic	[1:0]	imem_axi_rresp_IF;
+	logic			trap_taken_IF;
+	logic	[31:0]	trap_cause_IF;
 	logic			jump_pred_IF;
 	logic	[31:0]	jump_addr_IF;
 
@@ -105,8 +106,8 @@ module pipeline
 	logic			jump_ind_ID;
 	logic			jump_alw_ID;
 	logic			jump_pred_ID;
-	logic	[1:0]	imem_axi_rresp_ID;
-	logic			illegal_inst_ID;
+	logic			trap_taken_ID;
+	logic	[31:0]	trap_cause_ID;
 
 	// EX signals / EX/mem pipeline registers
 	logic			valid_out_EX;
@@ -124,16 +125,14 @@ module pipeline
 	logic	[2:0]	wb_src_EX;
 	logic	[2:0]	mem_op_EX;
 	logic	[1:0]	csr_op_EX;
+	logic	[4:0]	fpu_flags_EX;
 	logic			jump_ena_EX;
 	logic			jump_alw_EX;
 	logic			jump_taken_EX;
 	logic			jump_mpred_EX;
 	logic	[31:0]	jump_addr_EX;
-	logic	[1:0]	imem_axi_rresp_EX;
-	logic			illegal_inst_EX;
-	logic			maligned_inst_addr_EX;
-	logic			maligned_load_addr_EX;
-	logic			maligned_store_addr_EX;
+	logic			trap_taken_EX;
+	logic	[31:0]	trap_cause_EX;
 	
 	// MEM signals / MEM/WB pipeline registers
 	logic	[31:0]	PC_MEM;
@@ -147,13 +146,20 @@ module pipeline
 	logic			csr_wena_MEM;
 	logic	[31:0]	csr_wdata_MEM;
 	logic	[1:0]	csr_op_MEM;
-	logic	[1:0]	imem_axi_rresp_MEM;
-	logic			illegal_inst_MEM;
-	logic			maligned_inst_addr_MEM;
-	logic			maligned_load_addr_MEM;
-	logic			maligned_store_addr_MEM;
-	logic	[1:0]	dmem_axi_bresp_MEM;
-	logic	[1:0]	dmem_axi_rresp_MEM;
+	logic	[4:0]	fpu_flags_MEM;
+	logic			trap_taken_MEM;
+	logic	[31:0]	trap_cause_MEM;
+	
+	// imem is read only
+	assign			imem_axi_awaddr		= 32'h00000000;
+	assign			imem_axi_awprot		= 3'b110;
+	assign			imem_axi_awvalid	= 1'b0;
+
+	assign			imem_axi_wdata		= 32'h00000000;
+	assign			imem_axi_wstrb		= 4'b0000;
+	assign			imem_axi_wvalid		= 1'b0;
+
+	assign			imem_axi_bready		= 1'b0;
 
 	IF_stage IF_stage_inst
 	(
@@ -163,26 +169,11 @@ module pipeline
 
 		.valid_out(valid_out_IF),
 		.ready_in(ready_in_IF),
-
-		.imem_axi_awaddr(imem_axi_awaddr),
-		.imem_axi_awprot(imem_axi_awprot),
-		.imem_axi_awvalid(imem_axi_awvalid),
-		.imem_axi_awready(imem_axi_awready),
-		
-		.imem_axi_wdata(imem_axi_wdata),
-		.imem_axi_wstrb(imem_axi_wstrb),
-		.imem_axi_wvalid(imem_axi_wvalid),
-		.imem_axi_wready(imem_axi_wready),
-
-		.imem_axi_bresp(imem_axi_bresp),
-		.imem_axi_bvalid(imem_axi_bvalid),
-		.imem_axi_bready(imem_axi_bready),
 		
 		.imem_axi_araddr(imem_axi_araddr),
 		.imem_axi_arprot(imem_axi_arprot),
 		.imem_axi_arvalid(imem_axi_arvalid),
 		.imem_axi_arready(imem_axi_arready),
-
 		.imem_axi_rdata(imem_axi_rdata),
 		.imem_axi_rresp(imem_axi_rresp),
 		.imem_axi_rvalid(imem_axi_rvalid),
@@ -213,10 +204,14 @@ module pipeline
 		.ready_in_div(ready_in_div_ID),
 		.valid_out_fpu(valid_out_fpu_ID),
 		.ready_in_fpu(ready_in_fpu_ID),
+		
+		.M_ena(),
+		.F_ena(),
 
 		.PC_IF(PC_IF),
 		.IR_IF(IR_IF),
-		.imem_axi_rresp_IF(imem_axi_rresp_IF),
+		.trap_taken_IF(trap_taken_IF),
+		.trap_cause_IF(trap_cause_IF),
 		
 		.jump_pred_IF(jump_pred_IF),
 		.jump_addr_IF(jump_addr_IF),
@@ -252,8 +247,8 @@ module pipeline
 		.jump_ind_ID(jump_ind_ID),
 		.jump_alw_ID(jump_alw_ID),
 		.jump_pred_ID(jump_pred_ID),
-		.imem_axi_rresp_ID(imem_axi_rresp_ID),
-		.illegal_inst_ID(illegal_inst_ID),
+		.trap_taken_ID(trap_taken_ID),
+		.trap_cause_ID(trap_cause_ID),
 		
 		.PC_EX(PC_EX),
 		.jump_ena_EX(jump_ena_EX),
@@ -269,6 +264,7 @@ module pipeline
 	(
 		.clk(clk),
 		.reset(reset),
+		.flush(),
 
 		.valid_in(valid_out_ID),
 		.ready_out(ready_in_ID),
@@ -282,20 +278,7 @@ module pipeline
 		.valid_in_fpu(valid_out_fpu_ID),
 		.ready_out_fpu(ready_in_fpu_ID),
 		
-		.dmem_axi_awaddr(dmem_axi_awaddr),
-		.dmem_axi_awprot(dmem_axi_awprot),
-		.dmem_axi_awvalid(dmem_axi_awvalid),
-		.dmem_axi_awready(dmem_axi_awready),
-
-		.dmem_axi_wdata(dmem_axi_wdata),
-		.dmem_axi_wstrb(dmem_axi_wstrb),
-		.dmem_axi_wvalid(dmem_axi_wvalid),
-		.dmem_axi_wready(dmem_axi_wready),
-		
-		.dmem_axi_araddr(dmem_axi_araddr),
-		.dmem_axi_arprot(dmem_axi_arprot),
-		.dmem_axi_arvalid(dmem_axi_arvalid),
-		.dmem_axi_arready(dmem_axi_arready),
+		.frm(),
 
 		.PC_ID(PC_ID),
 		.IR_ID(IR_ID),
@@ -328,8 +311,8 @@ module pipeline
 		.jump_ind_ID(jump_ind_ID),
 		.jump_alw_ID(jump_alw_ID),
 		.jump_pred_ID(jump_pred_ID),
-		.imem_axi_rresp_ID(imem_axi_rresp_ID),
-		.illegal_inst_ID(illegal_inst_ID),
+		.trap_taken_ID(trap_taken_ID),
+		.trap_cause_ID(trap_cause_ID),
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),
@@ -344,16 +327,27 @@ module pipeline
 		.wb_src_EX(wb_src_EX),
 		.mem_op_EX(mem_op_EX),
 		.csr_op_EX(csr_op_EX),
+		.fpu_flags_EX(fpu_flags_EX),
 		.jump_ena_EX(jump_ena_EX),
 		.jump_alw_EX(jump_alw_EX),
 		.jump_taken_EX(jump_taken_EX),
 		.jump_mpred_EX(jump_mpred_EX),
 		.jump_addr_EX(jump_addr_EX),
-		.imem_axi_rresp_EX(imem_axi_rresp_EX),
-		.illegal_inst_EX(illegal_inst_EX),
-		.maligned_inst_addr_EX(maligned_inst_addr_EX),
-		.maligned_load_addr_EX(maligned_load_addr_EX),
-		.maligned_store_addr_EX(maligned_store_addr_EX),
+		.trap_taken_EX(trap_taken_EX),
+		.trap_cause_EX(trap_cause_EX),
+		
+		.dmem_axi_awaddr(dmem_axi_awaddr),
+		.dmem_axi_awprot(dmem_axi_awprot),
+		.dmem_axi_awvalid(dmem_axi_awvalid),
+		.dmem_axi_awready(dmem_axi_awready),
+		.dmem_axi_wdata(dmem_axi_wdata),
+		.dmem_axi_wstrb(dmem_axi_wstrb),
+		.dmem_axi_wvalid(dmem_axi_wvalid),
+		.dmem_axi_wready(dmem_axi_wready),
+		.dmem_axi_araddr(dmem_axi_araddr),
+		.dmem_axi_arprot(dmem_axi_arprot),
+		.dmem_axi_arvalid(dmem_axi_arvalid),
+		.dmem_axi_arready(dmem_axi_arready),
 
 		.rd_wena_MEM(rd_wena_MEM),
 		.rd_addr_MEM(rd_addr_MEM),
@@ -364,22 +358,12 @@ module pipeline
 	(
 		.clk(clk),
 		.reset(reset),
-
+		.flush(1'b0),
+		
 		.valid_in(valid_out_EX),
 		.ready_out(ready_in_EX),
 		.valid_out(),
 		.ready_in(1'b1),
-		
-		.dmem_axi_bresp(dmem_axi_bresp),
-		.dmem_axi_bvalid(dmem_axi_bvalid),
-		.dmem_axi_bready(dmem_axi_bready),
-		
-		.dmem_axi_araddr(dmem_axi_araddr),
-
-		.dmem_axi_rdata(dmem_axi_rdata),
-		.dmem_axi_rresp(dmem_axi_rresp),
-		.dmem_axi_rvalid(dmem_axi_rvalid),
-		.dmem_axi_rready(dmem_axi_rready),
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),
@@ -394,11 +378,18 @@ module pipeline
 		.wb_src_EX(wb_src_EX),
 		.mem_op_EX(mem_op_EX),
 		.csr_op_EX(csr_op_EX),
-		.imem_axi_rresp_EX(imem_axi_rresp_EX),
-		.illegal_inst_EX(illegal_inst_EX),
-		.maligned_inst_addr_EX(maligned_inst_addr_EX),
-		.maligned_load_addr_EX(maligned_load_addr_EX),
-		.maligned_store_addr_EX(maligned_store_addr_EX),
+		.fpu_flags_EX(fpu_flags_EX),
+		.trap_taken_EX(trap_taken_EX),
+		.trap_cause_EX(trap_cause_EX),
+		
+		.dmem_axi_bresp(dmem_axi_bresp),
+		.dmem_axi_bvalid(dmem_axi_bvalid),
+		.dmem_axi_bready(dmem_axi_bready),
+		.dmem_axi_araddr(dmem_axi_araddr),
+		.dmem_axi_rdata(dmem_axi_rdata),
+		.dmem_axi_rresp(dmem_axi_rresp),
+		.dmem_axi_rvalid(dmem_axi_rvalid),
+		.dmem_axi_rready(dmem_axi_rready),
 
 		.PC_MEM(PC_MEM),
 		.IR_MEM(IR_MEM),
@@ -411,13 +402,9 @@ module pipeline
 		.csr_wena_MEM(csr_wena_MEM),
 		.csr_wdata_MEM(csr_wdata_MEM)
 		.csr_op_MEM(csr_op_MEM),
-		.imem_axi_rresp_MEM(imem_axi_rresp_MEM),
-		.illegal_inst_MEM(illegal_inst_MEM),
-		.maligned_inst_addr_MEM(maligned_inst_addr_MEM),
-		.maligned_load_addr_MEM(maligned_load_addr_MEM),
-		.maligned_store_addr_MEM(maligned_store_addr_MEM),
-		.dmem_axi_bresp_MEM(dmem_axi_bresp_MEM),
-		.dmem_axi_rresp_MEM(dmem_axi_rresp_MEM)
+		.fpu_flags_MEM(fpu_flags_MEM),
+		.trap_taken_MEM(trap_taken_MEM),
+		.trap_cause_MEM(trap_cause_MEM)
 	);
 	
 

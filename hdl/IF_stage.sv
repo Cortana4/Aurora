@@ -1,8 +1,5 @@
 import CPU_pkg::*;
 
-`define	BYPASS_JUMP_ADDR
-//`undef	BYPASS_JUMP_ADDR
-
 module IF_stage
 (
 	input	logic			clk,
@@ -12,86 +9,40 @@ module IF_stage
 	output	logic			valid_out,
 	input	logic			ready_in,
 	
-	// write address channel
-	output	logic	[31:0]	imem_axi_awaddr,
-	output	logic	[2:0]	imem_axi_awprot,
-	output	logic			imem_axi_awvalid,
-	input	logic			imem_axi_awready,
-	// write data channel
-	output	logic	[31:0]	imem_axi_wdata,
-	output	logic	[3:0]	imem_axi_wstrb,
-	output	logic			imem_axi_wvalid,
-	input	logic			imem_axi_wready,
-	// write response channel
-	input	logic	[1:0]	imem_axi_bresp,
-	input	logic			imem_axi_bvalid,
-	output	logic			imem_axi_bready,
-	// read address channel
-	output	logic	[31:0]	imem_axi_araddr,
+	output	logic	[31:0]	imem_axi_araddr,	// read address channel
 	output	logic	[2:0]	imem_axi_arprot,
 	output	logic			imem_axi_arvalid,
 	input	logic			imem_axi_arready,
-	// read data channel
-	input	logic	[31:0]	imem_axi_rdata,
+	input	logic	[31:0]	imem_axi_rdata,		// read data channel
 	input	logic	[1:0]	imem_axi_rresp,
 	input	logic			imem_axi_rvalid,
 	output	logic			imem_axi_rready,
-	
+
 	input	logic			jump_taken,
 	input	logic	[31:0]	jump_addr,
 
 	output	logic	[31:0]	PC_IF,
 	output	logic	[31:0]	IR_IF,
-	// exception signals
-	output	logic	[1:0]	imem_axi_rresp_IF
+	output	logic			trap_taken_IF,
+	output	logic	[31:0]	trap_cause_IF
 );
 
 	logic			start_cycle;
 	logic	[31:0]	imem_addr_reg;
 	logic	[31:0]	PC;
 
-	logic			valid_reg;
+	logic			valid_out_int;
 	logic			jump_pend;
 	logic	[31:0]	jump_addr_reg;
 
-	// imem is read only
-	assign			imem_axi_awaddr		= 32'h00000000;
-	assign			imem_axi_awprot		= 3'b110;
-	assign			imem_axi_awvalid	= 1'b0;
-
-	assign			imem_axi_wdata		= 32'h00000000;
-	assign			imem_axi_wstrb		= 4'b0000;
-	assign			imem_axi_wvalid		= 1'b0;
-
-	assign			imem_axi_bready		= 1'b0;
-
-//	assign			imem_axi_araddr		= PC;
+	assign			imem_axi_araddr		= jump_taken ? jump_addr : PC;
 	assign			imem_axi_arprot		= 3'b110;
 	assign			imem_axi_arvalid	= !start_cycle;
 
 	assign			imem_axi_rready		= ready_in;
 
-	assign			valid_out			= valid_reg && !flush;
+	assign			valid_out			= valid_out_int && !flush;
 
-`ifndef BYPASS_JUMP_ADDR
-	assign			imem_axi_araddr		= PC;
-	
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset)
-			PC	<= RESET_VEC;
-
-		else if (imem_axi_arvalid) begin
-			if (jump_taken)
-				PC	<= jump_addr;
-			
-			else if (imem_axi_arready)
-				PC	<= PC + 32'd4;
-		end
-	end
-	
-`else
-	assign			imem_axi_araddr		= jump_taken ? jump_addr : PC;
-	
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset)
 			PC	<= RESET_VEC;
@@ -109,7 +60,6 @@ module IF_stage
 				PC	<= jump_addr;
 		end
 	end
-`endif
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin
@@ -127,50 +77,73 @@ module IF_stage
 	// IF/ID pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin
-			valid_reg			<= 1'b0;
-			jump_pend			<= 1'b0;
-			jump_addr_reg		<= 32'h00000000;
-			PC_IF				<= 32'h00000000;
-			IR_IF				<= 32'h00000000;
-			imem_axi_rresp_IF	<= 2'b00;
+			valid_out_int	<= 1'b0;
+			jump_pend		<= 1'b0;
+			jump_addr_reg	<= 32'h00000000;
+			PC_IF			<= 32'h00000000;
+			IR_IF			<= 32'h00000000;
+			trap_taken_IF	<= 1'b0;
+			trap_cause_IF	<= 32'h00000000;
 		end
 
 		else if (jump_taken) begin
-			valid_reg			<= 1'b0;
-			jump_pend			<= 1'b1;
-			jump_addr_reg		<= jump_addr;
-			PC_IF				<= 32'h00000000;
-			IR_IF				<= 32'h00000000;
-			imem_axi_rresp_IF	<= 2'b00;
+			valid_out_int	<= 1'b0;
+			jump_pend		<= 1'b1;
+			jump_addr_reg	<= jump_addr;
+			PC_IF			<= 32'h00000000;
+			IR_IF			<= 32'h00000000;
+			trap_taken_IF	<= 1'b0;
+			trap_cause_IF	<= 32'h00000000;
 		end
 
 		else if (imem_axi_rvalid && imem_axi_rready) begin
 			if (!jump_pend) begin
-				valid_reg			<= 1'b1;
-				jump_pend			<= 1'b0;
-				jump_addr_reg		<= 32'h00000000;
-				PC_IF				<= imem_addr_reg;
-				IR_IF				<= |imem_axi_rresp ? RV32I_NOP : imem_axi_rdata;
-				imem_axi_rresp_IF	<= imem_axi_rresp;
+				valid_out_int	<= 1'b1;
+				jump_pend		<= 1'b0;
+				jump_addr_reg	<= 32'h00000000;
+				PC_IF			<= imem_addr_reg;
+
+				if (|imem_axi_rresp) begin
+					IR_IF			<= RV32I_NOP;
+					trap_taken_IF	<= 1'b1;
+					trap_cause_IF	<= CAUSE_IMEM_BUS_ERROR;
+				end
+
+				else begin
+					IR_IF			<= imem_axi_rdata;
+					trap_taken_IF	<= 1'b0;
+					trap_cause_IF	<= 32'h00000000;
+				end
 			end
-			
+
 			else if (imem_addr_reg == jump_addr_reg) begin
-				valid_reg			<= 1'b1;
-				jump_pend			<= 1'b0;
-				jump_addr_reg		<= 32'h00000000;
-				PC_IF				<= imem_addr_reg;
-				IR_IF				<= |imem_axi_rresp ? RV32I_NOP : imem_axi_rdata;
-				imem_axi_rresp_IF	<= imem_axi_rresp;
+				valid_out_int	<= 1'b1;
+				jump_pend		<= 1'b0;
+				jump_addr_reg	<= 32'h00000000;
+				PC_IF			<= imem_addr_reg;
+
+				if (|imem_axi_rresp) begin
+					IR_IF			<= RV32I_NOP;
+					trap_taken_IF	<= 1'b1;
+					trap_cause_IF	<= CAUSE_IMEM_BUS_ERROR;
+				end
+
+				else begin
+					IR_IF			<= imem_axi_rdata;
+					trap_taken_IF	<= 1'b0;
+					trap_cause_IF	<= 32'h00000000;
+				end
 			end
 		end
 
-		else if ((valid_reg && ready_in) || flush) begin
-			valid_reg			<= 1'b0;
+		else if (valid_out_int && ready_in) begin
+			valid_out_int		<= 1'b0;
 			jump_pend			<= 1'b0;
 			jump_addr_reg		<= 32'h00000000;
 			PC_IF				<= 32'h00000000;
 			IR_IF				<= 32'h00000000;
-			imem_axi_rresp_IF	<= 2'b00;
+			trap_taken_IF		<= 1'b0;
+			trap_cause_IF		<= 32'h00000000;
 		end
 	end
 

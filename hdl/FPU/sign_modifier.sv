@@ -4,6 +4,7 @@ module sign_modifier
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 	
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -19,19 +20,22 @@ module sign_modifier
 );
 	
 	logic	sgn_a;
+	logic	valid_reg;
+	
 	assign	sgn_a		= a[31];
 	
+	assign	valid_out	= valid_out_int && !flush;
 	assign	ready_out	= ready_in && (op == FPU_OP_SGNJ || op == FPU_OP_SGNJN || op == FPU_OP_SGNJX);
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
-			valid_out	<= 1'b0;
-			float_out	<= 32'h00000000;
+		if (reset || flush) begin
+			valid_out_int	<= 1'b0;
+			float_out		<= 32'h00000000;
 		end
 		
 		else if (valid_in && ready_out) begin
-			valid_out	<= 1'b1;
-			float_out	<= 32'h00000000;
+			valid_out_int	<= 1'b1;
+			float_out		<= 32'h00000000;
 			
 			case (op)
 			FPU_OP_SGNJ:	float_out <= {sgn_b, a[30:0]};
@@ -40,9 +44,9 @@ module sign_modifier
 			endcase
 		end
 		
-		else if (valid_out && ready_in) begin
-			valid_out	<= 1'b0;
-			float_out	<= 32'h00000000;
+		else if (valid_out_int && ready_in) begin
+			valid_out_int	<= 1'b0;
+			float_out		<= 32'h00000000;
 		end
 	end
 

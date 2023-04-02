@@ -11,21 +11,57 @@ module csr_file
 	input	logic			csr_wena,
 	input	logic	[31:0]	csr_wdata,
 	input	logic			csr_rena,
-	output	logic	[31:0]	csr_rdata
+	output	logic	[31:0]	csr_rdata,
+	
+	// extension enable signals
+	output	logic			M_ena,
+	output	logic			F_ena,
+	
+	// fpu signals
+	input	logic	[4:0]	fflags,
+	output	logic	[2:0]	frm,
+	
+	// interrupt pending signals
+	input	logic	[15:0]	MCIP,
+	input	logic			MEIP,
+	input	logic			MTIP,
+	input	logic			MSIP,
+	
+	
+	
 );
 	
 	logic	[31:0]	misa;
-	logic			M_ext_ena;
-	logic			F_ext_ena;
 	assign			misa =
 					{					// bits		description
-						2'b01,			// 31-30	MXL (machine XLEN = 32)
+						2'b01,			// 31-30	MXL		(machine XLEN = 32)
 						4'b0000,		// 29-26	reserved
-						13'h0000,		// 25-13	N-Z disabled
-						M_ext_ena,		// 12
-						6'b000100,		// 11-6		G-H disabled, I enabled, J-L disabled
-						F_ext_ena,		// 5
-						5'b00000		// 4-0		A-E disabled
+						1'b0,			// 25		Z		(reserved)
+						1'b0,			// 24		Y		(reserved)
+						1'b0,			// 23		X		(non-standard)
+						1'b0,			// 22		W		(reserved)
+						1'b0,			// 21		V		(vector)
+						1'b0,			// 20		U		(U-mode)
+						1'b0,			// 19		T		(reserved)
+						1'b0,			// 18		S		(S-mode)
+						1'b0,			// 17		R		(reserved)
+						1'b0,			// 16		Q		(quad-precision floating-point)
+						1'b0,			// 15		P		(packed-SIMD)
+						1'b0,			// 14		O		(reserved)
+						1'b0,			// 13		N		(user-level interrupts)
+						M_ena,			// 12		M		(integer multiply/divide)
+						1'b0,			// 11		L		(reserved)
+						1'b0,			// 10		K		(reserved)
+						1'b0,			// 9		J		(dynamically translated languages)
+						1'b1,			// 8		I		(base ISA)
+						1'b0,			// 7		H		(H-mode)
+						1'b0,			// 6		G		(reserved)
+						F_ena,			// 5		F		(single-precision floating-point)
+						1'b0,			// 4		E		(RV32E base ISA)
+						1'b0,			// 3		D		(double-precision floating-point)
+						1'b0,			// 2		C		(compressed)
+						1'b0,			// 1		B		(bit-manipulation)
+						1'b0			// 0		A		(atomic)
 					};
 	
 	logic	[31:0]	mvendorid;
@@ -88,8 +124,48 @@ module csr_file
 						mode			// 1-0		0: PC=base 1: PC=base+4*cause (only interrupts)
 					};
 	
-	logic	[31:0]	mip;				// individual interrupt pending bits
-	logic	[31:0]	mie;				// individual interrupt enable bits
+	logic	[31:0]	mip;
+	assign			mip =
+					{					// bits		description
+						MCIP,			// 31-16	custom use
+						4'h0,			// 15-12	reserved
+						MEIP,			// 11		MEIP	(M-mode extern interrupt pending)
+						1'b0,			// 10		reserved
+						1'b0,			// 9		SEIP	(S-mode extern interrupt pending)
+						1'b0,			// 8		reserved
+						MTIP,			// 7		MTIP	(M-mode timer interrupt pending)
+						1'b0,			// 6		reserved
+						1'b0,			// 5		STIP	(S-mode timer interrupt pending)
+						1'b0,			// 4		reserved
+						MSIP,			// 3		MSIP	(M-mode software interrupt pending)
+						1'b0,			// 2		reserved
+						1'b0,			// 1		SSIP	(S-mode software interrupt pending)
+						1'b0			// 0		reserved
+					};
+
+	logic	[31:0]	mie;
+	logic	[15:0]	MCIE;
+	logic			MEIE;
+	logic			MTIE;
+	logic			MSIE;
+	assign			mie =
+					{					// bits		description
+						MCIE,			// 31-16	custom use
+						4'h0,			// 15-12	reserved
+						MEIE,			// 11		MEIP	(M-mode extern interrupt enable)
+						1'b0,			// 10		reserved
+						1'b0,			// 9		SEIP	(S-mode extern interrupt enable)
+						1'b0,			// 8		reserved
+						MTIE,			// 7		MTIP	(M-mode timer interrupt enable)
+						1'b0,			// 6		reserved
+						1'b0,			// 5		STIP	(S-mode timer interrupt enable)
+						1'b0,			// 4		reserved
+						MSIE,			// 3		MSIP	(M-mode software interrupt enable)
+						1'b0,			// 2		reserved
+						1'b0,			// 1		SSIP	(S-mode software interrupt enable)
+						1'b0			// 0		reserved
+					};
+	
 	logic	[63:0]	mcycle;				// cycle counter
 	logic	[63:0]	minstret;			// instruction counter
 	
@@ -112,8 +188,6 @@ module csr_file
 	logic	[31:0]	mconfigptr;	assign	mconfigptr	= 32'h00000000;
 	
 	logic	[31:0]	fcsr;
-	logic	[2:0]	frm;
-	logic	[4:0]	fflags;
 	assign			fcsr =
 					{					// bits		description
 						24'h000000,		// 31-8		reserved

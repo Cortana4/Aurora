@@ -8,6 +8,7 @@ module int_divider
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 	
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -35,6 +36,7 @@ module int_divider
 	logic	[n:0]	acc [m:0];
 	logic	[m-1:0]	q;
 	
+	logic			valid_out_int;
 	logic			stall;
 
 	integer			counter;
@@ -43,6 +45,7 @@ module int_divider
 
 	assign			prev_op		= reg_op;
 	
+	assign			valid_out	= valid_out_int && !flush;
 	assign			ready_out	= ready_in && !stall;
 	assign			stall		= state != IDLE;
 
@@ -56,8 +59,8 @@ module int_divider
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
-			valid_out	<= 1'b0;
+		if (reset || flush) begin
+			valid_reg	<= 1'b0;
 			prev_a		<= 0;
 			prev_b		<= 0;
 			reg_op		<= 2'b00;
@@ -79,15 +82,15 @@ module int_divider
 				 prev_op == SDIV && op == SREM  ||
 				 prev_op == SREM && op == SDIV) &&
 				 prev_a == a && prev_b == b) begin
-				valid_out	<= 1'b1;
-				state		<= IDLE;
+				valid_out_int	<= 1'b1;
+				state			<= IDLE;
 			end
 			
 			else begin
-				valid_out	<= 1'b0;
-				reg_rem		<= 0;
-				counter		<= 0;
-				state		<= CALC;
+				valid_out_int	<= 1'b0;
+				reg_rem			<= 0;
+				counter			<= 0;
+				state			<= CALC;
 
 				case (op)
 				UDIV,
@@ -111,20 +114,20 @@ module int_divider
 		end
 
 		else case (state)
-			IDLE:	if (valid_out && ready_in) begin
-						valid_out	<= 1'b0;
+			IDLE:	if (valid_out_int && ready_in) begin
+						valid_out_int	<= 1'b0;
 					end
 			CALC:	begin
 						reg_res	<= (reg_res << m) | q;
 						reg_rem	<= acc[m];
 
 						if (counter == n/m-1) begin
-							valid_out	<= 1'b1;
-							state		<= IDLE;
+							valid_out_int	<= 1'b1;
+							state			<= IDLE;
 						end
 
 						else
-							counter	<= counter + 1;
+							counter			<= counter + 1;
 					end
 		endcase
 	end

@@ -8,10 +8,8 @@ module ID_stage
 	
 	input	logic			valid_in,
 	output	logic			ready_out,
-	output	logic			flush_out,
 	output	logic			valid_out,
 	input	logic			ready_in,
-	input	logic			flush_in,
 	
 	output	logic			valid_out_mul,
 	input	logic			ready_in_mul,
@@ -20,9 +18,13 @@ module ID_stage
 	output	logic			valid_out_fpu,
 	input	logic			ready_in_fpu,
 	
+	input	logic			M_ena,
+	input	logic			F_ena,
+	
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IR_IF,
-	input	logic	[1:0]	imem_axi_rresp_IF,
+	input	logic			trap_taken_IF,
+	input	logic	[31:0]	trap_cause_IF,
 	
 	output	logic			jump_pred_IF,
 	output	logic	[31:0]	jump_addr_IF,
@@ -58,9 +60,8 @@ module ID_stage
 	output	logic			jump_ind_ID,
 	output	logic			jump_alw_ID,
 	output	logic			jump_pred_ID,
-	// exception signals
-	output	logic	[1:0]	imem_axi_rresp_ID,
-	output	logic			illegal_inst_ID,
+	output	logic			trap_taken_ID,
+	output	logic	[31:0]	trap_cause_ID,
 	
 	input	logic	[31:0]	PC_EX,
 	input	logic			jump_ena_EX,
@@ -102,28 +103,48 @@ module ID_stage
 	logic			jump_alw;
 	logic			illegal_inst;
 	
-	logic			valid_reg;
-	logic			valid_reg_mul;
-	logic			valid_reg_div;
-	logic			valid_reg_fpu;
+	logic			trap_taken;
+	logic	[31:0]	trap_cause;
+	
+	logic			valid_out_int;
+	logic			valid_out_mul_int;
+	logic			valid_out_div_int;
+	logic			valid_out_fpu_int;
 	
 	logic			stall;
 
-	assign			valid_out		= valid_reg && !flush;
-	assign			valid_out_mul	= valid_reg_mul && !flush;
-	assign			valid_out_div	= valid_reg_div && !flush;
-	assign			valid_out_fpu	= valid_reg_fpu && !flush;
+	assign			valid_out		= valid_out_int && !flush;
+	assign			valid_out_mul	= valid_out_mul_int && valid_out;
+	assign			valid_out_div	= valid_out_div_int && valid_out;
+	assign			valid_out_fpu	= valid_out_fpu_int && valid_out;
 	
 	assign			ready_out		= ready_in && !stall;
-	assign			stall			= csr_wena_ID;
+	assign			stall			= csr_wena_ID || csr_rena_ID;
+	
+	always_comb begin
+		if (trap_cause_ID) begin
+			trap_taken	= 1'b1;
+			trap_cause	= trap_cause_IF;
+		end
+
+		else if (illegal_inst) begin
+			trap_taken	= 1'b1;
+			trap_cause	= CAUSE_ILLEGAL_INST;
+		end
+		
+		else begin
+			trap_taken	= 1'b0;
+			trap_cause	= 32'h00000000;
+		end
+	end
 
 	// ID/EX pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_reg			<= 1'b0;
-			valid_reg_mul		<= 1'b0;
-			valid_reg_div		<= 1'b0;
-			valid_reg_fpu		<= 1'b0;
+			valid_out_int		<= 1'b0;
+			valid_out_mul_int	<= 1'b0;
+			valid_out_div_int	<= 1'b0;
+			valid_out_fpu_int	<= 1'b0;
 			PC_ID				<= 32'h00000000;
 			IR_ID				<= 32'h00000000;
 			IM_ID				<= 32'h00000000;
@@ -155,15 +176,15 @@ module ID_stage
 			jump_ind_ID			<= 1'b0;
 			jump_alw_ID			<= 1'b0;
 			jump_pred_ID		<= 1'b0;
-			imem_axi_rresp_ID	<= 2'b00;
-			illegal_inst_ID		<= 1'b0;
+			trap_taken_ID		<= 1'b0;
+			trap_cause_ID		<= 32'h00000000;
 		end
 		
 		else if (valid_in && ready_out) begin
-			valid_reg			<= 1'b1;
-			valid_reg_mul		<= wb_src == SEL_MUL;
-			valid_reg_div		<= wb_src == SEL_DIV;
-			valid_reg_fpu		<= wb_src == SEL_FPU;
+			valid_out_int		<= 1'b1;
+			valid_out_mul_int	<= wb_src == SEL_MUL;
+			valid_out_div_int	<= wb_src == SEL_DIV;
+			valid_out_fpu_int	<= wb_src == SEL_FPU;
 			PC_ID				<= PC_IF;
 			IR_ID				<= IR_IF;
 			IM_ID				<= immediate;
@@ -195,15 +216,15 @@ module ID_stage
 			jump_ind_ID			<= jump_ind;
 			jump_alw_ID			<= jump_alw;
 			jump_pred_ID		<= jump_pred_IF;
-			imem_axi_rresp_ID	<= imem_axi_rresp_IF;
-			illegal_inst_ID		<= illegal_inst;
+			trap_taken_ID		<= trap_taken;
+			trap_cause_ID		<= trap_cause;
 		end
 		
-		else if (valid_reg && ready_in) begin
-			valid_reg			<= 1'b0;
-			valid_reg_mul		<= 1'b0;
-			valid_reg_div		<= 1'b0;
-			valid_reg_fpu		<= 1'b0;
+		else if (valid_out_int && ready_in) begin
+			valid_out_int		<= 1'b0;
+			valid_out_mul_int	<= 1'b0;
+			valid_out_div_int	<= 1'b0;
+			valid_out_fpu_int	<= 1'b0;
 			PC_ID				<= 32'h00000000;
 			IR_ID				<= 32'h00000000;
 			IM_ID				<= 32'h00000000;
@@ -235,25 +256,28 @@ module ID_stage
 			jump_ind_ID			<= 1'b0;
 			jump_alw_ID			<= 1'b0;
 			jump_pred_ID		<= 1'b0;
-			imem_axi_rresp_ID	<= 2'b00;
-			illegal_inst_ID		<= 1'b0;
+			trap_taken_ID		<= 1'b0;
+			trap_cause_ID		<= 32'h00000000;
 		end
 		
 		else begin
-			if (valid_reg_mul && ready_in_mul)
-				valid_reg_mul	<= 1'b0;
+			if (valid_out_mul_int && ready_in_mul)
+				valid_out_mul_int	<= 1'b0;
 			
-			if (valid_reg_div && ready_in_div)
-				valid_reg_div	<= 1'b0;
+			if (valid_out_div_int && ready_in_div)
+				valid_out_div_int	<= 1'b0;
 			
-			if (valid_reg_fpu && ready_in_fpu)
-				valid_reg_fpu	<= 1'b0;
+			if (valid_out_fpu_int && ready_in_fpu)
+				valid_out_fpu_int	<= 1'b0;
 		end
 	end
 
 	inst_decoder inst_decoder_inst
 	(
 		.IR_IF(IR_IF),
+		
+		.M_ena(M_ena),
+		.F_ena(F_ena),
 		
 		.immediate(immediate),
 		.rs1_rena(rs1_rena),
@@ -325,7 +349,5 @@ module ID_stage
 		.rs3_addr(rs3_addr),
 		.rs3_data(rs3_data)
 	);
-	
-	// csr_file
 
 endmodule
