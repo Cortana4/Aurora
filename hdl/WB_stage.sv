@@ -10,6 +10,10 @@ module WB_stage
 	output	logic			valid_out,
 	input	logic			ready_in,
 	
+	output	logic			M_ena,
+	output	logic			F_ena,
+	output	logic	[2:0]	frm,
+	
 	input	logic	[31:0]	PC_MEM,
 	input	logic	[31:0]	IR_MEM,
 	input	logic	[31:0]	IM_MEM,
@@ -22,6 +26,7 @@ module WB_stage
 	input	logic	[31:0]	csr_wdata_MEM,
 	input	logic	[2:0]	wb_src_MEM,
 	input	logic	[1:0]	csr_op_MEM,
+	input	logic	[4:0]	fpu_flags_MEM,
 	input	logic			trap_taken_MEM,
 	input	logic	[31:0]	trap_cause_MEM,
 	

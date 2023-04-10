@@ -44,6 +44,9 @@ package CPU_pkg;
 	localparam RV32I_ECALL				= 32'b00000000000000000000000001110011;
 	localparam RV32I_EBREAK				= 32'b00000000000100000000000001110011;
 	
+	localparam RV32I_MRET				= 32'b00110000001000000000000001110011;
+	localparam RV32I_WFI				= 32'b00010000010100000000000001110011;
+	
 	//*************************************************************************
 	// RV32Zicsr instructions
 	localparam RV32Zicsr_CSRRW			= 32'b?????????????????001?????1110011;
@@ -153,14 +156,11 @@ package CPU_pkg;
 	
 	//*************************************************************************
 	// trap causes
-	localparam CAUSE_M_SOFTWARE_INT		= 32'h80000003;
-	localparam CAUSE_M_TIMER_INT		= 32'h80000007;
-	localparam CAUSE_M_EXT_INT			= 32'h8000000b;
-	localparam CAUSE_MALIGNED_INST		= 32'h00000000;
+	localparam CAUSE_MISALIGNED_INST	= 32'h00000000;
 	localparam CAUSE_ILLEGAL_INST		= 32'h00000002;
 	localparam CAUSE_BREAKPOINT			= 32'h00000003;
-	localparam CAUSE_MALIGNED_LOAD		= 32'h00000004;
-	localparam CAUSE_MALIGNED_STORE		= 32'h00000006;
+	localparam CAUSE_MISALIGNED_LOAD	= 32'h00000004;
+	localparam CAUSE_MISALIGNED_STORE	= 32'h00000006;
 	localparam CAUSE_ENV_CALL_FROM_M	= 32'h0000000b;
 	localparam CAUSE_IMEM_BUS_ERROR		= 32'h00000018;	// custom (24)
 	localparam CAUSE_DMEM_BUS_ERROR		= 32'h00000019;	// custom (25)

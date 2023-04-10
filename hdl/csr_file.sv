@@ -13,24 +13,41 @@ module csr_file
 	input	logic			csr_rena,
 	output	logic	[31:0]	csr_rdata,
 	
+	input	logic			valid_in,
+
+	input	logic	[31:0]	PC,
+	input	logic	[31:0]	PC_next,
+	input	logic			rd_wena,
+	input	logic	[5:0]	rd_addr,
+	
 	// extension enable signals
 	output	logic			M_ena,
 	output	logic			F_ena,
 	
 	// fpu signals
-	input	logic	[4:0]	fflags,
-	output	logic	[2:0]	frm,
+	input	logic	[4:0]	fpu_flags,
+	output	logic	[2:0]	fpu_rm,
 	
-	// interrupt pending signals
-	input	logic	[15:0]	MCIP,
-	input	logic			MEIP,
-	input	logic			MTIP,
-	input	logic			MSIP,
+	// exception signals
+	input	logic			exc_pend,
+	input	logic	[31:0]	exc_cause,
+
+	// interrupt request signals
+	input	logic	[15:0]	irq_ext,
+	input	logic			irq_int_controller,
+	input	logic			irq_timer,
+	
+	// trap signals
+	output	logic			trap_taken,
+	output	logic	[31:0]	trap_addr,
+	input	logic			trap_ret,
+	output	logic	[31:0]	trap_raddr,
 	
 	
 	
 );
 	
+	// machine level csr's
 	logic	[31:0]	misa;
 	assign			misa =
 					{					// bits		description
@@ -121,10 +138,13 @@ module csr_file
 	assign			mtvec =				// trap vector base address
 					{					// bits		description
 						base,			// 31-2		
-						mode			// 1-0		0: PC=base 1: PC=base+4*cause (only interrupts)
+						mode			// 1-0		interrupts set PC to 0: base 1: base+4*cause
 					};
 	
 	logic	[31:0]	mip;
+	logic	[15:0]	MCIP;		assign	MCIP		= irq_ext;
+	logic			MEIP;		assign	MEIP		= irq_int_controller;
+	logic			MTIP;		assign	MTIP		= irq_timer;
 	assign			mip =
 					{					// bits		description
 						MCIP,			// 31-16	custom use
@@ -137,7 +157,7 @@ module csr_file
 						1'b0,			// 6		reserved
 						1'b0,			// 5		STIP	(S-mode timer interrupt pending)
 						1'b0,			// 4		reserved
-						MSIP,			// 3		MSIP	(M-mode software interrupt pending)
+						1'b0,			// 3		MSIP	(M-mode software interrupt pending)
 						1'b0,			// 2		reserved
 						1'b0,			// 1		SSIP	(S-mode software interrupt pending)
 						1'b0			// 0		reserved
@@ -147,7 +167,6 @@ module csr_file
 	logic	[15:0]	MCIE;
 	logic			MEIE;
 	logic			MTIE;
-	logic			MSIE;
 	assign			mie =
 					{					// bits		description
 						MCIE,			// 31-16	custom use
@@ -160,7 +179,7 @@ module csr_file
 						1'b0,			// 6		reserved
 						1'b0,			// 5		STIP	(S-mode timer interrupt enable)
 						1'b0,			// 4		reserved
-						MSIE,			// 3		MSIP	(M-mode software interrupt enable)
+						1'b0,			// 3		MSIP	(M-mode software interrupt enable)
 						1'b0,			// 2		reserved
 						1'b0,			// 1		SSIP	(S-mode software interrupt enable)
 						1'b0			// 0		reserved
@@ -181,13 +200,16 @@ module csr_file
 					};
 	
 	logic	[31:0]	mscratch;			// ???
-	logic	[31:0]	mepc;				// PC of the instruction that was interrupted or caused the exception
+	logic	[31:0]	mepc;		assign	trap_raddr	= mepc;
+										// PC of the instruction that was interrupted or caused the exception (used as return address)
 	
 	logic	[31:0]	mcause;				// code indicating the event that caused the trap
 	logic	[31:0]	mtval;				// ???
 	logic	[31:0]	mconfigptr;	assign	mconfigptr	= 32'h00000000;
 	
 	logic	[31:0]	fcsr;
+	logic	[2:0]	frm;		assign	fpu_rm		= frm;
+	logic	[4:0]	fflags;
 	assign			fcsr =
 					{					// bits		description
 						24'h000000,		// 31-8		reserved
@@ -195,8 +217,59 @@ module csr_file
 						fflags			// 4-0		FPU flags (IV, DZ, OF, UF, IE)
 					};
 
+	// 
 	logic	[31:0]	csr_wdata_int;
 	
+	logic			illegal_inst;
+
+	logic			int_taken;
+	logic	[4:0]	int_cause;
+	logic	[31:0]	trap_cause;
+	logic	[31:0]	trap_raddr;
+	
+	assign			illegal_inst	= (csr_wena && &csr_addr[11:10]) || illegal_csr;
+	assign			int_taken		= MIE && |(mie & mip);
+	
+	
+	priority_encoder #(5) priority_encoder_inst
+	(
+		.x(mip),
+		.y(int_cause)
+	);
+
+	always_comb begin
+		if (exc_pend) begin
+			trap_taken		= 1'b1;
+			trap_addr		= {base, 2'b00};
+			trap_cause		= exc_cause;
+			trap_raddr_int	= PC;
+		end
+		
+		else if (illegal_inst) begin
+			trap_taken		= 1'b1;
+			trap_addr		= {base, 2'b00};
+			trap_cause		= CAUSE_ILLEGAL_INST;
+			trap_raddr_int	= PC;
+		end
+		
+		else if (int_taken) begin
+			trap_taken		= 1'b1;
+			trap_addr		= {base, 2'b00};
+			trap_cause		= 32'h80000000 | int_cause;
+			trap_raddr_int	= PC_next;
+
+			if (mode == 2'b01)
+				trap_addr	= {base, 2'b00} + (trap_cause << 2);
+		end
+		
+		else begin
+			trap_taken		= 1'b0;
+			trap_addr		= 32'h00000000;
+			trap_cause		= 32'h00000000;
+			trap_raddr_int	= 32'h00000000;
+		end
+	end
+
 	always_comb begin
 		case (op)
 		CSR_RS:		csr_wdata_int	= csr_rdata |  csr_wdata;
@@ -204,8 +277,117 @@ module csr_file
 		default:	csr_wdata_int	= csr_wdata;
 		endcase
 	end
-	
+
+	always_ff @(posedge clk, posedge reset) begin
+		if (reset) begin
+			M_ena		<= 1'b1;		// misa
+			F_ena		<= 1'b1;
+			FS			<= 2'd1;		// mstatus
+			MPIE		<= 1'b0;
+			MIE			<= 1'b0;
+			base		<= ;			// mtvec
+			mode		<= ;
+			MCIE		<= ;			// mie
+			MEIE		<= ;
+			MTIE		<= ;
+			mcycle		<= 64'd0;
+			minstret	<= 64'd0;
+			IR			<= 1'b1;		// mcountinhibit
+			CY			<= 1'b1;
+			mscratch	<= 32'h00000000;
+			mepc		<= 32'h00000000;
+			mcause		<= 32'h00000000;
+			mtval		<= 32'h00000000;
+			fflags		<= 5'b00000;	// fcsr
+			frm			<= 3'b000;
+		end
+		
+		else begin
+			if (!CY)
+				mcycle		<= mcycle + 32'd1;
+				
+			if (!IR && inst_ret)
+				minstret	<= minstret + 32'd1;
+			
+			if (F_ena && rd_wena && rd_addr[5]) begin
+				fflags		<= fflags | fpu_flags;
+				FS			<= 2'd2;
+			end
+			
+			if (trap_taken) begin
+				MPIE		<= MIE;
+				MIE			<= 1'b0;
+				mepc		<= trap_raddr_int;
+			end
+			
+			if (trap_ret) begin
+				MIE			<= MPIE;
+				MPIE		<= 1'b1;
+			end
+			
+		end
+		
+		else if (csr_wena) begin
+			case (csr_addr)
+			CSR_ADDR_MISA:			begin
+										M_ena	<= csr_wdata_int[12];
+										
+										if (csr_wdata_int[5]) begin
+											F_ena	<= 1'b1;
+											FS		<= 2'd1;
+										end
+										
+										else begin
+											F_ena	<= 1'b0;
+											FS		<= 2'd0;
+										end
+									end
+			CSR_ADDR_MSTATUS:		begin
+										FS		<= F_ena ? csr_wdata_int[14:13] : 2'd0;
+										MPIE	<= csr_wdata_int[7];
+										MIE		<= csr_wdata_int[3];
+									end
+			CSR_ADDR_MSTATUS:		;
+			CSR_ADDR_MTVEC:			begin
+										base	<= csr_wdata_int[31:2];
+										mode	<= csr_wdata_int[1:0];
+									end
+			CSR_ADDR_MIP:			;
+			CSR_ADDR_MIE:			begin
+										MCIE	<= csr_wdata_int[13:16];
+										MEIE	<= csr_wdata_int[11];
+										MTIE	<= csr_wdata_int[7];
+									end
+			CSR_ADDR_MCYCLE:		mcycle		<= {mcycle[63:32], csr_wdata_int};
+			CSR_ADDR_MCYCLEH:		mcycle		<= {csr_wdata_int, mcycle[31:0]};
+			CSR_ADDR_MINSTRET:		minstret	<= {minstret[63:32], csr_wdata_int};
+			CSR_ADDR_MINSTRETH:		minstret	<= {csr_wdata_int, minstret[31:0]};
+			CSR_ADDR_MCOUNTINHIBIT:	begin
+										IR		<= csr_wdata_int[2];
+										CY		<= csr_wdata_int[0];
+									end
+			CSR_ADDR_MSCRATCH:		mscratch	<= csr_wdata_int;
+			CSR_ADDR_MEPC:			mepc		<= csr_wdata_int;
+			CSR_ADDR_MCAUSE:		mcause		<= csr_wdata_int;
+			CSR_ADDR_MTVAL:			mtval		<= csr_wdata_int;
+			CSR_ADDR_FFLAGS:		if (F_ena) begin
+										fflags	<= csr_wdata_int[4:0];
+									end
+			CSR_ADDR_FRM:			if (F_ena) begin
+										frm		<= csr_wdata_int[2:0];
+									end
+			CSR_ADDR_FCSR			if (F_ena) begin
+										frm		<= csr_wdata_int[7:5];
+										fflags	<= csr_wdata_int[4:0];
+									end
+			endcase
+		end
+	end
+
 	always_comb begin
+		csr_rdata	= 32'h00000000;
+		illegal_csr	= 1'b0;
+		
 		case (csr_addr)
 		CSR_ADDR_MVENDORID:		csr_rdata	= mvendorid;
 		CSR_ADDR_MARCHID:		csr_rdata	= marchid;
@@ -216,37 +398,36 @@ module csr_file
 		CSR_ADDR_MTVEC:			csr_rdata	= mtvec;
 		CSR_ADDR_MIP:			csr_rdata	= mip;
 		CSR_ADDR_MIE:			csr_rdata	= mie;
-		CSR_ADDR_MCYCLE:		csr_rdata	= mcycle;
-		CSR_ADDR_MCYCLEH:		csr_rdata	= mcycleh;
-		CSR_ADDR_MINSTRET:		csr_rdata	= minstret;
-		CSR_ADDR_MINSTRETH:		csr_rdata	= minstreth;
+		CSR_ADDR_MCYCLE:		csr_rdata	= mcycle[31:0];
+		CSR_ADDR_MCYCLEH:		csr_rdata	= mcycle[63:32];
+		CSR_ADDR_MINSTRET:		csr_rdata	= minstret[31:0];
+		CSR_ADDR_MINSTRETH:		csr_rdata	= minstret[63:32];
 		CSR_ADDR_MCOUNTINHIBIT:	csr_rdata	= mcountinhibit;
 		CSR_ADDR_MSCRATCH:		csr_rdata	= mscratch;
 		CSR_ADDR_MEPC:			csr_rdata	= mepc;
 		CSR_ADDR_MCAUSE:		csr_rdata	= mcause;
 		CSR_ADDR_MTVAL:			csr_rdata	= mtval;
 		CSR_ADDR_MCONFIGPTR:	csr_rdata	= mconfigptr;
-		CSR_ADDR_FFLAGS:		csr_rdata	= {27'h0000000, fflags};
-		CSR_ADDR_FRM:			csr_rdata	= {29'h00000000, frm};
-		CSR_ADDR_FCSR:			csr_rdata	= fcsr;
-		default:				csr_rdata	= 32'h00000000;
+		CSR_ADDR_FFLAGS:		begin
+									if (F_ena)
+										csr_rdata	= {27'h0000000, fflags};
+									else
+										illegal_csr	= 1'b1;
+								end
+		CSR_ADDR_FRM:			begin
+									if (F_ena)
+										csr_rdata	= {29'h00000000, frm};
+									else
+										illegal_csr	= 1'b1;
+								end
+		CSR_ADDR_FCSR:			begin
+									if (F_ena)
+										csr_rdata	= fcsr;
+									else
+										illegal_csr	= 1'b1;
+								end
+		default:				illegal_csr	= 1'b1;
 		endcase
-	end
-	
-
-	
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
-			
-		end
-		
-		else if (csr_wena) begin
-			case (csr_addr)
-			MISA_ADDR:	begin
-							
-						end
-			endcase
-		end
 	end
 
 

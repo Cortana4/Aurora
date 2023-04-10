@@ -400,7 +400,7 @@ module pipeline
 		.csr_addr_MEM(csr_addr_MEM),
 		.csr_rena_MEM(csr_rena_MEM),
 		.csr_wena_MEM(csr_wena_MEM),
-		.csr_wdata_MEM(csr_wdata_MEM)
+		.csr_wdata_MEM(csr_wdata_MEM),
 		.csr_op_MEM(csr_op_MEM),
 		.fpu_flags_MEM(fpu_flags_MEM),
 		.trap_taken_MEM(trap_taken_MEM),

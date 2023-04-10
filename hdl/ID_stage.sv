@@ -20,11 +20,12 @@ module ID_stage
 	
 	input	logic			M_ena,
 	input	logic			F_ena,
+	input	logic	[31:0]	trap_raddr,
 	
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IR_IF,
-	input	logic			trap_taken_IF,
-	input	logic	[31:0]	trap_cause_IF,
+	input	logic			exc_pend_IF,
+	input	logic	[31:0]	exc_cause_IF,
 	
 	output	logic			jump_pred_IF,
 	output	logic	[31:0]	jump_addr_IF,
@@ -60,8 +61,9 @@ module ID_stage
 	output	logic			jump_ind_ID,
 	output	logic			jump_alw_ID,
 	output	logic			jump_pred_ID,
-	output	logic			trap_taken_ID,
-	output	logic	[31:0]	trap_cause_ID,
+	output	logic			trap_ret_ID,
+	output	logic			exc_pend_ID,
+	output	logic	[31:0]	exc_cause_ID,
 	
 	input	logic	[31:0]	PC_EX,
 	input	logic			jump_ena_EX,
@@ -101,10 +103,12 @@ module ID_stage
 	logic			jump_ena;
 	logic			jump_ind;
 	logic			jump_alw;
+	logic			env_call;
+	logic			trap_ret;
 	logic			illegal_inst;
 	
-	logic			trap_taken;
-	logic	[31:0]	trap_cause;
+	logic			exc_pend;
+	logic	[31:0]	exc_cause;
 	
 	logic			valid_out_int;
 	logic			valid_out_mul_int;
@@ -122,19 +126,24 @@ module ID_stage
 	assign			stall			= csr_wena_ID || csr_rena_ID;
 	
 	always_comb begin
-		if (trap_cause_ID) begin
-			trap_taken	= 1'b1;
-			trap_cause	= trap_cause_IF;
+		if (exc_pend_IF) begin
+			exc_pend	= 1'b1;
+			exc_cause	= exc_cause_IF;
 		end
 
 		else if (illegal_inst) begin
-			trap_taken	= 1'b1;
-			trap_cause	= CAUSE_ILLEGAL_INST;
+			exc_pend	= 1'b1;
+			exc_cause	= CAUSE_ILLEGAL_INST;
+		end
+		
+		else if (env_call) begin
+			exc_pend	= 1'b1;
+			exc_cause	= CAUSE_ENV_CALL_FROM_M;
 		end
 		
 		else begin
-			trap_taken	= 1'b0;
-			trap_cause	= 32'h00000000;
+			exc_pend	= 1'b0;
+			exc_cause	= 32'h00000000;
 		end
 	end
 
@@ -176,15 +185,16 @@ module ID_stage
 			jump_ind_ID			<= 1'b0;
 			jump_alw_ID			<= 1'b0;
 			jump_pred_ID		<= 1'b0;
-			trap_taken_ID		<= 1'b0;
-			trap_cause_ID		<= 32'h00000000;
+			trap_ret_ID			<= 1'b0;
+			exc_pend_ID			<= 1'b0;
+			exc_cause_ID		<= 32'h00000000;
 		end
 		
 		else if (valid_in && ready_out) begin
 			valid_out_int		<= 1'b1;
-			valid_out_mul_int	<= wb_src == SEL_MUL;
-			valid_out_div_int	<= wb_src == SEL_DIV;
-			valid_out_fpu_int	<= wb_src == SEL_FPU;
+			valid_out_mul_int	<= wb_src == SEL_MUL && !exc_pend;
+			valid_out_div_int	<= wb_src == SEL_DIV && !exc_pend;
+			valid_out_fpu_int	<= wb_src == SEL_FPU && !exc_pend;
 			PC_ID				<= PC_IF;
 			IR_ID				<= IR_IF;
 			IM_ID				<= immediate;
@@ -197,11 +207,11 @@ module ID_stage
 			rs3_rena_ID			<= rs3_rena;
 			rs3_addr_ID			<= rs3_addr;
 			rs3_data_ID			<= rs3_data;
-			rd_wena_ID			<= rd_wena;
+			rd_wena_ID			<= rd_wena && !exc_pend;
 			rd_addr_ID			<= rd_addr;
 			csr_addr_ID			<= csr_addr;
 			csr_rena_ID			<= csr_rena;
-			csr_wena_ID			<= csr_wena;
+			csr_wena_ID			<= csr_wena && !exc_pend;
 			sel_PC_ID			<= sel_PC;
 			sel_IM_ID			<= sel_IM;
 			wb_src_ID			<= wb_src;
@@ -216,8 +226,9 @@ module ID_stage
 			jump_ind_ID			<= jump_ind;
 			jump_alw_ID			<= jump_alw;
 			jump_pred_ID		<= jump_pred_IF;
-			trap_taken_ID		<= trap_taken;
-			trap_cause_ID		<= trap_cause;
+			trap_ret_ID			<= trap_ret;
+			exc_pend_ID			<= exc_pend;
+			exc_cause_ID		<= exc_cause;
 		end
 		
 		else if (valid_out_int && ready_in) begin
@@ -256,8 +267,9 @@ module ID_stage
 			jump_ind_ID			<= 1'b0;
 			jump_alw_ID			<= 1'b0;
 			jump_pred_ID		<= 1'b0;
-			trap_taken_ID		<= 1'b0;
-			trap_cause_ID		<= 32'h00000000;
+			trap_ret_ID			<= 1'b0;
+			exc_pend_ID			<= 1'b0;
+			exc_cause_ID		<= 32'h00000000;
 		end
 		
 		else begin
@@ -304,6 +316,8 @@ module ID_stage
 		.jump_ena(jump_ena),
 		.jump_ind(jump_ind),
 		.jump_alw(jump_alw),
+		.env_call(env_call),
+		.trap_ret(trap_ret),
 		.illegal_inst(illegal_inst)
 	);
 	

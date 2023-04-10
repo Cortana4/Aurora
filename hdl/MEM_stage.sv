@@ -25,8 +25,10 @@ module MEM_stage
 	input	logic	[2:0]	mem_op_EX,
 	input	logic	[1:0]	csr_op_EX,
 	input	logic	[4:0]	fpu_flags_EX,
-	input	logic			trap_taken_EX,
-	input	logic	[31:0]	trap_cause_EX,
+	input	logic	[31:0]	jump_addr_EX,
+	input	logic			trap_ret_EX,
+	input	logic			exc_pend_EX,
+	input	logic	[31:0]	exc_cause_EX,
 	
 	input	logic	[1:0]	dmem_axi_bresp,		// write response channel
 	input	logic			dmem_axi_bvalid,
@@ -50,8 +52,10 @@ module MEM_stage
 	output	logic	[2:0]	wb_src_MEM,
 	output	logic	[1:0]	csr_op_MEM,
 	output	logic	[4:0]	fpu_flags_MEM,
-	output	logic			trap_taken_MEM,
-	output	logic	[31:0]	trap_cause_MEM
+	output	logic	[31:0]	jump_addr_MEM,
+	output	logic			trap_ret_MEM,
+	output	logic			exc_pend_MEM,
+	output	logic	[31:0]	exc_cause_MEM
 );
 
 	logic			valid_out_int;
@@ -66,7 +70,7 @@ module MEM_stage
 	assign			valid_out				= valid_out_int && !flush;
 	assign			ready_out				= ready_in && !stall;
 	assign			stall					= csr_wena_MEM || csr_rena_MEM ||
-											  (wb_src_EX == SEL_MEM &&
+											  (!exc_pend_EX && wb_src_EX == SEL_MEM &&
 											  ((rd_wena_EX && !dmem_axi_rvalid) ||
 											  (!rd_wena_EX && !dmem_axi_bvalid)));
 
@@ -87,8 +91,10 @@ module MEM_stage
 			wb_src_MEM			<= 3'd0;
 			csr_op_MEM			<= 2'd0;
 			fpu_flags_MEM		<= 5'b00000;
-			trap_taken_MEM		<= 1'b0;
-			trap_cause_MEM		<= 32'h00000000;
+			jump_addr_MEM		<= 32'h00000000;
+			trap_ret_MEM		<= 1'b0;
+			exc_pend_MEM		<= 1'b0;
+			exc_cause_MEM		<= 32'h00000000;
 		end
 
 		else if (valid_in && ready_out) begin
@@ -106,33 +112,35 @@ module MEM_stage
 			wb_src_MEM			<= wb_src_EX;
 			csr_op_MEM			<= csr_op_EX;
 			fpu_flags_MEM		<= fpu_flags_EX;
-			trap_taken_MEM		<= trap_taken_EX;
-			trap_cause_MEM		<= trap_cause_EX;
-
-			if (wb_src_EX == SEL_MEM) begin
+			jump_addr_MEM		<= jump_addr_EX;
+			trap_ret_MEM		<= trap_ret_EX;
+			exc_pend_MEM		<= exc_pend_EX;
+			exc_cause_MEM		<= exc_cause_EX;
+			
+			if (wb_src_EX == SEL_MEM && !exc_pend_EX) begin
 				// dmem read access (load)
 				if (rd_wena_EX) begin
-					case (mem_op_EX)
-					MEM_LB:		rd_data_MEM	<= {{24{dmem_axi_rdata_aligned[7]}}, dmem_axi_rdata_aligned[7:0]};
-					MEM_LBU:	rd_data_MEM	<= {24'h000000, dmem_axi_rdata_aligned[7:0]};
-					MEM_LH:		rd_data_MEM	<= {{16{dmem_axi_rdata_aligned[15]}}, dmem_axi_rdata_aligned[15:0]};
-					MEM_LHU:	rd_data_MEM	<= {16'h0000, dmem_axi_rdata_aligned[15:0]};
-					default:	rd_data_MEM	<= dmem_axi_rdata_aligned;
-					endcase
-					
 					if (|imem_axi_rresp) begin
-						trap_taken_MEM	<= 1'b1;
-						trap_cause_MEM	<= CAUSE_DMEM_BUS_ERROR;
+						rd_wena_MEM		<= 1'b0;
+						csr_wena_MEM	<= 1'b0;
+						exc_pend_MEM	<= 1'b1;
+						exc_cause_MEM	<= CAUSE_DMEM_BUS_ERROR;
 					end
+					
+					else case (mem_op_EX)
+						MEM_LB:		rd_data_MEM	<= {{24{dmem_axi_rdata_aligned[7]}}, dmem_axi_rdata_aligned[7:0]};
+						MEM_LBU:	rd_data_MEM	<= {24'h000000, dmem_axi_rdata_aligned[7:0]};
+						MEM_LH:		rd_data_MEM	<= {{16{dmem_axi_rdata_aligned[15]}}, dmem_axi_rdata_aligned[15:0]};
+						MEM_LHU:	rd_data_MEM	<= {16'h0000, dmem_axi_rdata_aligned[15:0]};
+						default:	rd_data_MEM	<= dmem_axi_rdata_aligned;
+					endcase
 				end
 				// dmem write access (store)
-				else begin
-					rd_data_MEM	<= 32'h00000000;
-					
-					if (|imem_axi_bresp) begin
-						trap_taken_MEM	<= 1'b1;
-						trap_cause_MEM	<= CAUSE_DMEM_BUS_ERROR;
-					end
+				else if (|imem_axi_bresp) begin
+					rd_wena_MEM		<= 1'b0;
+					csr_wena_MEM	<= 1'b0;
+					exc_pend_MEM	<= 1'b1;
+					exc_cause_MEM	<= CAUSE_DMEM_BUS_ERROR;
 				end
 			end
 		end
@@ -152,8 +160,10 @@ module MEM_stage
 			wb_src_MEM			<= 3'd0;
 			csr_op_MEM			<= 2'd0;
 			fpu_flags_MEM		<= 5'b00000;
-			trap_taken_MEM		<= 1'b0;
-			trap_cause_MEM		<= 32'h00000000;
+			jump_addr_MEM		<= 32'h00000000;
+			trap_ret_MEM		<= 1'b0;
+			exc_pend_MEM		<= 1'b0;
+			exc_cause_MEM		<= 32'h00000000;
 		end
 	end
 

@@ -33,6 +33,8 @@ module inst_decoder
 	output	logic			jump_ena,
 	output	logic			jump_ind,
 	output	logic			jump_alw,
+	output	logic			env_call,
+	output	logic			trap_ret,
 	output	logic			illegal_inst
 );
 
@@ -82,6 +84,8 @@ module inst_decoder
 		jump_ena		= 1'b0;
 		jump_ind		= 1'b0;
 		jump_alw		= 1'b0;
+		env_call		= 1'b0;
+		trap_ret		= 1'b0;
 		illegal_inst	= 1'b1;
 	
 		casez (inst)
@@ -391,9 +395,24 @@ module inst_decoder
 								alu_op			= ALU_AND;
 								illegal_inst	= 1'b0;
 							end
-		RV32I_FENCE:		;
-		RV32I_ECALL:		;
+		RV32I_FENCE:		begin
+								illegal_inst	= 1'b0;
+							end
+		RV32I_ECALL:		begin
+								env_call		= 1'b1;
+								illegal_inst	= 1'b0;
+							end
 		RV32I_EBREAK:		;
+		// priveleged instructions
+		RV32I_MRET:			begin
+								jump_ena		= 1'b1;
+								jump_alw		= 1'b1;
+								trap_ret		= 1'b1;
+								illegal_inst	= 1'b0;
+							end
+		RV32I_WFI:			begin
+								illegal_inst	= 1'b0;
+							end
 		// RV32Zicsr instructions
 		RV32Zicsr_CSRRW:	begin
 								rs1_rena		= 1'b1;
@@ -516,7 +535,7 @@ module inst_decoder
 								wb_src			= SEL_DIV;
 								div_op			= UREM;
 								illegal_inst	= 1'b0;
-							if (M_ena) end
+							end
 		// RV32F instructions
 		RV32F_FLW:			if (F_ena) begin
 								immediate		= immediate_I;

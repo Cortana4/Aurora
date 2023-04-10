@@ -52,8 +52,9 @@ module EX_stage
 	input	logic			jump_ind_ID,
 	input	logic			jump_alw_ID,
 	input	logic			jump_pred_ID,
-	input	logic			trap_taken_ID,
-	input	logic	[31:0]	trap_cause_ID,
+	input	logic			trap_ret_ID,
+	input	logic			exc_pend_ID,
+	input	logic	[31:0]	exc_cause_ID,
 
 	output	logic	[31:0]	PC_EX,
 	output	logic	[31:0]	IR_EX,
@@ -74,9 +75,9 @@ module EX_stage
 	output	logic			jump_taken_EX,
 	output	logic			jump_mpred_EX,
 	output	logic	[31:0]	jump_addr_EX,
-	
-	output	logic			trap_taken_EX,
-	output	logic	[31:0]	trap_cause_EX,
+	output	logic			trap_ret_EX,
+	output	logic			exc_pend_EX,
+	output	logic	[31:0]	exc_cause_EX,
 
 	output	logic	[31:0]	dmem_axi_awaddr,	// write address channel
 	output	logic	[2:0]	dmem_axi_awprot,
@@ -129,8 +130,8 @@ module EX_stage
 	logic			maligned_load_addr;
 	logic			maligned_store_addr;
 
-	logic			trap_taken;
-	logic			trap_cause;
+	logic			exc_pend;
+	logic			exc_cause;
 	
 	logic			dmem_axi_awvalid_int;
 	logic	[31:0]	dmem_axi_wdata_int;
@@ -158,16 +159,17 @@ module EX_stage
 	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
 	assign			maligned_inst_addr	= jump_taken  && |jump_addr[1:0];
 	
-	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && valid_out && !trap_taken_EX;
-	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && valid_out && !trap_taken_EX;
-	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && valid_out && !trap_taken_EX;
+	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && valid_out;
+	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && valid_out;
+	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && valid_out;
 
 	assign			valid_out			= valid_out_int && !flush;
 	assign			ready_out			= ready_in && !stall;
-	assign			stall				= rd_after_ld_hazard || csr_wena_EX || csr_rena_EX ||
+	assign			stall				= csr_wena_EX || csr_rena_EX ||
+										  (!exc_pend && (rd_after_ld_hazard ||
 										  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
 										  (wb_src_ID == SEL_DIV && !valid_out_div) ||
-										  (wb_src_ID == SEL_FPU && !valid_out_fpu);
+										  (wb_src_ID == SEL_FPU && !valid_out_fpu)));
 
 	// wdata and byte enable computation
 	always_comb begin
@@ -209,29 +211,29 @@ module EX_stage
 	end
 
 	always_comb begin
-		if (trap_taken_ID) begin
-			trap_taken	= 1'b1;
-			trap_cause	= trap_caus_ID;
+		if (exc_pend_ID) begin
+			exc_pend	= 1'b1;
+			exc_cause	= exc_caus_ID;
 		end
 		
 		else if (maligned_inst_addr) begin
-			trap_taken	= 1'b1;
-			trap_cause	= CAUSE_MALIGNED_INST;
+			exc_pend	= 1'b1;
+			exc_cause	= CAUSE_MISALIGNED_INST;
 		end
 
 		else if (maligned_load_addr) begin
-			trap_taken	= 1'b1;
-			trap_cause	= CAUSE_MALIGNED_LOAD;
+			exc_pend	= 1'b1;
+			exc_cause	= CAUSE_MISALIGNED_LOAD;
 		end
 
 		else if (maligned_store_addr) begin
-			trap_taken	= 1'b1;
-			trap_cause	= CAUSE_MALIGNED_STORE;
+			exc_pend	= 1'b1;
+			exc_cause	= CAUSE_MISALIGNED_STORE;
 		end
 
 		else begin
-			trap_taken	= 1'b0;
-			trap_cause	= 32'h00000000;
+			exc_pend	= 1'b0;
+			exc_cause	= 32'h00000000;
 		end
 	end
 
@@ -306,8 +308,9 @@ module EX_stage
 			jump_taken_EX			<= 1'b0;
 			jump_mpred_EX			<= 1'b0;
 			jump_addr_EX			<= 32'h00000000;
-			trap_taken_EX			<= 1'b0;
-			trap_cause_EX			<= 32'h00000000;
+			trap_ret_EX				<= 1'b0;
+			exc_pend_EX				<= 1'b0;
+			exc_cause_EX			<= 32'h00000000;
 			dmem_axi_awaddr			<= 32'h00000000;
 			dmem_axi_awprot			<= 3'b000;
 			dmem_axi_awvalid_int	<= 1'b0;
@@ -324,12 +327,12 @@ module EX_stage
 			PC_EX					<= PC_ID;
 			IR_EX					<= IR_ID;
 			IM_EX					<= IM_ID;
-			rd_wena_EX				<= rd_wena_ID;
+			rd_wena_EX				<= rd_wena_ID && !exc_pend;
 			rd_addr_EX				<= rd_addr_ID;
 			rd_data_EX				<= 32'h00000000;
 			csr_addr_EX				<= csr_addr_ID;
 			csr_rena_EX				<= csr_rena_ID;
-			csr_wena_EX				<= csr_wena_ID;
+			csr_wena_EX				<= csr_wena_ID && !exc_pend;
 			csr_wdata_EX			<= csr_wdata;
 			wb_src_EX				<= wb_src_ID;
 			mem_op_EX				<= mem_op_ID;
@@ -339,8 +342,9 @@ module EX_stage
 			jump_taken_EX			<= jump_taken;
 			jump_mpred_EX			<= jump_mpred;
 			jump_addr_EX			<= jump_addr;
-			trap_taken_ID			<= trap_taken;
-			trap_cause_ID			<= trap_cause;
+			trap_ret_EX				<= trap_ret_ID;
+			exc_pend_EX				<= exc_pend;
+			exc_cause_EX			<= exc_cause;
 			dmem_axi_awaddr			<= 32'h00000000;
 			dmem_axi_awprot			<= 3'b000;
 			dmem_axi_awvalid_int	<= 1'b0;
@@ -352,7 +356,7 @@ module EX_stage
 			dmem_axi_arvalid_int	<= 1'b0;
 
 			case (wb_src_ID)
-			SEL_MEM:	begin
+			SEL_MEM:	if (!exc_pend) begin
 							// dmem read access (load)
 							if (rd_wena_ID) begin
 								dmem_axi_araddr			<= alu_out;
@@ -397,8 +401,9 @@ module EX_stage
 			jump_taken_EX			<= 1'b0;
 			jump_mpred_EX			<= 1'b0;
 			jump_addr_EX			<= 32'h00000000;
-			trap_taken_EX			<= 1'b0;
-			trap_cause_EX			<= 32'h00000000;
+			trap_ret_EX				<= 1'b0;
+			exc_pend_EX				<= 1'b0;
+			exc_cause_EX			<= 32'h00000000;
 			dmem_axi_awaddr			<= 32'h00000000;
 			dmem_axi_awprot			<= 3'b000;
 			dmem_axi_awvalid		<= 1'b0;
