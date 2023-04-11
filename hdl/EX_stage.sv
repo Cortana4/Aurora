@@ -19,7 +19,7 @@ module EX_stage
 	input	logic			valid_in_fpu,
 	output	logic			ready_out_fpu,
 	
-	input	logic	[2:0]	frm,
+	input	logic	[2:0]	fpu_rm_csr,
 
 	input	logic	[31:0]	PC_ID,
 	input	logic	[31:0]	IR_ID,
@@ -487,7 +487,7 @@ module EX_stage
 		.ready_in(ready_in && !rd_after_ld_hazard),
 
 		.op(fpu_op_ID),
-		.rm(fpu_rm_ID == FPU_RM_DYN ? frm : fpu_rm_ID),
+		.rm(fpu_rm_ID == FPU_RM_DYN ? fpu_rm_csr : fpu_rm_ID),
 
 		.a(a),
 		.b(b),

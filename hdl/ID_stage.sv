@@ -18,9 +18,9 @@ module ID_stage
 	output	logic			valid_out_fpu,
 	input	logic			ready_in_fpu,
 	
-	input	logic			M_ena,
-	input	logic			F_ena,
-	input	logic	[31:0]	trap_raddr,
+	input	logic			M_ena_csr,
+	input	logic			F_ena_csr,
+	input	logic	[31:0]	trap_raddr_csr,
 	
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IR_IF,
@@ -288,8 +288,8 @@ module ID_stage
 	(
 		.IR_IF(IR_IF),
 		
-		.M_ena(M_ena),
-		.F_ena(F_ena),
+		.M_ena(M_ena_csr),
+		.F_ena(F_ena_csr),
 		
 		.immediate(immediate),
 		.rs1_rena(rs1_rena),
@@ -334,6 +334,8 @@ module ID_stage
 		.jump_ena_IF(jump_ena),
 		.jump_alw_IF(jump_alw),
 		.jump_ind_IF(jump_ind),
+		.trap_ret_IF(trap_ret),
+		.trap_raddr_IF(trap_raddr_csr),
 		.jump_pred_IF(jump_pred_IF),
 		.jump_addr_IF(jump_addr_IF),
 

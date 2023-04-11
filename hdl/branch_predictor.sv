@@ -11,8 +11,6 @@ module branch_predictor
 
 	input	logic			valid_in,
 	input	logic			ready_in,
-	
-	input	logic	[31:0]	trap_raddr,
 
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IM_IF,

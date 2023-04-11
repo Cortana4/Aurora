@@ -25,7 +25,6 @@ module MEM_stage
 	input	logic	[2:0]	mem_op_EX,
 	input	logic	[1:0]	csr_op_EX,
 	input	logic	[4:0]	fpu_flags_EX,
-	input	logic	[31:0]	jump_addr_EX,
 	input	logic			trap_ret_EX,
 	input	logic			exc_pend_EX,
 	input	logic	[31:0]	exc_cause_EX,
@@ -52,7 +51,6 @@ module MEM_stage
 	output	logic	[2:0]	wb_src_MEM,
 	output	logic	[1:0]	csr_op_MEM,
 	output	logic	[4:0]	fpu_flags_MEM,
-	output	logic	[31:0]	jump_addr_MEM,
 	output	logic			trap_ret_MEM,
 	output	logic			exc_pend_MEM,
 	output	logic	[31:0]	exc_cause_MEM
@@ -91,7 +89,6 @@ module MEM_stage
 			wb_src_MEM			<= 3'd0;
 			csr_op_MEM			<= 2'd0;
 			fpu_flags_MEM		<= 5'b00000;
-			jump_addr_MEM		<= 32'h00000000;
 			trap_ret_MEM		<= 1'b0;
 			exc_pend_MEM		<= 1'b0;
 			exc_cause_MEM		<= 32'h00000000;
@@ -112,7 +109,6 @@ module MEM_stage
 			wb_src_MEM			<= wb_src_EX;
 			csr_op_MEM			<= csr_op_EX;
 			fpu_flags_MEM		<= fpu_flags_EX;
-			jump_addr_MEM		<= jump_addr_EX;
 			trap_ret_MEM		<= trap_ret_EX;
 			exc_pend_MEM		<= exc_pend_EX;
 			exc_cause_MEM		<= exc_cause_EX;
@@ -160,7 +156,6 @@ module MEM_stage
 			wb_src_MEM			<= 3'd0;
 			csr_op_MEM			<= 2'd0;
 			fpu_flags_MEM		<= 5'b00000;
-			jump_addr_MEM		<= 32'h00000000;
 			trap_ret_MEM		<= 1'b0;
 			exc_pend_MEM		<= 1'b0;
 			exc_cause_MEM		<= 32'h00000000;

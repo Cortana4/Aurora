@@ -14,9 +14,10 @@ module csr_file
 	output	logic	[31:0]	csr_rdata,
 	
 	input	logic			valid_in,
-
+	
+	input	logic	[31:0]	PC_int,
 	input	logic	[31:0]	PC,
-	input	logic	[31:0]	PC_next,
+	
 	input	logic			rd_wena,
 	input	logic	[5:0]	rd_addr,
 	
@@ -36,15 +37,13 @@ module csr_file
 	input	logic	[15:0]	irq_ext,
 	input	logic			irq_int_controller,
 	input	logic			irq_timer,
+	input	logic			irq_software,
 	
 	// trap signals
 	output	logic			trap_taken,
 	output	logic	[31:0]	trap_addr,
 	input	logic			trap_ret,
-	output	logic	[31:0]	trap_raddr,
-	
-	
-	
+	output	logic	[31:0]	trap_raddr
 );
 	
 	// machine level csr's
@@ -145,6 +144,7 @@ module csr_file
 	logic	[15:0]	MCIP;		assign	MCIP		= irq_ext;
 	logic			MEIP;		assign	MEIP		= irq_int_controller;
 	logic			MTIP;		assign	MTIP		= irq_timer;
+	logic			MSIP;		assign	MSIP		= irq_software;
 	assign			mip =
 					{					// bits		description
 						MCIP,			// 31-16	custom use
@@ -157,7 +157,7 @@ module csr_file
 						1'b0,			// 6		reserved
 						1'b0,			// 5		STIP	(S-mode timer interrupt pending)
 						1'b0,			// 4		reserved
-						1'b0,			// 3		MSIP	(M-mode software interrupt pending)
+						MSIP,			// 3		MSIP	(M-mode software interrupt pending)
 						1'b0,			// 2		reserved
 						1'b0,			// 1		SSIP	(S-mode software interrupt pending)
 						1'b0			// 0		reserved
@@ -167,21 +167,22 @@ module csr_file
 	logic	[15:0]	MCIE;
 	logic			MEIE;
 	logic			MTIE;
+	logic			MSIE
 	assign			mie =
 					{					// bits		description
 						MCIE,			// 31-16	custom use
 						4'h0,			// 15-12	reserved
-						MEIE,			// 11		MEIP	(M-mode extern interrupt enable)
+						MEIE,			// 11		MEIE	(M-mode extern interrupt enable)
 						1'b0,			// 10		reserved
-						1'b0,			// 9		SEIP	(S-mode extern interrupt enable)
+						1'b0,			// 9		SEIE	(S-mode extern interrupt enable)
 						1'b0,			// 8		reserved
-						MTIE,			// 7		MTIP	(M-mode timer interrupt enable)
+						MTIE,			// 7		MTIE	(M-mode timer interrupt enable)
 						1'b0,			// 6		reserved
-						1'b0,			// 5		STIP	(S-mode timer interrupt enable)
+						1'b0,			// 5		STIE	(S-mode timer interrupt enable)
 						1'b0,			// 4		reserved
-						1'b0,			// 3		MSIP	(M-mode software interrupt enable)
+						MSIE,			// 3		MSIE	(M-mode software interrupt enable)
 						1'b0,			// 2		reserved
-						1'b0,			// 1		SSIP	(S-mode software interrupt enable)
+						1'b0,			// 1		SSIE	(S-mode software interrupt enable)
 						1'b0			// 0		reserved
 					};
 	
@@ -225,7 +226,6 @@ module csr_file
 	logic			int_taken;
 	logic	[4:0]	int_cause;
 	logic	[31:0]	trap_cause;
-	logic	[31:0]	trap_raddr;
 	
 	assign			illegal_inst	= (csr_wena && &csr_addr[11:10]) || illegal_csr;
 	assign			int_taken		= MIE && |(mie & mip);
@@ -256,7 +256,7 @@ module csr_file
 			trap_taken		= 1'b1;
 			trap_addr		= {base, 2'b00};
 			trap_cause		= 32'h80000000 | int_cause;
-			trap_raddr_int	= PC_next;
+			trap_raddr_int	= PC_int;
 
 			if (mode == 2'b01)
 				trap_addr	= {base, 2'b00} + (trap_cause << 2);
@@ -306,7 +306,7 @@ module csr_file
 			if (!CY)
 				mcycle		<= mcycle + 32'd1;
 				
-			if (!IR && inst_ret)
+			if (!IR && valid_in)
 				minstret	<= minstret + 32'd1;
 			
 			if (F_ena && rd_wena && rd_addr[5]) begin

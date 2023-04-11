@@ -2,6 +2,12 @@ module pipeline
 (
 	input	logic			clk,
 	input	logic			reset,
+	
+// interrupt request signals
+	input	logic	[15:0]	irq_ext,
+	input	logic			irq_int_controller,
+	input	logic			irq_timer,
+	input	logic			irq_software,
 
 // imem port
 	// write address channel
@@ -61,8 +67,8 @@ module pipeline
 	logic			ready_in_IF;
 	logic	[31:0]	PC_IF;
 	logic	[31:0]	IR_IF;
-	logic			trap_taken_IF;
-	logic	[31:0]	trap_cause_IF;
+	logic			exc_pend_IF;
+	logic	[31:0]	exc_cause_IF;
 	logic			jump_pred_IF;
 	logic	[31:0]	jump_addr_IF;
 
@@ -106,8 +112,9 @@ module pipeline
 	logic			jump_ind_ID;
 	logic			jump_alw_ID;
 	logic			jump_pred_ID;
-	logic			trap_taken_ID;
-	logic	[31:0]	trap_cause_ID;
+	logic			trap_ret_ID;
+	logic			exc_pend_ID;
+	logic	[31:0]	exc_cause_ID;
 
 	// EX signals / EX/mem pipeline registers
 	logic			valid_out_EX;
@@ -131,10 +138,12 @@ module pipeline
 	logic			jump_taken_EX;
 	logic			jump_mpred_EX;
 	logic	[31:0]	jump_addr_EX;
-	logic			trap_taken_EX;
-	logic	[31:0]	trap_cause_EX;
+	logic			trap_ret_EX;
+	logic			exc_pend_EX;
+	logic	[31:0]	exc_cause_EX;
 	
 	// MEM signals / MEM/WB pipeline registers
+	logic			valid_out_MEM;
 	logic	[31:0]	PC_MEM;
 	logic	[31:0]	IR_MEM;
 	logic	[31:0]	IM_MEM;
@@ -145,10 +154,71 @@ module pipeline
 	logic			csr_rena_MEM;
 	logic			csr_wena_MEM;
 	logic	[31:0]	csr_wdata_MEM;
+	logic	[2:0]	wb_src_MEM;	
 	logic	[1:0]	csr_op_MEM;
 	logic	[4:0]	fpu_flags_MEM;
-	logic			trap_taken_MEM;
-	logic	[31:0]	trap_cause_MEM;
+	logic			trap_ret_MEM;
+	logic			exc_pend_MEM;
+	logic	[31:0]	exc_cause_MEM;
+	
+	// csr signals
+	logic	[31:0]	
+	logic			M_ena_csr;
+	logic			F_ena_csr;
+	logic	[2:0]	fpu_rm_csr;
+	logic			trap_taken_csr;
+	logic	[31:0]	trap_addr_csr;
+	logic	[31:0]	trap_raddr_csr;
+	
+	csr_file csr_file_inst
+	(
+		.clk(clk),
+		.reset(reset),
+
+		.op(csr_op_MEM),
+
+		.csr_addr(csr_addr_MEM),
+		.csr_wena(csr_wena_MEM),
+		.csr_wdata(csr_wdata_MEM),
+		.csr_rena(csr_rena_MEM),
+		.csr_rdata(),
+
+		.valid_in(valid_out_MEM),
+
+		.PC_int(),
+		.PC(PC_MEM),
+
+		.rd_wena(rd_wena_MEM),
+		.rd_addr(rd_addr_MEM),
+
+		.M_ena(M_ena_csr),
+		.F_ena(F_ena_csr),
+
+		.fpu_flags(fpu_flags_MEM),
+		.fpu_rm(fpu_rm_csr),
+
+		.exc_pend(exc_pend_MEM),
+		.exc_cause(exc_cause_MEM),
+
+		.irq_ext(irq_ext),
+		.irq_int_controller(irq_int_controller),
+		.irq_timer(irq_timer),
+		.irq_software(irq_software),
+
+		.trap_taken(trap_taken_csr),
+		.trap_addr(trap_addr_csr),
+		.trap_ret(trap_ret_MEM),
+		.trap_raddr(trap_raddr_csr)
+	);
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	// imem is read only
 	assign			imem_axi_awaddr		= 32'h00000000;
@@ -165,7 +235,6 @@ module pipeline
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(jump_mpred_EX),
 
 		.valid_out(valid_out_IF),
 		.ready_in(ready_in_IF),
@@ -184,14 +253,15 @@ module pipeline
 
 		.PC_IF(PC_IF),
 		.IR_IF(IR_IF),
-		.imem_axi_rresp_IF(imem_axi_rresp_IF)
+		.exc_pend_IF(exc_pend_IF),
+		.exc_cause_IF(exc_cause_IF)
 	);
 	
 	ID_stage ID_stage_inst
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(jump_mpred_EX),
+		.flush(),
 
 		.valid_in(valid_out_IF),
 		.ready_out(ready_in_IF),
@@ -205,13 +275,14 @@ module pipeline
 		.valid_out_fpu(valid_out_fpu_ID),
 		.ready_in_fpu(ready_in_fpu_ID),
 		
-		.M_ena(),
-		.F_ena(),
+		.M_ena_csr(),
+		.F_ena_csr(),
+		.trap_raddr_csr(),
 
 		.PC_IF(PC_IF),
 		.IR_IF(IR_IF),
-		.trap_taken_IF(trap_taken_IF),
-		.trap_cause_IF(trap_cause_IF),
+		.exc_pend_IF(exc_pend_IF),
+		.exc_cause_IF(exc_cause_IF),
 		
 		.jump_pred_IF(jump_pred_IF),
 		.jump_addr_IF(jump_addr_IF),
@@ -247,8 +318,9 @@ module pipeline
 		.jump_ind_ID(jump_ind_ID),
 		.jump_alw_ID(jump_alw_ID),
 		.jump_pred_ID(jump_pred_ID),
-		.trap_taken_ID(trap_taken_ID),
-		.trap_cause_ID(trap_cause_ID),
+		.trap_ret_ID(trap_ret_ID)
+		.exc_pend_ID(exc_pend_ID),
+		.exc_cause_ID(exc_cause_ID),
 		
 		.PC_EX(PC_EX),
 		.jump_ena_EX(jump_ena_EX),
@@ -278,7 +350,7 @@ module pipeline
 		.valid_in_fpu(valid_out_fpu_ID),
 		.ready_out_fpu(ready_in_fpu_ID),
 		
-		.frm(),
+		.fpu_rm_csr(),
 
 		.PC_ID(PC_ID),
 		.IR_ID(IR_ID),
@@ -311,8 +383,8 @@ module pipeline
 		.jump_ind_ID(jump_ind_ID),
 		.jump_alw_ID(jump_alw_ID),
 		.jump_pred_ID(jump_pred_ID),
-		.trap_taken_ID(trap_taken_ID),
-		.trap_cause_ID(trap_cause_ID),
+		.exc_pend_ID(exc_pend_ID),
+		.exc_cause_ID(exc_cause_ID),
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),
@@ -333,8 +405,8 @@ module pipeline
 		.jump_taken_EX(jump_taken_EX),
 		.jump_mpred_EX(jump_mpred_EX),
 		.jump_addr_EX(jump_addr_EX),
-		.trap_taken_EX(trap_taken_EX),
-		.trap_cause_EX(trap_cause_EX),
+		.exc_pend_EX(exc_pend_EX),
+		.exc_cause_EX(exc_cause_EX),
 		
 		.dmem_axi_awaddr(dmem_axi_awaddr),
 		.dmem_axi_awprot(dmem_axi_awprot),
@@ -358,11 +430,11 @@ module pipeline
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(1'b0),
+		.flush(),
 		
 		.valid_in(valid_out_EX),
 		.ready_out(ready_in_EX),
-		.valid_out(),
+		.valid_out(valid_out_MEM),
 		.ready_in(1'b1),
 
 		.PC_EX(PC_EX),
@@ -379,8 +451,9 @@ module pipeline
 		.mem_op_EX(mem_op_EX),
 		.csr_op_EX(csr_op_EX),
 		.fpu_flags_EX(fpu_flags_EX),
-		.trap_taken_EX(trap_taken_EX),
-		.trap_cause_EX(trap_cause_EX),
+		.trap_ret_EX(trap_ret_EX),
+		.exc_pend_EX(exc_pend_EX),
+		.exc_cause_EX(exc_cause_EX),
 		
 		.dmem_axi_bresp(dmem_axi_bresp),
 		.dmem_axi_bvalid(dmem_axi_bvalid),
@@ -401,10 +474,12 @@ module pipeline
 		.csr_rena_MEM(csr_rena_MEM),
 		.csr_wena_MEM(csr_wena_MEM),
 		.csr_wdata_MEM(csr_wdata_MEM),
+		.wb_src_MEM(wb_src_MEM),
 		.csr_op_MEM(csr_op_MEM),
 		.fpu_flags_MEM(fpu_flags_MEM),
-		.trap_taken_MEM(trap_taken_MEM),
-		.trap_cause_MEM(trap_cause_MEM)
+		.trap_ret_MEM(trap_ret_MEM),
+		.exc_pend_MEM(exc_pend_MEM),
+		.exc_cause_MEM(exc_cause_MEM)
 	);
 	
 
