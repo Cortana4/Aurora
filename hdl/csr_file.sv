@@ -5,6 +5,11 @@ module csr_file
 	input	logic			clk,
 	input	logic			reset,
 	
+	input	logic			valid_in,
+	output	logic			ready_out,
+	output	logic			valid_out,
+	input	logic			ready_in,
+	
 	input	logic	[1:0]	op,
 	
 	input	logic	[11:0]	csr_addr,
@@ -13,7 +18,7 @@ module csr_file
 	input	logic			csr_rena,
 	output	logic	[31:0]	csr_rdata,
 	
-	input	logic			valid_in,
+	
 	
 	input	logic	[31:0]	PC_int,
 	input	logic	[31:0]	PC,
@@ -40,6 +45,8 @@ module csr_file
 	input	logic			irq_software,
 	
 	// trap signals
+	output	logic			int_taken,
+	output	logic			exc_taken,
 	output	logic			trap_taken,
 	output	logic	[31:0]	trap_addr,
 	input	logic			trap_ret,
@@ -132,7 +139,7 @@ module csr_file
 					};
 	
 	logic	[31:0]	mtvec;
-	logic	[31:2]	base;
+	logic	[29:0]	base;
 	logic	[1:0]	mode;
 	assign			mtvec =				// trap vector base address
 					{					// bits		description
@@ -223,14 +230,13 @@ module csr_file
 	
 	logic			illegal_inst;
 
-	logic			int_taken;
 	logic	[4:0]	int_cause;
 	logic	[31:0]	trap_cause;
 	
-	assign			illegal_inst	= (csr_wena && &csr_addr[11:10]) || illegal_csr;
-	assign			int_taken		= MIE && |(mie & mip);
-	
-	
+	assign			illegal_inst	= (csr_wena && &csr_addr[11:10]) ||			// write read only
+									  ((csr_wena || csr_rena) && illegal_csr);	// read/write non-existent
+
+
 	priority_encoder #(5) priority_encoder_inst
 	(
 		.x(mip),
@@ -238,21 +244,31 @@ module csr_file
 	);
 
 	always_comb begin
-		if (exc_pend) begin
+		int_taken		= 1'b0;
+		exc_taken		= 1'b0;
+		trap_taken		= 1'b0;
+		trap_addr		= 32'h00000000;
+		trap_cause		= 32'h00000000;
+		trap_raddr_int	= 32'h00000000;
+			
+		if (valid_in && exc_pend) begin
+			exc_taken		= 1'b1;
 			trap_taken		= 1'b1;
 			trap_addr		= {base, 2'b00};
 			trap_cause		= exc_cause;
 			trap_raddr_int	= PC;
 		end
 		
-		else if (illegal_inst) begin
+		else if (valid_in && illegal_inst) begin
+			exc_taken		= 1'b1;
 			trap_taken		= 1'b1;
 			trap_addr		= {base, 2'b00};
 			trap_cause		= CAUSE_ILLEGAL_INST;
 			trap_raddr_int	= PC;
 		end
 		
-		else if (int_taken) begin
+		else if (MIE && |(mie & mip)) begin
+			int_taken		= 1'b1;
 			trap_taken		= 1'b1;
 			trap_addr		= {base, 2'b00};
 			trap_cause		= 32'h80000000 | int_cause;
@@ -260,13 +276,6 @@ module csr_file
 
 			if (mode == 2'b01)
 				trap_addr	= {base, 2'b00} + (trap_cause << 2);
-		end
-		
-		else begin
-			trap_taken		= 1'b0;
-			trap_addr		= 32'h00000000;
-			trap_cause		= 32'h00000000;
-			trap_raddr_int	= 32'h00000000;
 		end
 	end
 
@@ -285,11 +294,12 @@ module csr_file
 			FS			<= 2'd1;		// mstatus
 			MPIE		<= 1'b0;
 			MIE			<= 1'b0;
-			base		<= ;			// mtvec
-			mode		<= ;
-			MCIE		<= ;			// mie
-			MEIE		<= ;
-			MTIE		<= ;
+			base		<= 30'h00000000;// mtvec
+			mode		<= 2'd0;
+			MCIE		<= 16'h0000;	// mie
+			MEIE		<= 1'b0;
+			MTIE		<= 1'b0;
+			MSIE		<= 1'b0;
 			mcycle		<= 64'd0;
 			minstret	<= 64'd0;
 			IR			<= 1'b1;		// mcountinhibit
@@ -305,82 +315,93 @@ module csr_file
 		else begin
 			if (!CY)
 				mcycle		<= mcycle + 32'd1;
+
+			if (ready_out) begin
+				if (trap_taken) begin
+					MPIE		<= MIE;
+					MIE			<= 1'b0;
+					mepc		<= trap_raddr_int;
+				end
 				
-			if (!IR && valid_in)
-				minstret	<= minstret + 32'd1;
+				if (valid_in && !exc_taken) begin
+					if (!IR)
+						minstret	<= minstret + 32'd1;
+					
+					if (F_ena && rd_wena && rd_addr[5]) begin
+						fflags		<= fflags | fpu_flags;
+						FS			<= 2'd2;
+					end
+					
+					if (trap_ret) begin
+						MIE			<= MPIE;
+						MPIE		<= 1'b1;
+					end
+					
+					if (csr_wena) begin
+						case (csr_addr)
+						CSR_ADDR_MISA:			begin
+													M_ena	<= csr_wdata_int[12];
+													
+													if (csr_wdata_int[5]) begin
+														F_ena	<= 1'b1;
+														FS		<= 2'd1;
+													end
+													
+													else begin
+														F_ena	<= 1'b0;
+														FS		<= 2'd0;
+													end
+												end
+						CSR_ADDR_MSTATUS:		begin
+													FS		<= F_ena ? csr_wdata_int[14:13] : 2'd0;
+													MPIE	<= csr_wdata_int[7];
+													MIE		<= csr_wdata_int[3];
+												end
+						CSR_ADDR_MSTATUSH:		;
+						CSR_ADDR_MTVEC:			begin
+													base	<= csr_wdata_int[31:2];
+													mode	<= {1'b0, csr_wdata_int[1:0] == 2'd1};
+												end
+						CSR_ADDR_MIP:			;
+						CSR_ADDR_MIE:			begin
+													MCIE	<= csr_wdata_int[13:16];
+													MEIE	<= csr_wdata_int[11];
+													MTIE	<= csr_wdata_int[7];
+													MSIE	<= csr_wdata_int[3];
+												end
+						CSR_ADDR_MCYCLE:		mcycle		<= {mcycle[63:32], csr_wdata_int};
+						CSR_ADDR_MCYCLEH:		mcycle		<= {csr_wdata_int, mcycle[31:0]};
+						CSR_ADDR_MINSTRET:		minstret	<= {minstret[63:32], csr_wdata_int};
+						CSR_ADDR_MINSTRETH:		minstret	<= {csr_wdata_int, minstret[31:0]};
+						CSR_ADDR_MCOUNTINHIBIT:	begin
+													IR		<= csr_wdata_int[2];
+													CY		<= csr_wdata_int[0];
+												end
+						CSR_ADDR_MSCRATCH:		mscratch	<= csr_wdata_int;
+						CSR_ADDR_MEPC:			mepc		<= csr_wdata_int;
+						CSR_ADDR_MCAUSE:		mcause		<= csr_wdata_int;
+						CSR_ADDR_MTVAL:			mtval		<= csr_wdata_int;
+						CSR_ADDR_FFLAGS:		if (F_ena) begin
+													fflags	<= csr_wdata_int[4:0];
+												end
+						CSR_ADDR_FRM:			if (F_ena) begin
+													frm		<= csr_wdata_int[2:0];
+												end
+						CSR_ADDR_FCSR			if (F_ena) begin
+													frm		<= csr_wdata_int[7:5];
+													fflags	<= csr_wdata_int[4:0];
+												end
+						endcase
+					end
+				end
+
 			
-			if (F_ena && rd_wena && rd_addr[5]) begin
-				fflags		<= fflags | fpu_flags;
-				FS			<= 2'd2;
-			end
 			
-			if (trap_taken) begin
-				MPIE		<= MIE;
-				MIE			<= 1'b0;
-				mepc		<= trap_raddr_int;
-			end
-			
-			if (trap_ret) begin
-				MIE			<= MPIE;
-				MPIE		<= 1'b1;
-			end
 			
 		end
 		
 		else if (csr_wena) begin
-			case (csr_addr)
-			CSR_ADDR_MISA:			begin
-										M_ena	<= csr_wdata_int[12];
-										
-										if (csr_wdata_int[5]) begin
-											F_ena	<= 1'b1;
-											FS		<= 2'd1;
-										end
-										
-										else begin
-											F_ena	<= 1'b0;
-											FS		<= 2'd0;
-										end
-									end
-			CSR_ADDR_MSTATUS:		begin
-										FS		<= F_ena ? csr_wdata_int[14:13] : 2'd0;
-										MPIE	<= csr_wdata_int[7];
-										MIE		<= csr_wdata_int[3];
-									end
-			CSR_ADDR_MSTATUS:		;
-			CSR_ADDR_MTVEC:			begin
-										base	<= csr_wdata_int[31:2];
-										mode	<= csr_wdata_int[1:0];
-									end
-			CSR_ADDR_MIP:			;
-			CSR_ADDR_MIE:			begin
-										MCIE	<= csr_wdata_int[13:16];
-										MEIE	<= csr_wdata_int[11];
-										MTIE	<= csr_wdata_int[7];
-									end
-			CSR_ADDR_MCYCLE:		mcycle		<= {mcycle[63:32], csr_wdata_int};
-			CSR_ADDR_MCYCLEH:		mcycle		<= {csr_wdata_int, mcycle[31:0]};
-			CSR_ADDR_MINSTRET:		minstret	<= {minstret[63:32], csr_wdata_int};
-			CSR_ADDR_MINSTRETH:		minstret	<= {csr_wdata_int, minstret[31:0]};
-			CSR_ADDR_MCOUNTINHIBIT:	begin
-										IR		<= csr_wdata_int[2];
-										CY		<= csr_wdata_int[0];
-									end
-			CSR_ADDR_MSCRATCH:		mscratch	<= csr_wdata_int;
-			CSR_ADDR_MEPC:			mepc		<= csr_wdata_int;
-			CSR_ADDR_MCAUSE:		mcause		<= csr_wdata_int;
-			CSR_ADDR_MTVAL:			mtval		<= csr_wdata_int;
-			CSR_ADDR_FFLAGS:		if (F_ena) begin
-										fflags	<= csr_wdata_int[4:0];
-									end
-			CSR_ADDR_FRM:			if (F_ena) begin
-										frm		<= csr_wdata_int[2:0];
-									end
-			CSR_ADDR_FCSR			if (F_ena) begin
-										frm		<= csr_wdata_int[7:5];
-										fflags	<= csr_wdata_int[4:0];
-									end
-			endcase
+			
 		end
 	end
 
@@ -389,6 +410,7 @@ module csr_file
 		illegal_csr	= 1'b0;
 		
 		case (csr_addr)
+		CSR_ADDR_MISA:			csr_rdata	= misa;
 		CSR_ADDR_MVENDORID:		csr_rdata	= mvendorid;
 		CSR_ADDR_MARCHID:		csr_rdata	= marchid;
 		CSR_ADDR_MIMPID:		csr_rdata	= mimpid;

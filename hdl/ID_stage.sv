@@ -70,9 +70,9 @@ module ID_stage
 	input	logic			jump_alw_EX,
 	input	logic			jump_taken_EX,
 	
-	input	logic			rd_wena_MEM,
-	input	logic	[5:0]	rd_addr_MEM,
-	input	logic	[31:0]	rd_data_MEM
+	input	logic			rd_wena_WB,
+	input	logic	[5:0]	rd_addr_WB,
+	input	logic	[31:0]	rd_data_WB
 );
 	
 	logic	[31:0]	immediate;
@@ -349,9 +349,9 @@ module ID_stage
 	(
 		.clk(clk),
 
-		.rd_wena(rd_wena_MEM),
-		.rd_addr(rd_addr_MEM),
-		.rd_data(rd_data_MEM),
+		.rd_wena(rd_wena_WB),
+		.rd_addr(rd_addr_WB),
+		.rd_data(rd_data_WB),
 
 		.rs1_rena(rs1_rena),
 		.rs1_addr(rs1_addr),

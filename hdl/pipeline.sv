@@ -144,6 +144,7 @@ module pipeline
 	
 	// MEM signals / MEM/WB pipeline registers
 	logic			valid_out_MEM;
+	logic			ready_in_MEM;
 	logic	[31:0]	PC_MEM;
 	logic	[31:0]	IR_MEM;
 	logic	[31:0]	IM_MEM;
@@ -161,6 +162,11 @@ module pipeline
 	logic			exc_pend_MEM;
 	logic	[31:0]	exc_cause_MEM;
 	
+	// WB signals
+	logic			rd_wena_WB;
+	logic	[5:0]	rd_addr_WB;
+	logic	[31:0]	rd_data_WB;
+	
 	// csr signals
 	logic	[31:0]	
 	logic			M_ena_csr;
@@ -169,57 +175,7 @@ module pipeline
 	logic			trap_taken_csr;
 	logic	[31:0]	trap_addr_csr;
 	logic	[31:0]	trap_raddr_csr;
-	
-	csr_file csr_file_inst
-	(
-		.clk(clk),
-		.reset(reset),
 
-		.op(csr_op_MEM),
-
-		.csr_addr(csr_addr_MEM),
-		.csr_wena(csr_wena_MEM),
-		.csr_wdata(csr_wdata_MEM),
-		.csr_rena(csr_rena_MEM),
-		.csr_rdata(),
-
-		.valid_in(valid_out_MEM),
-
-		.PC_int(),
-		.PC(PC_MEM),
-
-		.rd_wena(rd_wena_MEM),
-		.rd_addr(rd_addr_MEM),
-
-		.M_ena(M_ena_csr),
-		.F_ena(F_ena_csr),
-
-		.fpu_flags(fpu_flags_MEM),
-		.fpu_rm(fpu_rm_csr),
-
-		.exc_pend(exc_pend_MEM),
-		.exc_cause(exc_cause_MEM),
-
-		.irq_ext(irq_ext),
-		.irq_int_controller(irq_int_controller),
-		.irq_timer(irq_timer),
-		.irq_software(irq_software),
-
-		.trap_taken(trap_taken_csr),
-		.trap_addr(trap_addr_csr),
-		.trap_ret(trap_ret_MEM),
-		.trap_raddr(trap_raddr_csr)
-	);
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	// imem is read only
 	assign			imem_axi_awaddr		= 32'h00000000;
 	assign			imem_axi_awprot		= 3'b110;
@@ -230,6 +186,34 @@ module pipeline
 	assign			imem_axi_wvalid		= 1'b0;
 
 	assign			imem_axi_bready		= 1'b0;
+	
+	always_comb begin
+		if (trap_taken_csr) begin
+			jump_taken	= 1'b1;
+			jump_addr	= trap_addr_csr;
+			
+			// flush EX, ID, (IF)
+		end
+		
+		else if (jump_mpred_EX) begin
+			jump_taken	= 1'b1;
+			jump_addr	= jump_addr_EX;
+			
+			// flush ID, (IF)
+		end
+		
+		else (jump_pred_IF) begin
+			jump_taken	= 1'b1;
+			jump_addr	= jump_addr_IF;
+			
+			// flush (IF)
+		end
+		
+		else begin
+			jump_taken	= 1'b0;
+			jump_addr	= 32'h00000000;
+		end
+	end
 
 	IF_stage IF_stage_inst
 	(
@@ -275,9 +259,9 @@ module pipeline
 		.valid_out_fpu(valid_out_fpu_ID),
 		.ready_in_fpu(ready_in_fpu_ID),
 		
-		.M_ena_csr(),
-		.F_ena_csr(),
-		.trap_raddr_csr(),
+		.M_ena_csr(M_ena_csr),
+		.F_ena_csr(F_ena_csr),
+		.trap_raddr_csr(trap_raddr_csr),
 
 		.PC_IF(PC_IF),
 		.IR_IF(IR_IF),
@@ -327,9 +311,9 @@ module pipeline
 		.jump_alw_EX(jump_alw_EX),
 		.jump_taken_EX(jump_taken_EX),
 		
-		.rd_wena_MEM(rd_wena_MEM),
-		.rd_addr_MEM(rd_addr_MEM),
-		.rd_data_MEM(rd_data_MEM)
+		.rd_wena_WB(rd_wena_WB),
+		.rd_addr_WB(rd_addr_WB),
+		.rd_data_WB(rd_data_WB)
 	);
 	
 	EX_stage EX_stage_inst
@@ -350,7 +334,7 @@ module pipeline
 		.valid_in_fpu(valid_out_fpu_ID),
 		.ready_out_fpu(ready_in_fpu_ID),
 		
-		.fpu_rm_csr(),
+		.fpu_rm_csr(fpu_rm_csr),
 
 		.PC_ID(PC_ID),
 		.IR_ID(IR_ID),
@@ -435,7 +419,7 @@ module pipeline
 		.valid_in(valid_out_EX),
 		.ready_out(ready_in_EX),
 		.valid_out(valid_out_MEM),
-		.ready_in(1'b1),
+		.ready_in(ready_in_MEM),
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),
@@ -480,6 +464,51 @@ module pipeline
 		.trap_ret_MEM(trap_ret_MEM),
 		.exc_pend_MEM(exc_pend_MEM),
 		.exc_cause_MEM(exc_cause_MEM)
+	);
+	
+	WB_stage WB_stage_inst
+	(
+		.clk(clk),
+		.reset(reset),
+
+		.valid_in(valid_out_MEM),
+		.ready_out(ready_in_MEM),
+		.valid_out(),
+		.ready_in(),
+
+		.irq_ext(irq_ext),
+		.irq_int_controller(irq_int_controller),
+		.irq_timer(irq_timer),
+		.irq_software(irq_software),
+
+		.M_ena_csr(M_ena_csr),
+		.F_ena_csr(F_ena_csr),
+		.fpu_rm_csr(fpu_rm_csr),
+		.exc_taken(exc_taken),
+		.trap_taken_csr(trap_taken_csr),
+		.trap_addr_csr(trap_addr_csr),
+		.trap_raddr_csr(trap_raddr_csr),
+
+		.PC_MEM(PC_MEM),
+		.IR_MEM(IR_MEM),
+		.IM_MEM(IM_MEM),
+		.rd_wena_MEM(rd_wena_MEM),
+		.rd_addr_MEM(rd_addr_MEM),
+		.rd_data_MEM(rd_data_MEM),
+		.csr_addr_MEM(csr_addr_MEM),
+		.csr_rena_MEM(csr_rena_MEM),
+		.csr_wena_MEM(csr_wena_MEM),
+		.csr_wdata_MEM(csr_wdata_MEM),
+		.wb_src_MEM(wb_src_MEM),
+		.csr_op_MEM(csr_op_MEM),
+		.fpu_flags_MEM(fpu_flags_MEM),
+		.trap_ret_MEM(trap_ret_MEM),
+		.exc_pend_MEM(exc_pend_MEM),
+		.exc_cause_MEM(exc_cause_MEM),
+
+		.rd_wena_WB(rd_wena_WB),
+		.rd_addr_WB(rd_addr_WB),
+		.rd_data_WB(rd_data_WB)
 	);
 	
 
