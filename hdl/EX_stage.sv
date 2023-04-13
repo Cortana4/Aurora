@@ -213,7 +213,7 @@ module EX_stage
 	always_comb begin
 		if (exc_pend_ID) begin
 			exc_pend	= 1'b1;
-			exc_cause	= exc_caus_ID;
+			exc_cause	= exc_cause_ID;
 		end
 		
 		else if (maligned_inst_addr) begin
@@ -406,13 +406,13 @@ module EX_stage
 			exc_cause_EX			<= 32'h00000000;
 			dmem_axi_awaddr			<= 32'h00000000;
 			dmem_axi_awprot			<= 3'b000;
-			dmem_axi_awvalid		<= 1'b0;
+			dmem_axi_awvalid_int	<= 1'b0;
 			dmem_axi_wdata			<= 32'h00000000;
 			dmem_axi_wstrb			<= 4'b0000;
-			dmem_axi_wvalid			<= 1'b0;
+			dmem_axi_wvalid_int		<= 1'b0;
 			dmem_axi_araddr			<= 32'h00000000;
 			dmem_axi_arprot			<= 3'b000;
-			dmem_axi_arvalid		<= 1'b0;
+			dmem_axi_arvalid_int	<= 1'b0;
 		end
 
 		else begin

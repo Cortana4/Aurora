@@ -178,6 +178,11 @@ module pipeline_tb();
 		.clk(clk),
 		.reset(reset),
 		
+		.irq_ext(16'h0000),
+		.irq_int_controller(1'b0),
+		.irq_timer(1'b0),
+		.irq_software(1'b0),
+		
 		.imem_axi_awaddr(imem_axi_awaddr),
 		.imem_axi_awprot(imem_axi_awprot),
 		.imem_axi_awvalid(imem_axi_awvalid),

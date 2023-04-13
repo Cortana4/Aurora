@@ -113,7 +113,7 @@ module MEM_stage
 			if (wb_src_EX == SEL_MEM && !exc_pend_EX) begin
 				// dmem read access (load)
 				if (rd_wena_EX) begin
-					if (|imem_axi_rresp) begin
+					if (|dmem_axi_rresp) begin
 						rd_wena_MEM		<= 1'b0;
 						csr_wena_MEM	<= 1'b0;
 						exc_pend_MEM	<= 1'b1;
@@ -129,7 +129,7 @@ module MEM_stage
 					endcase
 				end
 				// dmem write access (store)
-				else if (|imem_axi_bresp) begin
+				else if (|dmem_axi_bresp) begin
 					rd_wena_MEM		<= 1'b0;
 					csr_wena_MEM	<= 1'b0;
 					exc_pend_MEM	<= 1'b1;

@@ -6,8 +6,6 @@ module csr_file
 	input	logic			reset,
 	
 	input	logic			valid_in,
-	output	logic			ready_out,
-	output	logic			valid_out,
 	input	logic			ready_in,
 	
 	input	logic	[1:0]	op,
@@ -17,20 +15,16 @@ module csr_file
 	input	logic	[31:0]	csr_wdata,
 	input	logic			csr_rena,
 	output	logic	[31:0]	csr_rdata,
-	
-	
-	
+
 	input	logic	[31:0]	PC_int,
-	input	logic	[31:0]	PC,
-	
-	input	logic			rd_wena,
-	input	logic	[5:0]	rd_addr,
+	input	logic	[31:0]	PC_last,
 	
 	// extension enable signals
 	output	logic			M_ena,
 	output	logic			F_ena,
 	
 	// fpu signals
+	input	logic			fpu_dirty,
 	input	logic	[4:0]	fpu_flags,
 	output	logic	[2:0]	fpu_rm,
 	
@@ -174,7 +168,7 @@ module csr_file
 	logic	[15:0]	MCIE;
 	logic			MEIE;
 	logic			MTIE;
-	logic			MSIE
+	logic			MSIE;
 	assign			mie =
 					{					// bits		description
 						MCIE,			// 31-16	custom use
@@ -229,9 +223,11 @@ module csr_file
 	logic	[31:0]	csr_wdata_int;
 	
 	logic			illegal_inst;
+	logic			illegal_csr;
 
 	logic	[4:0]	int_cause;
 	logic	[31:0]	trap_cause;
+	logic	[31:0]	trap_raddr_int;
 	
 	assign			illegal_inst	= (csr_wena && &csr_addr[11:10]) ||			// write read only
 									  ((csr_wena || csr_rena) && illegal_csr);	// read/write non-existent
@@ -256,7 +252,7 @@ module csr_file
 			trap_taken		= 1'b1;
 			trap_addr		= {base, 2'b00};
 			trap_cause		= exc_cause;
-			trap_raddr_int	= PC;
+			trap_raddr_int	= PC_last;
 		end
 		
 		else if (valid_in && illegal_inst) begin
@@ -264,7 +260,7 @@ module csr_file
 			trap_taken		= 1'b1;
 			trap_addr		= {base, 2'b00};
 			trap_cause		= CAUSE_ILLEGAL_INST;
-			trap_raddr_int	= PC;
+			trap_raddr_int	= PC_last;
 		end
 		
 		else if (MIE && |(mie & mip)) begin
@@ -316,7 +312,7 @@ module csr_file
 			if (!CY)
 				mcycle		<= mcycle + 32'd1;
 
-			if (ready_out) begin
+			if (ready_in) begin
 				if (trap_taken) begin
 					MPIE		<= MIE;
 					MIE			<= 1'b0;
@@ -327,7 +323,7 @@ module csr_file
 					if (!IR)
 						minstret	<= minstret + 32'd1;
 					
-					if (F_ena && rd_wena && rd_addr[5]) begin
+					if (F_ena && fpu_dirty) begin
 						fflags		<= fflags | fpu_flags;
 						FS			<= 2'd2;
 					end
@@ -356,7 +352,7 @@ module csr_file
 												end
 						CSR_ADDR_MIP:			;
 						CSR_ADDR_MIE:			begin
-													MCIE	<= csr_wdata_int[13:16];
+													MCIE	<= csr_wdata_int[31:16];
 													MEIE	<= csr_wdata_int[11];
 													MTIE	<= csr_wdata_int[7];
 													MSIE	<= csr_wdata_int[3];
@@ -375,17 +371,21 @@ module csr_file
 						CSR_ADDR_MTVAL:			mtval		<= csr_wdata_int;
 						CSR_ADDR_FFLAGS:		if (F_ena) begin
 													fflags	<= csr_wdata_int[4:0];
+													FS		<= 2'd2;
 												end
 						CSR_ADDR_FRM:			if (F_ena) begin
 													frm		<= csr_wdata_int[2:0];
+													FS		<= 2'd2;
 												end
-						CSR_ADDR_FCSR			if (F_ena) begin
+						CSR_ADDR_FCSR:			if (F_ena) begin
 													frm		<= csr_wdata_int[7:5];
 													fflags	<= csr_wdata_int[4:0];
+													FS		<= 2'd2;
 												end
 						endcase
 					end
 				end
+			end
 		end
 	end
 

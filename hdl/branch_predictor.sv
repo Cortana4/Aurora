@@ -11,6 +11,8 @@ module branch_predictor
 
 	input	logic			valid_in,
 	input	logic			ready_in,
+	
+	input	logic	[31:0]	trap_raddr_csr,
 
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IM_IF,
@@ -18,10 +20,8 @@ module branch_predictor
 	input	logic			jump_alw_IF,
 	input	logic			jump_ind_IF,
 	input	logic			trap_ret_IF,
-	input	logic	[31:0]	trap_raddr_IF,
 	output	logic			jump_pred_IF,
 	output	logic	[31:0]	jump_addr_IF,
-	
 
 	input	logic	[31:0]	PC_EX,
 	input	logic			jump_ena_EX,
@@ -39,12 +39,12 @@ module branch_predictor
 	assign			rPtr			= GBH ^ PC_IF[n+1:2];
 
 	// direct jumps (jump_alw):
-	// JAL is always "predicted" taken
-	// JALR is always "predicted" not taken, because the jump
-	// address is not known until the instruction reaches EX stage
-	// MRET is also always "predicted" taken
+	// JAL	is always "predicted" taken
+	// JALR	is always "predicted" not taken, because the jump
+	// 		address is not known until the instruction reaches EX stage
+	// MRET	is also always "predicted" taken
 
-	assign			jump_addr_IF	= trap_ret_IF ? trap_raddr : PC_IF + IM_IF;
+	assign			jump_addr_IF	= trap_ret_IF ? trap_raddr_csr : PC_IF + IM_IF;
 	assign			jump_pred_IF	= valid_in && jump_ena_IF && !jump_ind_IF &&
 									  (PHT[rPtr] >= 2**(n-2) || jump_alw_IF);
 

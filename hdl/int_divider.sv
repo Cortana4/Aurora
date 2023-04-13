@@ -60,16 +60,16 @@ module int_divider
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_reg	<= 1'b0;
-			prev_a		<= 0;
-			prev_b		<= 0;
-			reg_op		<= 2'b00;
-			reg_b		<= 0;
-			reg_res		<= 0;
-			reg_rem		<= 0;
-			reg_sgn		<= 1'b0;
-			counter		<= 0;
-			state		<= IDLE;
+			valid_out_int	<= 1'b0;
+			prev_a			<= 0;
+			prev_b			<= 0;
+			reg_op			<= 2'b00;
+			reg_b			<= 0;
+			reg_res			<= 0;
+			reg_rem			<= 0;
+			reg_sgn			<= 1'b0;
+			counter			<= 0;
+			state			<= IDLE;
 		end
 
 		else if (valid_in && ready_out) begin

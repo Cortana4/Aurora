@@ -30,7 +30,7 @@ module float_comparator_seq
 	logic	equal;
 	logic	less;
 	
-	logic	valid_reg;
+	logic	valid_out_int;
 
 	assign	int_out		= {31'h00000000, y};
 	

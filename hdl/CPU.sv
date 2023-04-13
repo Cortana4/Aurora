@@ -4,6 +4,12 @@ module CPU
 (
 	input	logic			clk,
 	input	logic			reset,
+	
+// interrupt request signals
+	input	logic	[15:0]	irq_ext,
+	input	logic			irq_int_controller,
+	input	logic			irq_timer,
+	input	logic			irq_software,
 
 // imem port
 	// write address channel
@@ -102,6 +108,11 @@ module CPU
 	(
 		.clk(clk),
 		.reset(reset),
+		
+		.irq_ext(irq_ext),
+		.irq_int_controller(irq_int_controller),
+		.irq_timer(irq_timer),
+		.irq_software(irq_software),
 
 		.imem_axi_awaddr(imem_axi_awaddr),
 		.imem_axi_awprot(imem_axi_awprot),

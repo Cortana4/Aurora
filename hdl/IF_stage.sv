@@ -4,7 +4,6 @@ module IF_stage
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	output	logic			valid_out,
 	input	logic			ready_in,
@@ -17,16 +16,22 @@ module IF_stage
 	input	logic	[1:0]	imem_axi_rresp,
 	input	logic			imem_axi_rvalid,
 	output	logic			imem_axi_rready,
-
-	input	logic			jump_taken,
-	input	logic	[31:0]	jump_addr,
+	
+	input	logic			trap_taken_csr,
+	input	logic	[31:0]	trap_addr_csr,
 	
 	output	logic	[31:0]	PC_int,
 
 	output	logic	[31:0]	PC_IF,
 	output	logic	[31:0]	IR_IF,
 	output	logic			exc_pend_IF,
-	output	logic	[31:0]	exc_cause_IF
+	output	logic	[31:0]	exc_cause_IF,
+	
+	input	logic			jump_pred_IF,
+	input	logic	[31:0]	jump_addr_IF,
+	
+	input	logic			jump_mpred_EX,
+	input	logic	[31:0]	jump_addr_EX
 );
 
 	logic			start_cycle;
@@ -37,10 +42,14 @@ module IF_stage
 	
 	logic			imem_addr_buf_wena;
 	logic			imem_addr_buf_rena;
-	logic			imem_addr_buf_rdata;
+	logic	[31:0]	imem_addr_buf_rdata;
 	logic			imem_addr_buf_valid;
+	
+	logic			jump_taken;
+	logic	[31:0]	jump_addr;
 
 	logic			valid_out_int;
+	logic			flush;
 	
 	assign			imem_addr_buf_wena	= imem_axi_arvalid && imem_axi_arready;
 	assign			imem_addr_buf_rena	= imem_axi_rvalid  && imem_axi_rready;
@@ -50,7 +59,8 @@ module IF_stage
 	assign			imem_axi_arvalid	= PC_valid;
 	assign			imem_axi_rready		= ready_in;
 
-	assign			valid_out			= valid_out_int && !jump_taken;
+	assign			valid_out			= valid_out_int && !flush;
+	assign			flush				= trap_taken_csr || jump_mpred_EX;
 
 	addr_buf
 	#(
@@ -72,7 +82,6 @@ module IF_stage
 		.empty(imem_addr_buf_empty),
 		.full()
 	);
-	
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin
@@ -122,7 +131,7 @@ module IF_stage
 
 	// IF/ID pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || jump_taken) begin
+		if (reset || flush) begin
 			valid_out_int	<= 1'b0;
 			PC_IF			<= 32'h00000000;
 			IR_IF			<= 32'h00000000;
@@ -158,6 +167,27 @@ module IF_stage
 			exc_cause_IF		<= 32'h00000000;
 		end
 	end
+	
+	always_comb begin
+		jump_taken	= 1'b0;
+		jump_addr	= 32'h00000000;
+			
+		if (trap_taken_csr) begin
+			jump_taken	= 1'b1;
+			jump_addr	= trap_addr_csr;
+		end
+		
+		else if (jump_mpred_EX) begin
+			jump_taken	= 1'b1;
+			jump_addr	= jump_addr_EX;
+		end
+		
+		else if (jump_pred_IF) begin
+			jump_taken	= 1'b1;
+			jump_addr	= jump_addr_IF;
+		end
+	end
+	
 	
 	assign PC_int = 32'h00000000;
 

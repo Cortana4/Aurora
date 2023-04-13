@@ -20,7 +20,7 @@ module sign_modifier
 );
 	
 	logic	sgn_a;
-	logic	valid_reg;
+	logic	valid_out_int;
 	
 	assign	sgn_a		= a[31];
 	

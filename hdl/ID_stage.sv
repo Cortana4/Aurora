@@ -70,9 +70,9 @@ module ID_stage
 	input	logic			jump_alw_EX,
 	input	logic			jump_taken_EX,
 	
-	input	logic			rd_wena_WB,
-	input	logic	[5:0]	rd_addr_WB,
-	input	logic	[31:0]	rd_data_WB
+	input	logic			rd_wena_to_WB,
+	input	logic	[5:0]	rd_addr_to_WB,
+	input	logic	[31:0]	rd_data_to_WB
 );
 	
 	logic	[31:0]	immediate;
@@ -328,6 +328,8 @@ module ID_stage
 		
 		.valid_in(valid_in),
 		.ready_in(ready_in),
+		
+		.trap_raddr_csr(trap_raddr_csr),
 
 		.PC_IF(PC_IF),
 		.IM_IF(immediate),
@@ -335,7 +337,6 @@ module ID_stage
 		.jump_alw_IF(jump_alw),
 		.jump_ind_IF(jump_ind),
 		.trap_ret_IF(trap_ret),
-		.trap_raddr_IF(trap_raddr_csr),
 		.jump_pred_IF(jump_pred_IF),
 		.jump_addr_IF(jump_addr_IF),
 
@@ -349,9 +350,9 @@ module ID_stage
 	(
 		.clk(clk),
 
-		.rd_wena(rd_wena_WB),
-		.rd_addr(rd_addr_WB),
-		.rd_data(rd_data_WB),
+		.rd_wena(rd_wena_to_WB),
+		.rd_addr(rd_addr_to_WB),
+		.rd_data(rd_data_to_WB),
 
 		.rs1_rena(rs1_rena),
 		.rs1_addr(rs1_addr),
