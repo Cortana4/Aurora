@@ -54,8 +54,6 @@ module ftoi_converter
 	logic			lower_limit_exc;
 	logic			upper_limit_exc;
 	logic			rounded_zero;
-	
-	logic			valid_out_int;
 
 	assign			lower_limit_exc	= inf_a && sgn_a;
 	assign			upper_limit_exc	= (inf_a && !sgn_a) || sNaN_a || qNaN_a;
@@ -69,8 +67,7 @@ module ftoi_converter
 	 * = 31 + bias - exp_biased
 	 * = 31 + 127 - exp_biased
 	 */
-	
-	assign			valid_out		= valid_out_int && !flush;
+
 	assign			ready_out		= ready_in && (op == FPU_OP_CVTFI || op == FPU_OP_CVTFU);
 
 	always_comb begin
@@ -89,7 +86,7 @@ module ftoi_converter
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
+			valid_out		<= 1'b0;
 			reg_rm			<= 3'b000;
 			reg_int			<= 32'h00000000;
 			reg_sgn			<= 1'b0;
@@ -102,7 +99,7 @@ module ftoi_converter
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int	<= 1'b1;
+			valid_out		<= 1'b1;
 			reg_rm			<= rm;
 			reg_int			<= shifter_out[32:1];
 			reg_sgn			<= sgn_a;
@@ -146,8 +143,8 @@ module ftoi_converter
 			end
 		end
 
-		else if (valid_out_int && ready_in) begin
-			valid_out_int	<= 1'b0;
+		else if (valid_out && ready_in) begin
+			valid_out		<= 1'b0;
 			reg_rm			<= 3'b000;
 			reg_int			<= 32'h00000000;
 			reg_sgn			<= 1'b0;

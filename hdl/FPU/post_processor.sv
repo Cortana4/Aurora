@@ -59,14 +59,11 @@ module post_processor
 	logic			RTZ;
 	logic			RDN;
 	logic			RUP;
-	
-	logic			valid_out_int;
 
 	assign			RTZ			= reg_rm == FPU_RM_RTZ;
 	assign			RDN			= reg_rm == FPU_RM_RDN;
 	assign			RUP			= reg_rm == FPU_RM_RUP;
 	
-	assign			valid_out	= valid_out_int && !flush;
 	assign			ready_out	= ready_in;
 
 	// input logic
@@ -148,7 +145,7 @@ module post_processor
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
+			valid_out		<= 1'b0;
 			reg_rm			<= 3'b000;
 			reg_man			<= 23'h000000;
 			reg_exp			<= 10'h000;
@@ -163,7 +160,7 @@ module post_processor
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int	<= 1'b1;
+			valid_out		<= 1'b1;
 			reg_rm			<= rm;
 			reg_man			<= shifter_out[23:1];
 			reg_exp			<= exp_biased;
@@ -189,8 +186,8 @@ module post_processor
 			end
 		end
 
-		else if (valid_out_int && ready_in) begin
-			valid_out_int	<= 1'b0;
+		else if (valid_out && ready_in) begin
+			valid_out		<= 1'b0;
 			reg_rm			<= 3'b000;
 			reg_man			<= 23'h000000;
 			reg_exp			<= 10'h000;

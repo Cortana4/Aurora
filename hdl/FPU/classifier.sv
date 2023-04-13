@@ -23,20 +23,17 @@ module classifier
 	output	logic	[31:0]	int_out
 );
 
-	logic	valid_out_int;
-	
-	assign	valid_out	= valid_out_int && !flush;
 	assign	ready_out	= ready_in && op == FPU_OP_CLASS;
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
-			int_out			<= 32'h00000000;
+			valid_out	<= 1'b0;
+			int_out		<= 32'h00000000;
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int	<= 1'b1;
-			int_out			<= 32'h00000000;
+			valid_out	<= 1'b1;
+			int_out		<= 32'h00000000;
 			
 			// 0.0
 			if (!sgn_a && zero_a)
@@ -70,9 +67,9 @@ module classifier
 				int_out		<= 32'h00000004;
 		end
 
-		else if (valid_out_int && ready_in) begin
-			valid_out_int	<= 1'b0;
-			int_out			<= 32'h00000000;
+		else if (valid_out && ready_in) begin
+			valid_out	<= 1'b0;
+			int_out		<= 32'h00000000;
 		end
 	end
 

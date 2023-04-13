@@ -29,25 +29,22 @@ module float_comparator_seq
 
 	logic	equal;
 	logic	less;
-	
-	logic	valid_out_int;
 
 	assign	int_out		= {31'h00000000, y};
 	
-	assign	valid_out	= valid_out_int && !flush;
 	assign	ready_out	= ready_in && (op == FPU_OP_SEQ || op == FPU_OP_SLE || op == FPU_OP_SLT);
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
-			y				<= 1'b0;
-			IV				<= 1'b0;
+			valid_out	<= 1'b0;
+			y			<= 1'b0;
+			IV			<= 1'b0;
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int	<= 1'b1;
-			y				<= 1'b0;
-			IV				<= 1'b0;
+			valid_out	<= 1'b1;
+			y			<= 1'b0;
+			IV			<= 1'b0;
 			
 			case (op)
 			FPU_OP_SEQ:	begin
@@ -65,10 +62,10 @@ module float_comparator_seq
 			endcase
 		end
 
-		else if (valid_out_int && ready_in) begin
-			valid_out_int	<= 1'b0;
-			y				<= 1'b0;
-			IV				<= 1'b0;
+		else if (valid_out && ready_in) begin
+			valid_out	<= 1'b0;
+			y			<= 1'b0;
+			IV			<= 1'b0;
 		end
 	end
 

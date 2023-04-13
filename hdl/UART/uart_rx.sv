@@ -16,8 +16,8 @@ module uart_rx
 	input	logic					data_bits,
 	input	logic	[23:0]			baud_reg,
 
-	input	logic					pop,
-	output	logic	[7:0]			data_out,
+	input	logic					rena,
+	output	logic	[7:0]			rdata,
 	output	logic	[ADDR_WIDTH:0]	size,
 	output	logic					empty,
 	output	logic					full,
@@ -35,18 +35,18 @@ module uart_rx
 	logic		[2:0]	bit_idx;
 	logic				abort;
 
-	logic				push;
-	logic		[7:0]	data;
+	logic				wena;
+	logic		[7:0]	wdata;
 
 	logic				noise_e_reg;
 	logic				parity_e_reg;
 
 	enum	logic		[2:0]			{IDLE, START, DATA, PARITY, STOP}	state;
 
-	assign				noise_error		= (noise_e_reg || !(samples == 3'b111 || samples == 3'b000)) && (push || abort);
-	assign				parity_error	= parity_e_reg && push;
-	assign				frame_error		= (!(&samples[2:1] || &samples[1:0] || (samples[2] && samples[0]))) && push;
-	assign				overflow_error	= full && !pop && push;
+	assign				noise_error		= (noise_e_reg || !(samples == 3'b111 || samples == 3'b000)) && (wena || abort);
+	assign				parity_error	= parity_e_reg && wena;
+	assign				frame_error		= (!(&samples[2:1] || &samples[1:0] || (samples[2] && samples[0]))) && wena;
+	assign				overflow_error	= full && !rena && wena;
 	// to prevent data loss, rts is set some bytes before the rx stack is full
 	assign				rts				= flow_ctrl ? size > (2**ADDR_WIDTH - 4) : 1'b0;
 
@@ -68,8 +68,8 @@ module uart_rx
 			samples			<= 3'b000;
 			bit_idx			<= 3'b000;
 			abort			<= 1'b0;
-			push			<= 1'b0;
-			data			<= 8'h00;
+			wena			<= 1'b0;
+			wdata			<= 8'h00;
 		end
 
 		else case (state)
@@ -81,7 +81,7 @@ module uart_rx
 							samples			<= 3'b000;
 							bit_idx			<= 3'b000;
 							abort			<= 1'b0;
-							data			<= 8'h00;
+							wdata			<= 8'h00;
 
 							if (!rx_stable[1])
 								state	<= START;
@@ -121,7 +121,7 @@ module uart_rx
 							// wait until data bit is finished
 							if (counter == baud_reg - 24'd1) begin
 								// shift in major value of all samples left (LSB is received first)
-								data		<= {&samples[2:1] || &samples[1:0] || (samples[2] && samples[0]), data[7:1]};
+								wdata		<= {&samples[2:1] || &samples[1:0] || (samples[2] && samples[0]), wdata[7:1]};
 								noise_e_reg	<= noise_e_reg || !(samples == 3'b111 || samples == 3'b000);
 								counter		<= 25'd0;
 
@@ -153,7 +153,7 @@ module uart_rx
 							if (counter == baud_reg - 24'd1) begin
 								noise_e_reg		<= noise_e_reg || !(samples == 3'b111 || samples == 3'b000);
 								// error if parity received != parity computed
-								parity_e_reg	<= (&samples[2:1] || &samples[1:0] || (samples[2] && samples[0])) != (^data);
+								parity_e_reg	<= (&samples[2:1] || &samples[1:0] || (samples[2] && samples[0])) != (^wdata);
 								counter			<= 25'd0;
 								state			<= STOP;
 							end
@@ -173,8 +173,8 @@ module uart_rx
 							end
 						end
 			STOP:		begin
-							if (push) begin
-								push	<= 1'b0;
+							if (wena) begin
+								wena	<= 1'b0;
 								counter	<= 25'd0;
 								state	<= IDLE;
 							end
@@ -183,8 +183,8 @@ module uart_rx
 								if ((!stop_bits	&& counter == baud_reg - 24'd2) ||
 									(stop_bits	&& counter == (baud_reg << 1) - 24'd2)) begin
 									// because LSB is received first, data has to be aligned
-									push		<= 1'b1;
-									data		<= data >> !data_bits;
+									wena		<= 1'b1;
+									wdata		<= wdata >> !data_bits;
 								end
 								// read 3 samples around the middle of the stop bit
 								// c_bit / 2 - c_bit / 16
@@ -212,19 +212,17 @@ module uart_rx
 		endcase
 	end
 
-	fifo_stack #(ADDR_WIDTH, 8) rx_fifo_stack
+	fifo_buf #(ADDR_WIDTH, 8) rx_fifo_buf
 	(
+		.clk(clk),
 		.reset(reset),
 		.clear(clear),
-		.clk(clk),
 
-		// write port
-		.push(push),
-		.data_in(data),
+		.wena(wena),
+		.wdata(wdata),
 
-		// read port
-		.pop(pop),
-		.data_out(data_out),
+		.rena(rena),
+		.rdata(rdata),
 
 		.size(size),
 		.empty(empty),

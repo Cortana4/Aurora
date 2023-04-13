@@ -1,3 +1,5 @@
+//`define USE_BRAM_SIM_MODEL
+
 module pipeline_tb();
 
 	logic			clk;
@@ -89,21 +91,17 @@ module pipeline_tb();
 		.s_axi_awprot(imem_axi_awprot),
 		.s_axi_awvalid(imem_axi_awvalid),
 		.s_axi_awready(imem_axi_awready),
-		
 		.s_axi_wdata(imem_axi_wdata),
 		.s_axi_wstrb(imem_axi_wstrb),
 		.s_axi_wvalid(imem_axi_wvalid),
 		.s_axi_wready(imem_axi_wready),
-		
 		.s_axi_bresp(imem_axi_bresp),
 		.s_axi_bvalid(imem_axi_bvalid),
 		.s_axi_bready(imem_axi_bready),
-		
 		.s_axi_araddr(imem_axi_araddr[15:0]),
 		.s_axi_arprot(imem_axi_arprot),
 		.s_axi_arvalid(imem_axi_arvalid),
 		.s_axi_arready(imem_axi_arready),
-		
 		.s_axi_rdata(imem_axi_rdata),
 		.s_axi_rresp(imem_axi_rresp),
 		.s_axi_rvalid(imem_axi_rvalid),
@@ -127,21 +125,17 @@ module pipeline_tb();
 		.s_axi_awprot(dmem_axi_awprot),
 		.s_axi_awvalid(dmem_axi_awvalid),
 		.s_axi_awready(dmem_axi_awready),
-		
 		.s_axi_wdata(dmem_axi_wdata),
 		.s_axi_wstrb(dmem_axi_wstrb),
 		.s_axi_wvalid(dmem_axi_wvalid),
 		.s_axi_wready(dmem_axi_wready),
-		
 		.s_axi_bresp(dmem_axi_bresp),
 		.s_axi_bvalid(dmem_axi_bvalid),
 		.s_axi_bready(dmem_axi_bready),
-		
 		.s_axi_araddr(dmem_axi_araddr[15:0]),
 		.s_axi_arprot(dmem_axi_arprot),
 		.s_axi_arvalid(dmem_axi_arvalid),
 		.s_axi_arready(dmem_axi_arready),
-		
 		.s_axi_rdata(dmem_axi_rdata),
 		.s_axi_rresp(dmem_axi_rresp),
 		.s_axi_rvalid(dmem_axi_rvalid),
@@ -155,7 +149,25 @@ module pipeline_tb();
 		.bram_wrdata_a(bram_wrdata_b),
 		.bram_rddata_a(bram_rddata_b)
 	);
-	
+
+`ifdef USE_BRAM_SIM_MODEL
+	bram_sim_model #(14) bram_sim_model_inst
+	(
+		.clk(clk),
+
+		.addra(bram_addr_a[15:2]),
+		.dina(bram_wrdata_a),
+		.douta(bram_rddata_a),
+		.ena(bram_en_a),
+		.wea(bram_we_a),
+
+		.addrb(bram_addr_b[15:2]),
+		.dinb(bram_wrdata_b),
+		.doutb(bram_rddata_b),
+		.enb(bram_en_b),
+		.web(bram_we_b),
+	);
+`else
 	RAM RAM_inst
 	(
 		.clka(bram_clk_a),
@@ -172,6 +184,7 @@ module pipeline_tb();
 		.enb(bram_en_b),
 		.web(bram_we_b)
 	);
+`endif
 	
 	pipeline aurora
 	(

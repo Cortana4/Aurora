@@ -26,7 +26,6 @@ module WB_stage
 
 	input	logic	[31:0]	PC_MEM,
 	input	logic	[31:0]	IR_MEM,
-	input	logic	[31:0]	IM_MEM,
 	input	logic			rd_wena_MEM,
 	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM,

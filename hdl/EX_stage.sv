@@ -58,7 +58,6 @@ module EX_stage
 
 	output	logic	[31:0]	PC_EX,
 	output	logic	[31:0]	IR_EX,
-	output	logic	[31:0]	IM_EX,
 	output	logic			rd_wena_EX,
 	output	logic	[5:0]	rd_addr_EX,
 	output	logic	[31:0]	rd_data_EX,
@@ -131,7 +130,7 @@ module EX_stage
 	logic			maligned_store_addr;
 
 	logic			exc_pend;
-	logic			exc_cause;
+	logic	[31:0]	exc_cause;
 	
 	logic			dmem_axi_awvalid_int;
 	logic	[31:0]	dmem_axi_wdata_int;
@@ -159,14 +158,14 @@ module EX_stage
 	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
 	assign			maligned_inst_addr	= jump_taken  && |jump_addr[1:0];
 	
-	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && valid_out;
-	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && valid_out;
-	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && valid_out;
+	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && valid_out && !exc_pend_EX;
+	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && valid_out && !exc_pend_EX;
+	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && valid_out && !exc_pend_EX;
 
 	assign			valid_out			= valid_out_int && !flush;
 	assign			ready_out			= ready_in && !stall;
-	assign			stall				= csr_wena_EX || csr_rena_EX ||
-										  (!exc_pend && (rd_after_ld_hazard ||
+	assign			stall				= csr_wena_EX || csr_rena_EX || 
+										  (!exc_pend_ID && (rd_after_ld_hazard ||
 										  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
 										  (wb_src_ID == SEL_DIV && !valid_out_div) ||
 										  (wb_src_ID == SEL_FPU && !valid_out_fpu)));
@@ -291,7 +290,6 @@ module EX_stage
 			valid_out_int			<= 1'b0;
 			PC_EX					<= 32'h00000000;
 			IR_EX					<= 32'h00000000;
-			IM_EX					<= 32'h00000000;
 			rd_wena_EX				<= 1'b0;
 			rd_addr_EX				<= 6'd0;
 			rd_data_EX				<= 32'h00000000;
@@ -326,7 +324,6 @@ module EX_stage
 			valid_out_int			<= 1'b1;
 			PC_EX					<= PC_ID;
 			IR_EX					<= IR_ID;
-			IM_EX					<= IM_ID;
 			rd_wena_EX				<= rd_wena_ID && !exc_pend;
 			rd_addr_EX				<= rd_addr_ID;
 			rd_data_EX				<= 32'h00000000;
@@ -336,6 +333,7 @@ module EX_stage
 			csr_wdata_EX			<= csr_wdata;
 			wb_src_EX				<= wb_src_ID;
 			mem_op_EX				<= mem_op_ID;
+			csr_op_EX				<= csr_op_ID;
 			fpu_flags_EX			<= fpu_flags;
 			jump_ena_EX				<= jump_ena_ID;
 			jump_alw_EX				<= jump_alw_ID;
@@ -356,7 +354,7 @@ module EX_stage
 			dmem_axi_arvalid_int	<= 1'b0;
 
 			case (wb_src_ID)
-			SEL_MEM:	if (!exc_pend) begin
+			SEL_MEM:	begin
 							// dmem read access (load)
 							if (rd_wena_ID) begin
 								dmem_axi_araddr			<= alu_out;
@@ -384,7 +382,6 @@ module EX_stage
 			valid_out_int			<= 1'b0;
 			PC_EX					<= 32'h00000000;
 			IR_EX					<= 32'h00000000;
-			IM_EX					<= 32'h00000000;
 			rd_wena_EX				<= 1'b0;
 			rd_addr_EX				<= 6'd0;
 			rd_data_EX				<= 32'h00000000;
@@ -443,7 +440,7 @@ module EX_stage
 		.reset(reset),
 		.flush(flush),
 		
-		.valid_in(valid_in_mul),
+		.valid_in(valid_in_mul && !exc_pend_ID),
 		.ready_out(ready_out_mul),
 		.valid_out(valid_out_mul),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -462,7 +459,7 @@ module EX_stage
 		.reset(reset),
 		.flush(flush),
 
-		.valid_in(valid_in_div),
+		.valid_in(valid_in_div && !exc_pend_ID),
 		.ready_out(ready_out_div),
 		.valid_out(valid_out_div),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -481,7 +478,7 @@ module EX_stage
 		.reset(reset),
 		.flush(flush),
 
-		.valid_in(valid_in_fpu),
+		.valid_in(valid_in_fpu && !exc_pend_ID),
 		.ready_out(ready_out_fpu),
 		.valid_out(valid_out_fpu),
 		.ready_in(ready_in && !rd_after_ld_hazard),

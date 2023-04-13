@@ -51,12 +51,10 @@ module float_multiplier
 
 	logic	[29:0]	acc;
 	
-	logic			valid_out_int;
 	logic			stall;
 
 	enum	logic	{IDLE, CALC} state;
 	
-	assign			valid_out	= valid_out_int && !flush;
 	assign			ready_out	= ready_in && !stall && op == FPU_OP_MUL;
 	assign			stall		= state != IDLE;
 	
@@ -80,87 +78,87 @@ module float_multiplier
 
 	always @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
-			reg_man_b		<= 24'h000000;
-			reg_res			<= 48'h000000000000;
-			reg_exp_y		<= 10'h000;
-			reg_sgn_y		<= 1'b0;
-			skip_round		<= 1'b0;
-			IV				<= 1'b0;
-			rm_out			<= 3'b000;
-			counter			<= 2'd0;
-			state			<= IDLE;
+			valid_out	<= 1'b0;
+			reg_man_b	<= 24'h000000;
+			reg_res		<= 48'h000000000000;
+			reg_exp_y	<= 10'h000;
+			reg_sgn_y	<= 1'b0;
+			skip_round	<= 1'b0;
+			IV			<= 1'b0;
+			rm_out		<= 3'b000;
+			counter		<= 2'd0;
+			state		<= IDLE;
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int	<= 1'b0;
-			reg_man_b		<= man_b;
-			reg_res			<= {24'h000000, man_a};
-			reg_exp_y		<= exp_a + exp_b;
-			reg_sgn_y		<= sgn_a ^ sgn_b;
-			skip_round		<= 1'b0;
-			IV				<= 1'b0;
-			rm_out			<= rm;
-			counter			<= 2'd0;
-			state			<= CALC;
+			valid_out	<= 1'b0;
+			reg_man_b	<= man_b;
+			reg_res		<= {24'h000000, man_a};
+			reg_exp_y	<= exp_a + exp_b;
+			reg_sgn_y	<= sgn_a ^ sgn_b;
+			skip_round	<= 1'b0;
+			IV			<= 1'b0;
+			rm_out		<= rm;
+			counter		<= 2'd0;
+			state		<= CALC;
 
 			// NaN
 			if (sNaN_a || sNaN_b || qNaN_a || qNaN_b ||
 				(zero_a && inf_b) || (inf_a && zero_b)) begin
-				valid_out_int	<= 1'b1;
-				reg_man_b		<= 24'h000000;
-				reg_res			<= {24'hc00000, 24'h000000};
-				reg_exp_y		<= 10'h0ff;
-				reg_sgn_y		<= 1'b0;
-				skip_round		<= 1'b1;
-				IV				<= ~(qNaN_a || qNaN_b);
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_man_b	<= 24'h000000;
+				reg_res		<= {24'hc00000, 24'h000000};
+				reg_exp_y	<= 10'h0ff;
+				reg_sgn_y	<= 1'b0;
+				skip_round	<= 1'b1;
+				IV			<= ~(qNaN_a || qNaN_b);
+				state		<= IDLE;
 			end
 			// inf
 			else if (inf_a || inf_b) begin
-				valid_out_int	<= 1'b1;
-				reg_man_b		<= 24'h000000;
-				reg_res			<= {24'h800000, 24'h000000};
-				reg_exp_y		<= 10'h0ff;
-				reg_sgn_y		<= sgn_a ^ sgn_b;
-				skip_round		<= 1'b1;
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_man_b	<= 24'h000000;
+				reg_res		<= {24'h800000, 24'h000000};
+				reg_exp_y	<= 10'h0ff;
+				reg_sgn_y	<= sgn_a ^ sgn_b;
+				skip_round	<= 1'b1;
+				state		<= IDLE;
 			end
 			// zero
 			else if (zero_a || zero_b) begin
-				valid_out_int	<= 1'b1;
-				reg_man_b		<= 24'h000000;
-				reg_res			<= {24'h000000, 24'h000000};
-				reg_exp_y		<= 10'h000;
-				reg_sgn_y		<= sgn_a ^ sgn_b;
-				skip_round		<= 1'b1;
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_man_b	<= 24'h000000;
+				reg_res		<= {24'h000000, 24'h000000};
+				reg_exp_y	<= 10'h000;
+				reg_sgn_y	<= sgn_a ^ sgn_b;
+				skip_round	<= 1'b1;
+				state		<= IDLE;
 			end
 		end
 
 		else case (state)
-			IDLE:	if (valid_out_int && ready_in) begin
-						valid_out_int	<= 1'b0;
-						reg_man_b		<= 24'h000000;
-						reg_res			<= 48'h000000000000;
-						reg_exp_y		<= 10'h000;
-						reg_sgn_y		<= 1'b0;
-						skip_round		<= 1'b0;
-						IV				<= 1'b0;
-						rm_out			<= 3'b000;
-						counter			<= 2'd0;
+			IDLE:	if (valid_out && ready_in) begin
+						valid_out	<= 1'b0;
+						reg_man_b	<= 24'h000000;
+						reg_res		<= 48'h000000000000;
+						reg_exp_y	<= 10'h000;
+						reg_sgn_y	<= 1'b0;
+						skip_round	<= 1'b0;
+						IV			<= 1'b0;
+						rm_out		<= 3'b000;
+						counter		<= 2'd0;
 					end
 
 			CALC:	begin
 						reg_res		<= {acc, reg_res[23:6]};
 
 						if (counter == 2'd3) begin
-							valid_out_int	<= 1'b1;
-							state			<= IDLE;
+							valid_out	<= 1'b1;
+							state		<= IDLE;
 						end
 
 						else
-							counter			<= counter + 2'd1;
+							counter		<= counter + 2'd1;
 					end
 		endcase
 	end

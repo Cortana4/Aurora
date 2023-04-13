@@ -12,7 +12,6 @@ module MEM_stage
 
 	input	logic	[31:0]	PC_EX,
 	input	logic	[31:0]	IR_EX,
-	input	logic	[31:0]	IM_EX,
 	input	logic			rd_wena_EX,
 	input	logic	[5:0]	rd_addr_EX,
 	input	logic	[31:0]	rd_data_EX,
@@ -39,7 +38,6 @@ module MEM_stage
 
 	output	logic	[31:0]	PC_MEM,
 	output	logic	[31:0]	IR_MEM,
-	output	logic	[31:0]	IM_MEM,
 	output	logic			rd_wena_MEM,
 	output	logic	[5:0]	rd_addr_MEM,
 	output	logic	[31:0]	rd_data_MEM,
@@ -75,7 +73,6 @@ module MEM_stage
 			valid_out		<= 1'b0;
 			PC_MEM			<= 32'h00000000;
 			IR_MEM			<= 32'h00000000;
-			IM_MEM			<= 32'h00000000;
 			rd_wena_MEM		<= 1'b0;
 			rd_addr_MEM		<= 6'd0;
 			rd_data_MEM		<= 32'h00000000;
@@ -95,7 +92,6 @@ module MEM_stage
 			valid_out		<= 1'b1;
 			PC_MEM			<= PC_EX;
 			IR_MEM			<= IR_EX;
-			IM_MEM			<= IM_EX;
 			rd_wena_MEM		<= rd_wena_EX;
 			rd_addr_MEM		<= rd_addr_EX;
 			rd_data_MEM		<= rd_data_EX;
@@ -114,8 +110,6 @@ module MEM_stage
 				// dmem read access (load)
 				if (rd_wena_EX) begin
 					if (|dmem_axi_rresp) begin
-						rd_wena_MEM		<= 1'b0;
-						csr_wena_MEM	<= 1'b0;
 						exc_pend_MEM	<= 1'b1;
 						exc_cause_MEM	<= CAUSE_DMEM_BUS_ERROR;
 					end
@@ -130,8 +124,6 @@ module MEM_stage
 				end
 				// dmem write access (store)
 				else if (|dmem_axi_bresp) begin
-					rd_wena_MEM		<= 1'b0;
-					csr_wena_MEM	<= 1'b0;
 					exc_pend_MEM	<= 1'b1;
 					exc_cause_MEM	<= CAUSE_DMEM_BUS_ERROR;
 				end
@@ -142,7 +134,6 @@ module MEM_stage
 			valid_out		<= 1'b0;
 			PC_MEM			<= 32'h00000000;
 			IR_MEM			<= 32'h00000000;
-			IM_MEM			<= 32'h00000000;
 			rd_wena_MEM		<= 1'b0;
 			rd_addr_MEM		<= 6'd0;
 			rd_data_MEM		<= 32'h00000000;

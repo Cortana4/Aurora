@@ -88,7 +88,7 @@ module csr_file
 						7'h00			// 6-0		offset
 					};
 	
-	logic	[31:0]	marchid;	assign	archid		= 32'h00000000;
+	logic	[31:0]	marchid;	assign	marchid		= 32'h00000000;
 	logic	[31:0]	mimpid;		assign	mimpid		= 32'h00000000;
 	logic	[31:0]	mhartid;	assign	mhartid		= 32'h00000000;
 	
@@ -317,6 +317,7 @@ module csr_file
 					MPIE		<= MIE;
 					MIE			<= 1'b0;
 					mepc		<= trap_raddr_int;
+					mcause		<= trap_cause;
 				end
 				
 				if (valid_in && !exc_taken) begin

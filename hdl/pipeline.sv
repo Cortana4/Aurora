@@ -123,7 +123,6 @@ module pipeline
 	logic			ready_in_EX;
 	logic	[31:0]	PC_EX;
 	logic	[31:0]	IR_EX;
-	logic	[31:0]	IM_EX;
 	logic			rd_wena_EX;
 	logic	[5:0]	rd_addr_EX;
 	logic	[31:0]	rd_data_EX;
@@ -149,7 +148,6 @@ module pipeline
 	logic			ready_in_MEM;
 	logic	[31:0]	PC_MEM;
 	logic	[31:0]	IR_MEM;
-	logic	[31:0]	IM_MEM;
 	logic			rd_wena_MEM;
 	logic	[5:0]	rd_addr_MEM;
 	logic	[31:0]	rd_data_MEM;
@@ -362,7 +360,6 @@ module pipeline
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),
-		.IM_EX(IM_EX),
 		.rd_wena_EX(rd_wena_EX),
 		.rd_addr_EX(rd_addr_EX),
 		.rd_data_EX(rd_data_EX),
@@ -413,7 +410,6 @@ module pipeline
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),
-		.IM_EX(IM_EX),
 		.rd_wena_EX(rd_wena_EX),
 		.rd_addr_EX(rd_addr_EX),
 		.rd_data_EX(rd_data_EX),
@@ -440,7 +436,6 @@ module pipeline
 
 		.PC_MEM(PC_MEM),
 		.IR_MEM(IR_MEM),
-		.IM_MEM(IM_MEM),
 		.rd_wena_MEM(rd_wena_MEM),
 		.rd_addr_MEM(rd_addr_MEM),
 		.rd_data_MEM(rd_data_MEM),
@@ -482,7 +477,6 @@ module pipeline
 
 		.PC_MEM(PC_MEM),
 		.IR_MEM(IR_MEM),
-		.IM_MEM(IM_MEM),
 		.rd_wena_MEM(rd_wena_MEM),
 		.rd_addr_MEM(rd_addr_MEM),
 		.rd_data_MEM(rd_data_MEM),

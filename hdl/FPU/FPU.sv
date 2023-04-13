@@ -41,7 +41,7 @@ module FPU
 	
 	logic			stall;
 
-	assign			valid_out	= valid_out_core && !wb_ena && !flush;
+	assign			valid_out	= valid_out_core && !wb_ena;
 	assign			ready_out	= ready_in && !stall;
 	assign			stall		= reg_op != FPU_OP_NOP && !valid_out;
 	

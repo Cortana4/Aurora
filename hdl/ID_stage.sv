@@ -192,9 +192,9 @@ module ID_stage
 		
 		else if (valid_in && ready_out) begin
 			valid_out_int		<= 1'b1;
-			valid_out_mul_int	<= wb_src == SEL_MUL && !exc_pend;
-			valid_out_div_int	<= wb_src == SEL_DIV && !exc_pend;
-			valid_out_fpu_int	<= wb_src == SEL_FPU && !exc_pend;
+			valid_out_mul_int	<= wb_src == SEL_MUL;
+			valid_out_div_int	<= wb_src == SEL_DIV;
+			valid_out_fpu_int	<= wb_src == SEL_FPU;
 			PC_ID				<= PC_IF;
 			IR_ID				<= IR_IF;
 			IM_ID				<= immediate;
@@ -207,11 +207,11 @@ module ID_stage
 			rs3_rena_ID			<= rs3_rena;
 			rs3_addr_ID			<= rs3_addr;
 			rs3_data_ID			<= rs3_data;
-			rd_wena_ID			<= rd_wena && !exc_pend;
+			rd_wena_ID			<= rd_wena;
 			rd_addr_ID			<= rd_addr;
 			csr_addr_ID			<= csr_addr;
 			csr_rena_ID			<= csr_rena;
-			csr_wena_ID			<= csr_wena && !exc_pend;
+			csr_wena_ID			<= csr_wena;
 			sel_PC_ID			<= sel_PC;
 			sel_IM_ID			<= sel_IM;
 			wb_src_ID			<= wb_src;
@@ -308,7 +308,7 @@ module ID_stage
 		.wb_src(wb_src),
 		.alu_op(alu_op),
 		.mem_op(mem_op),
-		.csr_op(),
+		.csr_op(csr_op),
 		.mul_op(mul_op),
 		.div_op(div_op),
 		.fpu_op(fpu_op),

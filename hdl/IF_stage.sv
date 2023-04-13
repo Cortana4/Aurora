@@ -139,23 +139,21 @@ module IF_stage
 			exc_cause_IF	<= 32'h00000000;
 		end
 
-		else if (imem_axi_rvalid && imem_axi_rready) begin
-			if (imem_addr_buf_valid) begin
-				if (|imem_axi_rresp) begin
-					valid_out_int	<= 1'b1;
-					PC_IF			<= imem_addr_buf_rdata;
-					IR_IF			<= RV32I_NOP;
-					exc_pend_IF		<= 1'b1;
-					exc_cause_IF	<= CAUSE_IMEM_BUS_ERROR;
-				end
+		else if (imem_addr_buf_rena && imem_addr_buf_valid) begin
+			if (|imem_axi_rresp) begin
+				valid_out_int	<= 1'b1;
+				PC_IF			<= imem_addr_buf_rdata;
+				IR_IF			<= RV32I_NOP;
+				exc_pend_IF		<= 1'b1;
+				exc_cause_IF	<= CAUSE_IMEM_BUS_ERROR;
+			end
 
-				else begin
-					valid_out_int	<= 1'b1;
-					PC_IF			<= imem_addr_buf_rdata;
-					IR_IF			<= imem_axi_rdata;
-					exc_pend_IF		<= 1'b0;
-					exc_cause_IF	<= 32'h00000000;
-				end
+			else begin
+				valid_out_int	<= 1'b1;
+				PC_IF			<= imem_addr_buf_rdata;
+				IR_IF			<= imem_axi_rdata;
+				exc_pend_IF		<= 1'b0;
+				exc_cause_IF	<= 32'h00000000;
 			end
 		end
 

@@ -53,7 +53,6 @@ module float_divider
 
 	logic			IV_int;
 	
-	logic			valid_out_int;
 	logic			stall;
 
 	logic	[26:0]	acc [2:0];
@@ -63,7 +62,6 @@ module float_divider
 
 	assign			IV_int		= sNaN_a || sNaN_b || (zero_a && zero_b) || (inf_a && inf_b);
 	
-	assign			valid_out	= valid_out_int && !flush;
 	assign			ready_out	= ready_in && !stall && op == FPU_OP_DIV;
 	assign			stall		= state != IDLE;
 	
@@ -87,84 +85,84 @@ module float_divider
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
-			reg_man_b		<= 24'h000000;
-			reg_res			<= {24'hc00000, 2'b00};
-			reg_rem			<= 27'h0000000;
-			reg_exp_y		<= 10'h000;
-			reg_sgn_y		<= 1'b0;
-			skip_round		<= 1'b0;
-			IV				<= 1'b0;
-			DZ				<= 1'b0;
-			rm_out			<= 3'b000;
-			counter			<= 4'd0;
-			state			<= IDLE;
+			valid_out	<= 1'b0;
+			reg_man_b	<= 24'h000000;
+			reg_res		<= {24'hc00000, 2'b00};
+			reg_rem		<= 27'h0000000;
+			reg_exp_y	<= 10'h000;
+			reg_sgn_y	<= 1'b0;
+			skip_round	<= 1'b0;
+			IV			<= 1'b0;
+			DZ			<= 1'b0;
+			rm_out		<= 3'b000;
+			counter		<= 4'd0;
+			state		<= IDLE;
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int	<= 1'b0;
-			reg_man_b		<= man_b;
-			reg_res			<= 26'd0;
-			reg_rem			<= {1'b0, man_a, 2'b00};
-			reg_exp_y		<= exp_a - exp_b;
-			reg_sgn_y		<= sgn_a ^ sgn_b;
-			skip_round		<= 1'b0;
-			IV				<= 1'b0;
-			DZ				<= zero_b;
-			rm_out			<= rm;
-			counter			<= 4'd0;
-			state			<= CALC;
+			valid_out	<= 1'b0;
+			reg_man_b	<= man_b;
+			reg_res		<= 26'd0;
+			reg_rem		<= {1'b0, man_a, 2'b00};
+			reg_exp_y	<= exp_a - exp_b;
+			reg_sgn_y	<= sgn_a ^ sgn_b;
+			skip_round	<= 1'b0;
+			IV			<= 1'b0;
+			DZ			<= zero_b;
+			rm_out		<= rm;
+			counter		<= 4'd0;
+			state		<= CALC;
 
 			// NaN
 			if (sNaN_a || sNaN_b || qNaN_a || qNaN_b ||
 				(zero_a && zero_b) || (inf_a && inf_b)) begin
-				valid_out_int	<= 1'b1;
-				reg_man_b		<= 24'h000000;
-				reg_res			<= {24'hc00000, 2'b00};
-				reg_rem			<= 27'h0000000;
-				reg_exp_y		<= 10'h0ff;
-				reg_sgn_y		<= 1'b0;
-				skip_round		<= 1'b1;
-				IV				<= ~(qNaN_a || qNaN_b);
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_man_b	<= 24'h000000;
+				reg_res		<= {24'hc00000, 2'b00};
+				reg_rem		<= 27'h0000000;
+				reg_exp_y	<= 10'h0ff;
+				reg_sgn_y	<= 1'b0;
+				skip_round	<= 1'b1;
+				IV			<= ~(qNaN_a || qNaN_b);
+				state		<= IDLE;
 			end
 			// inf
 			else if (inf_a || zero_b) begin
-				valid_out_int	<= 1'b1;
-				reg_man_b		<= 24'h000000;
-				reg_res			<= {24'h800000, 2'b00};
-				reg_rem			<= 27'h0000000;
-				reg_exp_y		<= 10'h0ff;
-				reg_sgn_y		<= sgn_a ^ sgn_b;
-				skip_round		<= 1'b1;
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_man_b	<= 24'h000000;
+				reg_res		<= {24'h800000, 2'b00};
+				reg_rem		<= 27'h0000000;
+				reg_exp_y	<= 10'h0ff;
+				reg_sgn_y	<= sgn_a ^ sgn_b;
+				skip_round	<= 1'b1;
+				state		<= IDLE;
 			end
 			// zero
 			else if (zero_a || inf_b) begin
-				valid_out_int	<= 1'b1;
-				reg_man_b		<= 24'h000000;
-				reg_res			<= {24'h000000, 2'b00};
-				reg_rem			<= 27'h0000000;
-				reg_exp_y		<= 10'h000;
-				reg_sgn_y		<= sgn_a ^ sgn_b;
-				skip_round		<= 1'b1;
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_man_b	<= 24'h000000;
+				reg_res		<= {24'h000000, 2'b00};
+				reg_rem		<= 27'h0000000;
+				reg_exp_y	<= 10'h000;
+				reg_sgn_y	<= sgn_a ^ sgn_b;
+				skip_round	<= 1'b1;
+				state		<= IDLE;
 			end
 		end
 
 		else case (state)
-			IDLE:	if (valid_out_int && ready_in) begin
-						valid_out_int	<= 1'b0;
-						reg_man_b		<= 24'h000000;
-						reg_res			<= {24'hc00000, 2'b00};
-						reg_rem			<= 27'h0000000;
-						reg_exp_y		<= 10'h000;
-						reg_sgn_y		<= 1'b0;
-						skip_round		<= 1'b0;
-						IV				<= 1'b0;
-						DZ				<= 1'b0;
-						rm_out			<= 3'b000;
-						counter			<= 4'd0;
+			IDLE:	if (valid_out && ready_in) begin
+						valid_out	<= 1'b0;
+						reg_man_b	<= 24'h000000;
+						reg_res		<= {24'hc00000, 2'b00};
+						reg_rem		<= 27'h0000000;
+						reg_exp_y	<= 10'h000;
+						reg_sgn_y	<= 1'b0;
+						skip_round	<= 1'b0;
+						IV			<= 1'b0;
+						DZ			<= 1'b0;
+						rm_out		<= 3'b000;
+						counter		<= 4'd0;
 					end
 
 			CALC:	begin
@@ -172,12 +170,12 @@ module float_divider
 						reg_rem		<= acc[2];
 
 						if (counter == 4'd12) begin
-							valid_out_int	<= 1'b1;
-							state			<= IDLE;
+							valid_out	<= 1'b1;
+							state		<= IDLE;
 						end
 
 						else
-							counter			<= counter + 4'd1;
+							counter		<= counter + 4'd1;
 					end
 		endcase
 	end

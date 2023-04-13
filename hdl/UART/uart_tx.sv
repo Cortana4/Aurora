@@ -16,8 +16,8 @@ module uart_tx
 	input	logic					data_bits,
 	input	logic	[23:0]			baud_reg,
 
-	input	logic					push,
-	input	logic	[7:0]			data_in,
+	input	logic					wena,
+	input	logic	[7:0]			wdata,
 	output	logic	[ADDR_WIDTH:0]	size,
 	output	logic					empty,
 	output	logic					full
@@ -28,8 +28,8 @@ module uart_tx
 	logic	[24:0]	counter;
 	logic	[2:0]	bit_idx;
 
-	logic			pop;
-	logic	[7:0]	data;
+	logic			rena;
+	logic	[7:0]	rdata;
 
 	enum	logic	[2:0]	{IDLE, START, DATA, PARITY, STOP}	state;
 
@@ -48,7 +48,7 @@ module uart_tx
 			state	<= IDLE;
 			counter	<= 25'h0000000;
 			bit_idx	<= 3'b000;
-			pop		<= 1'b0;
+			rena		<= 1'b0;
 		end
 
 		else case (state)
@@ -84,7 +84,7 @@ module uart_tx
 							end
 
 							else begin
-								tx		<= data[bit_idx];
+								tx		<= rdata[bit_idx];
 								counter	<= counter + 25'd1;
 							end
 						end
@@ -95,20 +95,20 @@ module uart_tx
 							end
 
 							else begin
-								tx		<= ^data;
+								tx		<= ^rdata;
 								counter	<= counter + 25'd1;
 							end
 						end
 			STOP:		begin
-							if (pop) begin
-								pop		<= 1'b0;
+							if (rena) begin
+								rena		<= 1'b0;
 								state	<= IDLE;
 							end
 
 							else begin
 								if ((!stop_bits	&& counter == baud_reg - 24'd2) ||
 									(stop_bits	&& counter == (baud_reg << 1) - 24'd2))
-									pop <= 1'b1;
+									rena <= 1'b1;
 
 								tx		<= 1'b1;
 								counter	<= counter + 25'd1;
@@ -118,19 +118,17 @@ module uart_tx
 		endcase
 	end
 
-	fifo_stack #(ADDR_WIDTH, 8) tx_fifo_stack
+	fifo_buf #(ADDR_WIDTH, 8) tx_fifo_buf
 	(
+		.clk(clk),
 		.reset(reset),
 		.clear(clear),
-		.clk(clk),
+
+		.wena(wena),
+		.wdata(wdata),
 		
-		// write port
-		.push(push),
-		.data_in(data_in),
-		
-		// read port
-		.pop(pop),
-		.data_out(data),
+		.rena(rena),
+		.rdata(rdata),
 
 		.size(size),
 		.empty(empty),

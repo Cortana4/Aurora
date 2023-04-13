@@ -42,7 +42,6 @@ module float_sqrt
 	logic	[27:0]	acc [2:0];
 	logic	[1:0]	s;
 	
-	logic			valid_out_int;
 	logic			stall;
 
 	enum	logic	{IDLE, CALC} state;
@@ -51,82 +50,81 @@ module float_sqrt
 	assign			round_bit	= reg_res[1];
 	assign			sticky_bit	= |reg_rem || reg_res[0];
 	
-	assign			valid_out	= valid_out_int && !flush;
 	assign			ready_out	= ready_in && !stall && op == FPU_OP_SQRT;
 	assign			stall		= state != IDLE;
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
-			reg_rad			<= 26'h0000000;
-			reg_res			<= 26'h0000000;
-			reg_rem			<= 28'h0000000;
-			exp_y			<= 10'h000;
-			sgn_y			<= 1'b0;
-			skip_round		<= 1'b0;
-			IV				<= 1'b0;
-			rm_out			<= 3'b000;
-			state			<= IDLE;
+			valid_out	<= 1'b0;
+			reg_rad		<= 26'h0000000;
+			reg_res		<= 26'h0000000;
+			reg_rem		<= 28'h0000000;
+			exp_y		<= 10'h000;
+			sgn_y		<= 1'b0;
+			skip_round	<= 1'b0;
+			IV			<= 1'b0;
+			rm_out		<= 3'b000;
+			state		<= IDLE;
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int	<= 1'b0;
-			reg_rad			<= {1'b0, man_a, 1'b0} << exp_a[0];
-			reg_res			<= 26'h0000000;
-			reg_rem			<= 28'h0000000;
-			exp_y			<= exp_a >>> 1;
-			sgn_y			<= 1'b0;
-			skip_round		<= 1'b0;
-			IV				<= 1'b0;
-			rm_out			<= rm;
-			state			<= CALC;
+			valid_out	<= 1'b0;
+			reg_rad		<= {1'b0, man_a, 1'b0} << exp_a[0];
+			reg_res		<= 26'h0000000;
+			reg_rem		<= 28'h0000000;
+			exp_y		<= exp_a >>> 1;
+			sgn_y		<= 1'b0;
+			skip_round	<= 1'b0;
+			IV			<= 1'b0;
+			rm_out		<= rm;
+			state		<= CALC;
 
 			// +0.0 or -0.0
 			if (zero_a) begin
-				valid_out_int	<= 1'b1;
-				reg_rad			<= 26'h0000000;
-				reg_res			<= 26'h0000000;
-				exp_y			<= 10'h000;
-				sgn_y			<= sgn_a;
-				skip_round		<= 1'b1;
-				IV				<= 1'b0;
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_rad		<= 26'h0000000;
+				reg_res		<= 26'h0000000;
+				exp_y		<= 10'h000;
+				sgn_y		<= sgn_a;
+				skip_round	<= 1'b1;
+				IV			<= 1'b0;
+				state		<= IDLE;
 			end
 			// NaN (negative numbers, except -0.0)
 			else if (sgn_a || sNaN_a || qNaN_a) begin
-				valid_out_int	<= 1'b1;
-				reg_rad			<= 26'h0000000;
-				reg_res			<= {24'hc00000, 2'b00};
-				exp_y			<= 10'h0ff;
-				sgn_y			<= 1'b0;
-				skip_round		<= 1'b1;
-				IV				<= 1'b1;
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_rad		<= 26'h0000000;
+				reg_res		<= {24'hc00000, 2'b00};
+				exp_y		<= 10'h0ff;
+				sgn_y		<= 1'b0;
+				skip_round	<= 1'b1;
+				IV			<= 1'b1;
+				state		<= IDLE;
 			end
 			// inf
 			else if (inf_a) begin
-				valid_out_int	<= 1'b1;
-				reg_rad			<= 26'h0000000;
-				reg_res			<= {24'h800000, 2'b00};
-				exp_y			<= 10'h0ff;
-				sgn_y			<= 1'b0;
-				skip_round		<= 1'b1;
-				IV				<= 1'b1;
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				reg_rad		<= 26'h0000000;
+				reg_res		<= {24'h800000, 2'b00};
+				exp_y		<= 10'h0ff;
+				sgn_y		<= 1'b0;
+				skip_round	<= 1'b1;
+				IV			<= 1'b1;
+				state		<= IDLE;
 			end
 		end
 
 		else case (state)
-			IDLE:	if (valid_out_int && ready_in) begin
-						valid_out_int	<= 1'b0;
-						reg_rad			<= 26'h0000000;
-						reg_res			<= 26'h0000000;
-						reg_rem			<= 28'h0000000;
-						exp_y			<= 10'h000;
-						sgn_y			<= 1'b0;
-						skip_round		<= 1'b0;
-						IV				<= 1'b0;
-						rm_out			<= 3'b000;
+			IDLE:	if (valid_out && ready_in) begin
+						valid_out	<= 1'b0;
+						reg_rad		<= 26'h0000000;
+						reg_res		<= 26'h0000000;
+						reg_rem		<= 28'h0000000;
+						exp_y		<= 10'h000;
+						sgn_y		<= 1'b0;
+						skip_round	<= 1'b0;
+						IV			<= 1'b0;
+						rm_out		<= 3'b000;
 					end
 
 			CALC:	begin
@@ -137,8 +135,8 @@ module float_sqrt
 						// when the calculation is finished,
 						// the MSB of the result is always 1
 						if (reg_res[23]) begin
-							valid_out_int	<= 1'b1;
-							state			<= IDLE;
+							valid_out	<= 1'b1;
+							state		<= IDLE;
 						end
 					end
 		endcase

@@ -42,13 +42,11 @@ module addr_buf
 		end
 
 		else if (wena && rena && !empty) begin
-			data_buf[wPtr]	<= wdata;
 			wPtr			<= wPtr_next;
 			rPtr			<= rPtr_next;
 		end
 
 		else if (wena && !full) begin
-			data_buf[wPtr]	<= wdata;
 			wPtr			<= wPtr_next;
 			empty			<= 1'b0;
 			full			<= wPtr_next == rPtr;
@@ -59,6 +57,11 @@ module addr_buf
 			empty			<= rPtr_next == wPtr;
 			full			<= 1'b0;
 		end
+	end
+	
+	always_ff @(posedge clk) begin
+		if (wena && (!full || (rena && !empty)))
+			data_buf[wPtr]	<= wdata;
 	end
 	
 	always_ff @(posedge clk, posedge reset) begin

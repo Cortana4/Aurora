@@ -22,7 +22,7 @@ module uart
 	output	logic					Int
 );
 
-	localparam	STACK_ADDR			= BASE_ADDR + 0;
+	localparam	FIFO_BUF_ADDR		= BASE_ADDR + 0;
 	localparam	CTRL_REG_ADDR		= BASE_ADDR + 4;
 	localparam	CTRL_SET_ADDR		= BASE_ADDR + 8;
 	localparam	CTRL_CLR_ADDR		= BASE_ADDR + 12;
@@ -37,14 +37,14 @@ module uart
 	logic							wen_reg;
 	logic	[31:0]					addr_reg;
 
-	logic							push;
-	logic	[7:0]					data_in;
-	logic							pop;
-	logic	[7:0]					data_out;
+	logic							tx_wena;
+	logic	[7:0]					tx_wdata;
+	logic							rx_rena;
+	logic	[7:0]					rx_rdata;
 
-	assign							push			= ena && wen && addr == STACK_ADDR;
-	assign							data_in			= wdata[7:0];
-	assign							pop				= ena_reg && !wen_reg && addr_reg == STACK_ADDR;
+	assign							tx_wena			= ena && wen && addr == FIFO_BUF_ADDR;
+	assign							tx_wdata		= wdata[7:0];
+	assign							rx_rena			= ena_reg && !wen_reg && addr_reg == FIFO_BUF_ADDR;
 
 	// control signals
 	logic	[31:0]					ctrl_reg;
@@ -205,11 +205,11 @@ module uart
 			wen_reg					<= wen;
 			addr_reg				<= addr;
 			// refresh status signals
-			tx_overflow_error		<= tx_overflow_error	|| push && tx_full;
+			tx_overflow_error		<= tx_overflow_error	|| tx_wena && tx_full;
 			rx_frame_error			<= rx_frame_error		|| frame_error_w;
 			rx_parity_error			<= rx_parity_error		|| parity_error_w;
 			rx_noise_error			<= rx_noise_error		|| noise_error_w;
-			rx_underflow_error		<= rx_underflow_error	|| pop && rx_empty;
+			rx_underflow_error		<= rx_underflow_error	|| rx_rena && rx_empty;
 			rx_overflow_error		<= rx_overflow_error	|| overflow_error_w;
 			tx_clear				<= 1'b0;
 			rx_clear				<= 1'b0;
@@ -317,7 +317,7 @@ module uart
 
 	always_comb begin
 		case (addr_reg)
-		STACK_ADDR:			rdata = {24'h000000, data_out};
+		FIFO_BUF_ADDR:		rdata = {24'h000000, rx_rdata};
 		CTRL_REG_ADDR:		rdata = ctrl_reg;
 		TX_STAT_REG_ADDR:	rdata = tx_stat_reg;
 		RX_STAT_REG_ADDR:	rdata = rx_stat_reg;
@@ -340,8 +340,8 @@ module uart
 		.data_bits(data_bits),
 		.baud_reg(baud_reg),
 
-		.push(push),
-		.data_in(data_in),
+		.wena(tx_wena),
+		.wdata(tx_wdata),
 		.size(tx_size),
 		.empty(tx_empty),
 		.full(tx_full)
@@ -362,8 +362,8 @@ module uart
 		.data_bits(data_bits),
 		.baud_reg(baud_reg),
 
-		.pop(pop),
-		.data_out(data_out),
+		.rena(rx_rena),
+		.rdata(rx_rdata),
 		.size(rx_size),
 		.empty(rx_empty),
 		.full(rx_full),
