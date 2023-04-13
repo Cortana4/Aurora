@@ -341,16 +341,8 @@ module csr_file
 						case (csr_addr)
 						CSR_ADDR_MISA:			begin
 													M_ena	<= csr_wdata_int[12];
-													
-													if (csr_wdata_int[5]) begin
-														F_ena	<= 1'b1;
-														FS		<= 2'd1;
-													end
-													
-													else begin
-														F_ena	<= 1'b0;
-														FS		<= 2'd0;
-													end
+													F_ena	<= csr_wdata_int[5];
+													FS		<= csr_wdata_int[5] ? 2'd1 : 2'd0;
 												end
 						CSR_ADDR_MSTATUS:		begin
 													FS		<= F_ena ? csr_wdata_int[14:13] : 2'd0;
@@ -394,14 +386,6 @@ module csr_file
 						endcase
 					end
 				end
-
-			
-			
-			
-		end
-		
-		else if (csr_wena) begin
-			
 		end
 	end
 

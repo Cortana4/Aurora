@@ -4,7 +4,6 @@ module MEM_stage
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -56,7 +55,6 @@ module MEM_stage
 	output	logic	[31:0]	exc_cause_MEM
 );
 
-	logic			valid_out_int;
 	logic			stall;
 
 	logic	[31:0]	dmem_axi_rdata_aligned;
@@ -65,7 +63,6 @@ module MEM_stage
 	assign			dmem_axi_bready			= ready_in;
 	assign			dmem_axi_rready			= ready_in;
 
-	assign			valid_out				= valid_out_int && !flush;
 	assign			ready_out				= ready_in && !stall;
 	assign			stall					= csr_wena_MEM || csr_rena_MEM ||
 											  (!exc_pend_EX && wb_src_EX == SEL_MEM &&
@@ -74,44 +71,44 @@ module MEM_stage
 
 	// MEM/WB pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
-			valid_out_int		<= 1'b0;
-			PC_MEM				<= 32'h00000000;
-			IR_MEM				<= 32'h00000000;
-			IM_MEM				<= 32'h00000000;
-			rd_wena_MEM			<= 1'b0;
-			rd_addr_MEM			<= 6'd0;
-			rd_data_MEM			<= 32'h00000000;
-			csr_addr_MEM		<= 12'h000;
-			csr_rena_MEM		<= 1'b0;
-			csr_wena_MEM		<= 1'b0;
-			csr_wdata_MEM		<= 32'h00000000;
-			wb_src_MEM			<= 3'd0;
-			csr_op_MEM			<= 2'd0;
-			fpu_flags_MEM		<= 5'b00000;
-			trap_ret_MEM		<= 1'b0;
-			exc_pend_MEM		<= 1'b0;
-			exc_cause_MEM		<= 32'h00000000;
+		if (reset) begin
+			valid_out		<= 1'b0;
+			PC_MEM			<= 32'h00000000;
+			IR_MEM			<= 32'h00000000;
+			IM_MEM			<= 32'h00000000;
+			rd_wena_MEM		<= 1'b0;
+			rd_addr_MEM		<= 6'd0;
+			rd_data_MEM		<= 32'h00000000;
+			csr_addr_MEM	<= 12'h000;
+			csr_rena_MEM	<= 1'b0;
+			csr_wena_MEM	<= 1'b0;
+			csr_wdata_MEM	<= 32'h00000000;
+			wb_src_MEM		<= 3'd0;
+			csr_op_MEM		<= 2'd0;
+			fpu_flags_MEM	<= 5'b00000;
+			trap_ret_MEM	<= 1'b0;
+			exc_pend_MEM	<= 1'b0;
+			exc_cause_MEM	<= 32'h00000000;
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int		<= 1'b1;
-			PC_MEM				<= PC_EX;
-			IR_MEM				<= IR_EX;
-			IM_MEM				<= IM_EX;
-			rd_wena_MEM			<= rd_wena_EX;
-			rd_addr_MEM			<= rd_addr_EX;
-			rd_data_MEM			<= rd_data_EX;
-			csr_addr_MEM		<= csr_addr_EX;
-			csr_rena_MEM		<= csr_rena_EX;
-			csr_wena_MEM		<= csr_wena_EX;
-			csr_wdata_MEM		<= csr_wdata_EX;
-			wb_src_MEM			<= wb_src_EX;
-			csr_op_MEM			<= csr_op_EX;
-			fpu_flags_MEM		<= fpu_flags_EX;
-			trap_ret_MEM		<= trap_ret_EX;
-			exc_pend_MEM		<= exc_pend_EX;
-			exc_cause_MEM		<= exc_cause_EX;
+			valid_out		<= 1'b1;
+			PC_MEM			<= PC_EX;
+			IR_MEM			<= IR_EX;
+			IM_MEM			<= IM_EX;
+			rd_wena_MEM		<= rd_wena_EX;
+			rd_addr_MEM		<= rd_addr_EX;
+			rd_data_MEM		<= rd_data_EX;
+			csr_addr_MEM	<= csr_addr_EX;
+			csr_rena_MEM	<= csr_rena_EX;
+			csr_wena_MEM	<= csr_wena_EX;
+			csr_wdata_MEM	<= csr_wdata_EX;
+			wb_src_MEM		<= wb_src_EX;
+			csr_op_MEM		<= csr_op_EX;
+			fpu_flags_MEM	<= fpu_flags_EX;
+			trap_ret_MEM	<= trap_ret_EX;
+			exc_pend_MEM	<= exc_pend_EX;
+			exc_cause_MEM	<= exc_cause_EX;
 			
 			if (wb_src_EX == SEL_MEM && !exc_pend_EX) begin
 				// dmem read access (load)
@@ -141,24 +138,24 @@ module MEM_stage
 			end
 		end
 
-		else if (valid_out_int && ready_in) begin
-			valid_out_int		<= 1'b0;
-			PC_MEM				<= 32'h00000000;
-			IR_MEM				<= 32'h00000000;
-			IM_MEM				<= 32'h00000000;
-			rd_wena_MEM			<= 1'b0;
-			rd_addr_MEM			<= 6'd0;
-			rd_data_MEM			<= 32'h00000000;
-			csr_addr_MEM		<= 12'h000;
-			csr_rena_MEM		<= 1'b0;
-			csr_wena_MEM		<= 1'b0;
-			csr_wdata_MEM		<= 32'h00000000;
-			wb_src_MEM			<= 3'd0;
-			csr_op_MEM			<= 2'd0;
-			fpu_flags_MEM		<= 5'b00000;
-			trap_ret_MEM		<= 1'b0;
-			exc_pend_MEM		<= 1'b0;
-			exc_cause_MEM		<= 32'h00000000;
+		else if (valid_out && ready_in) begin
+			valid_out		<= 1'b0;
+			PC_MEM			<= 32'h00000000;
+			IR_MEM			<= 32'h00000000;
+			IM_MEM			<= 32'h00000000;
+			rd_wena_MEM		<= 1'b0;
+			rd_addr_MEM		<= 6'd0;
+			rd_data_MEM		<= 32'h00000000;
+			csr_addr_MEM	<= 12'h000;
+			csr_rena_MEM	<= 1'b0;
+			csr_wena_MEM	<= 1'b0;
+			csr_wdata_MEM	<= 32'h00000000;
+			wb_src_MEM		<= 3'd0;
+			csr_op_MEM		<= 2'd0;
+			fpu_flags_MEM	<= 5'b00000;
+			trap_ret_MEM	<= 1'b0;
+			exc_pend_MEM	<= 1'b0;
+			exc_cause_MEM	<= 32'h00000000;
 		end
 	end
 
