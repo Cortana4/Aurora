@@ -123,7 +123,7 @@ module ID_stage
 	assign			valid_out_fpu	= valid_out_fpu_int && valid_out;
 	
 	assign			ready_out		= ready_in && !stall;
-	assign			stall			= csr_wena_ID || csr_rena_ID;
+	assign			stall			= exc_pend_ID || csr_wena_ID || csr_rena_ID;
 	
 	always_comb begin
 		if (exc_pend_IF) begin

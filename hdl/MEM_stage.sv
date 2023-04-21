@@ -62,7 +62,7 @@ module MEM_stage
 	assign			dmem_axi_rready			= ready_in;
 
 	assign			ready_out				= ready_in && !stall;
-	assign			stall					= csr_wena_MEM || csr_rena_MEM ||
+	assign			stall					= exc_pend_MEM || csr_wena_MEM || csr_rena_MEM ||
 											  (!exc_pend_EX && wb_src_EX == SEL_MEM &&
 											  ((rd_wena_EX && !dmem_axi_rvalid) ||
 											  (!rd_wena_EX && !dmem_axi_bvalid)));
@@ -106,7 +106,7 @@ module MEM_stage
 			exc_pend_MEM	<= exc_pend_EX;
 			exc_cause_MEM	<= exc_cause_EX;
 			
-			if (wb_src_EX == SEL_MEM && !exc_pend_EX) begin
+			if (wb_src_EX == SEL_MEM) begin
 				// dmem read access (load)
 				if (rd_wena_EX) begin
 					if (|dmem_axi_rresp) begin

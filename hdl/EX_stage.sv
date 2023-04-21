@@ -5,7 +5,6 @@ module EX_stage
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -90,23 +89,16 @@ module EX_stage
 	output	logic	[2:0]	dmem_axi_arprot,
 	output	logic			dmem_axi_arvalid,
 	input	logic			dmem_axi_arready,
-
+	
 	input	logic			rd_wena_MEM,
 	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM
 );
 
 	logic	[31:0]	rs1_data;
-	logic			bypass_rs1_EX;
-	logic			bypass_rs1_MEM;
 	logic	[31:0]	rs2_data;
-	logic			bypass_rs2_EX;
-	logic			bypass_rs2_MEM;
 	logic	[31:0]	rs3_data;
-	logic			bypass_rs3_EX;
-	logic			bypass_rs3_MEM;
-	logic			rd_after_ld_hazard;
-
+	
 	logic	[31:0]	csr_wdata;
 	logic	[31:0]	a;
 	logic	[31:0]	b;
@@ -115,22 +107,6 @@ module EX_stage
 	logic			jump_taken;
 	logic			jump_mpred;
 	logic	[31:0]	jump_addr;
-
-	logic	[31:0]	alu_out;
-	logic	[31:0]	mul_out;
-	logic			valid_out_mul;
-	logic	[31:0]	div_out;
-	logic			valid_out_div;
-	logic	[31:0]	fpu_out;
-	logic	[4:0]	fpu_flags;
-	logic			valid_out_fpu;
-
-	logic			maligned_inst_addr;
-	logic			maligned_load_addr;
-	logic			maligned_store_addr;
-
-	logic			exc_pend;
-	logic	[31:0]	exc_cause;
 	
 	logic			dmem_axi_awvalid_int;
 	logic	[31:0]	dmem_axi_wdata_int;
@@ -138,16 +114,27 @@ module EX_stage
 	logic			dmem_axi_wvalid_int;
 	logic			dmem_axi_arvalid_int;
 
-	logic			valid_out_int;
-	logic			stall;
+	logic	[31:0]	alu_out;
+	
+	logic	[31:0]	mul_out;
+	logic			valid_out_mul;
+	
+	logic	[31:0]	div_out;
+	logic			valid_out_div;
+	
+	logic	[31:0]	fpu_out;
+	logic	[4:0]	fpu_flags;
+	logic			valid_out_fpu;
+	
+	logic			maligned_inst_addr;
+	logic			maligned_load_addr;
+	logic			maligned_store_addr;
 
-	assign			bypass_rs1_EX		= rs1_rena_ID && |rs1_addr_ID && rd_wena_EX  && rs1_addr_ID == rd_addr_EX;
-	assign			bypass_rs1_MEM		= rs1_rena_ID && |rs1_addr_ID && rd_wena_MEM && rs1_addr_ID == rd_addr_MEM;
-	assign			bypass_rs2_EX		= rs2_rena_ID && |rs2_addr_ID && rd_wena_EX  && rs2_addr_ID == rd_addr_EX;
-	assign			bypass_rs2_MEM		= rs2_rena_ID && |rs2_addr_ID && rd_wena_MEM && rs2_addr_ID == rd_addr_MEM;
-	assign			bypass_rs3_EX		= rs3_rena_ID && |rs3_addr_ID && rd_wena_EX  && rs3_addr_ID == rd_addr_EX;
-	assign			bypass_rs3_MEM		= rs3_rena_ID && |rs3_addr_ID && rd_wena_MEM && rs3_addr_ID == rd_addr_MEM;
-	assign			rd_after_ld_hazard	= (bypass_rs1_EX || bypass_rs2_EX || bypass_rs3_EX) && wb_src_EX == SEL_MEM;
+	logic			exc_pend;
+	logic	[31:0]	exc_cause;
+	
+	logic			rd_after_ld_hazard;
+	logic			stall;
 
 	assign			csr_wdata			= sel_IM_ID ? IM_ID : rs1_data;
 	assign			a					= sel_PC_ID ? PC_ID : rs1_data;
@@ -158,18 +145,29 @@ module EX_stage
 	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
 	assign			maligned_inst_addr	= jump_taken  && |jump_addr[1:0];
 	
-	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && valid_out && !exc_pend_EX;
-	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && valid_out && !exc_pend_EX;
-	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && valid_out && !exc_pend_EX;
+	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && !exc_pend_EX;
+	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && !exc_pend_EX;
+	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && !exc_pend_EX;
 
-	assign			valid_out			= valid_out_int && !flush;
 	assign			ready_out			= ready_in && !stall;
-	assign			stall				= csr_wena_EX || csr_rena_EX || 
+	assign			stall				= exc_pend_EX || csr_wena_EX || csr_rena_EX || 
 										  (!exc_pend_ID && (rd_after_ld_hazard ||
 										  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
 										  (wb_src_ID == SEL_DIV && !valid_out_div) ||
 										  (wb_src_ID == SEL_FPU && !valid_out_fpu)));
+	
+	// jump address computation
+	always_comb begin
+		if (!jump_taken)
+			jump_addr	= PC_ID + 32'd4;
 
+		else if (jump_ind_ID)
+			jump_addr	= (rs1_data + IM_ID) & 32'hfffffffe;
+
+		else
+			jump_addr	= PC_ID + IM_ID;
+	end
+	
 	// wdata and byte enable computation
 	always_comb begin
 		dmem_axi_wdata_int	= 32'h00000000;
@@ -236,58 +234,10 @@ module EX_stage
 		end
 	end
 
-	// rs1 bypass
-	always_comb begin
-		if (bypass_rs1_EX)
-			rs1_data	= rd_data_EX;
-
-		else if (bypass_rs1_MEM)
-			rs1_data	= rd_data_MEM;
-
-		else
-			rs1_data	= rs1_data_ID;
-	end
-
-	// rs2 bypass
-	always_comb begin
-		if (bypass_rs2_EX)
-			rs2_data	= rd_data_EX;
-
-		else if (bypass_rs2_MEM)
-			rs2_data	= rd_data_MEM;
-
-		else
-			rs2_data	= rs2_data_ID;
-	end
-
-	// rs3 bypass
-	always_comb begin
-		if (bypass_rs3_EX)
-			rs3_data	= rd_data_EX;
-
-		else if (bypass_rs3_MEM)
-			rs3_data	= rd_data_MEM;
-
-		else
-			rs3_data	= rs3_data_ID;
-	end
-
-	// jump address computation
-	always_comb begin
-		if (!jump_taken)
-			jump_addr	= PC_ID + 32'd4;
-
-		else if (jump_ind_ID)
-			jump_addr	= (rs1_data + IM_ID) & 32'hfffffffe;
-
-		else
-			jump_addr	= PC_ID + IM_ID;
-	end
-
-	// EX/MEM pipeline registers
+	// EX/MMA pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
-			valid_out_int			<= 1'b0;
+		if (reset) begin
+			valid_out				<= 1'b0;
 			PC_EX					<= 32'h00000000;
 			IR_EX					<= 32'h00000000;
 			rd_wena_EX				<= 1'b0;
@@ -321,15 +271,15 @@ module EX_stage
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out_int			<= 1'b1;
+			valid_out				<= 1'b1;
 			PC_EX					<= PC_ID;
 			IR_EX					<= IR_ID;
-			rd_wena_EX				<= rd_wena_ID && !exc_pend;
+			rd_wena_EX				<= rd_wena_ID;
 			rd_addr_EX				<= rd_addr_ID;
 			rd_data_EX				<= 32'h00000000;
 			csr_addr_EX				<= csr_addr_ID;
 			csr_rena_EX				<= csr_rena_ID;
-			csr_wena_EX				<= csr_wena_ID && !exc_pend;
+			csr_wena_EX				<= csr_wena_ID;
 			csr_wdata_EX			<= csr_wdata;
 			wb_src_EX				<= wb_src_ID;
 			mem_op_EX				<= mem_op_ID;
@@ -378,8 +328,8 @@ module EX_stage
 			endcase
 		end
 
-		else if (valid_out_int && ready_in) begin
-			valid_out_int			<= 1'b0;
+		else if (valid_out && ready_in) begin
+			valid_out				<= 1'b0;
 			PC_EX					<= 32'h00000000;
 			IR_EX					<= 32'h00000000;
 			rd_wena_EX				<= 1'b0;
@@ -423,6 +373,33 @@ module EX_stage
 				dmem_axi_arvalid_int	<= 1'b0;
 		end
 	end
+	
+	bypass_logic bypass_logic_inst
+	(
+		.rs1_rena_ID(rs1_rena_ID),
+		.rs1_addr_ID(rs1_addr_ID),
+		.rs1_data_ID(rs1_data_ID),
+		.rs2_rena_ID(rs2_rena_ID),
+		.rs2_addr_ID(rs2_addr_ID),
+		.rs2_data_ID(rs2_data_ID),
+		.rs3_rena_ID(rs3_rena_ID),
+		.rs3_addr_ID(rs3_addr_ID),
+		.rs3_data_ID(rs3_data_ID),
+
+		.rd_wena_EX(rd_wena_EX),
+		.rd_addr_EX(rd_addr_EX),
+		.rd_data_EX(rd_data_EX),
+		.wb_src_EX(wb_src_EX),
+
+		.rd_wena_MEM(rd_wena_MEM),
+		.rd_addr_MEM(rd_addr_MEM),
+		.rd_data_MEM(rd_data_MEM),
+
+		.rs1_data(rs1_data),
+		.rs2_data(rs2_data),
+		.rs3_data(rs3_data),
+		.rd_after_ld_hazard(rd_after_ld_hazard)
+	);
 
 	ALU ALU_inst
 	(
