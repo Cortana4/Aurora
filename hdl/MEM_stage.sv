@@ -7,8 +7,10 @@ module MEM_stage
 
 	input	logic			valid_in,
 	output	logic			ready_out,
+	output	logic			flush_out,
 	output	logic			valid_out,
 	input	logic			ready_in,
+	input	logic			flush_in,
 
 	input	logic	[31:0]	PC_EX,
 	input	logic	[31:0]	IR_EX,
@@ -58,10 +60,11 @@ module MEM_stage
 	logic	[31:0]	dmem_axi_rdata_aligned;
 	assign			dmem_axi_rdata_aligned	= dmem_axi_rdata >> dmem_axi_araddr[1:0];
 
-	assign			dmem_axi_bready			= ready_in;
-	assign			dmem_axi_rready			= ready_in;
+	assign			dmem_axi_bready			= wb_src_EX == SEL_MEM && !rd_wena_EX && valid_in && ready_out;
+	assign			dmem_axi_rready			= wb_src_EX == SEL_MEM &&  rd_wena_EX && valid_in && ready_out;
 
 	assign			ready_out				= ready_in && !stall;
+	assign			flush_out				= flush_in;
 	assign			stall					= exc_pend_MEM || csr_wena_MEM || csr_rena_MEM ||
 											  (!exc_pend_EX && wb_src_EX == SEL_MEM &&
 											  ((rd_wena_EX && !dmem_axi_rvalid) ||
@@ -69,7 +72,7 @@ module MEM_stage
 
 	// MEM/WB pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush_in) begin
 			valid_out		<= 1'b0;
 			PC_MEM			<= 32'h00000000;
 			IR_MEM			<= 32'h00000000;
@@ -88,7 +91,7 @@ module MEM_stage
 			exc_cause_MEM	<= 32'h00000000;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in && ready_out && !flush_out) begin
 			valid_out		<= 1'b1;
 			PC_MEM			<= PC_EX;
 			IR_MEM			<= IR_EX;

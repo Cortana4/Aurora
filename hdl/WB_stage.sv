@@ -7,8 +7,10 @@ module WB_stage
 	
 	input	logic			valid_in,
 	output	logic			ready_out,
+	output	logic			flush_out,
 	output	logic			valid_out,
 	input	logic			ready_in,
+	input	logic			flush_in,
 	
 	input	logic	[15:0]	irq_ext,
 	input	logic			irq_int_controller,

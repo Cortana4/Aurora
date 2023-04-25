@@ -78,7 +78,7 @@ module bypass_logic
 			rs3_data	= rd_data_MEM;
 
 		else
-			rs3_data	= rs1_data_ID;
+			rs3_data	= rs3_data_ID;
 	end
 
 endmodule

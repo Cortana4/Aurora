@@ -31,7 +31,7 @@ module addr_buf
 	assign						wPtr_next	= wPtr + 1;
 
 	assign						rdata		= data_buf[rPtr];
-	assign						valid		= valid_buf[rPtr] && !flush;
+	assign						valid		= valid_buf[rPtr];
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin

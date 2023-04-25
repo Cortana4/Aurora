@@ -7,6 +7,7 @@ module IF_stage
 
 	output	logic			valid_out,
 	input	logic			ready_in,
+	input	logic			flush_in,
 	
 	output	logic	[31:0]	imem_axi_araddr,	// read address channel
 	output	logic	[2:0]	imem_axi_arprot,
@@ -47,9 +48,6 @@ module IF_stage
 	
 	logic			jump_taken;
 	logic	[31:0]	jump_addr;
-
-	logic			valid_out_int;
-	logic			flush;
 	
 	assign			imem_addr_buf_wena	= imem_axi_arvalid && imem_axi_arready;
 	assign			imem_addr_buf_rena	= imem_axi_rvalid  && imem_axi_rready;
@@ -58,9 +56,6 @@ module IF_stage
 	assign			imem_axi_arprot		= 3'b110;
 	assign			imem_axi_arvalid	= PC_valid;
 	assign			imem_axi_rready		= ready_in;
-
-	assign			valid_out			= valid_out_int && !flush;
-	assign			flush				= trap_taken_csr || jump_mpred_EX;
 
 	addr_buf
 	#(
@@ -114,6 +109,8 @@ module IF_stage
 				end
 				
 				else begin
+					jump_addr_buf	<= 32'h00000000;
+					jump_pend		<= 1'b0;
 					PC_valid		<= 1'b1;
 					PC				<= PC + 32'd4;
 				end
@@ -131,8 +128,8 @@ module IF_stage
 
 	// IF/ID pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
+		if (reset || flush_in) begin
+			valid_out		<= 1'b0;
 			PC_IF			<= 32'h00000000;
 			IR_IF			<= 32'h00000000;
 			exc_pend_IF		<= 1'b0;
@@ -141,7 +138,7 @@ module IF_stage
 
 		else if (imem_addr_buf_rena && imem_addr_buf_valid) begin
 			if (|imem_axi_rresp) begin
-				valid_out_int	<= 1'b1;
+				valid_out		<= 1'b1;
 				PC_IF			<= imem_addr_buf_rdata;
 				IR_IF			<= RV32I_NOP;
 				exc_pend_IF		<= 1'b1;
@@ -149,7 +146,7 @@ module IF_stage
 			end
 
 			else begin
-				valid_out_int	<= 1'b1;
+				valid_out		<= 1'b1;
 				PC_IF			<= imem_addr_buf_rdata;
 				IR_IF			<= imem_axi_rdata;
 				exc_pend_IF		<= 1'b0;
@@ -157,12 +154,12 @@ module IF_stage
 			end
 		end
 
-		else if (valid_out_int && ready_in) begin
-			valid_out_int		<= 1'b0;
-			PC_IF				<= 32'h00000000;
-			IR_IF				<= 32'h00000000;
-			exc_pend_IF			<= 1'b0;
-			exc_cause_IF		<= 32'h00000000;
+		else if (valid_out && ready_in) begin
+			valid_out		<= 1'b0;
+			PC_IF			<= 32'h00000000;
+			IR_IF			<= 32'h00000000;
+			exc_pend_IF		<= 1'b0;
+			exc_cause_IF	<= 32'h00000000;
 		end
 	end
 	
@@ -185,17 +182,17 @@ module IF_stage
 			jump_addr	= jump_addr_IF;
 		end
 	end
-	
-	
-	assign PC_int = 32'h00000000;
 
-/*
 	always_comb begin
 		if (valid_out)
 			PC_int	= PC_IF;
 		
-		else if ()
+		else if (imem_addr_buf_valid)
+			PC_int	= imem_addr_buf_rdata;
+		
+		else
+			PC_int	= PC;
 	end
-	*/
+	
 
 endmodule

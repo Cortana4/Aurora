@@ -5,11 +5,14 @@ module EX_stage
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
+	output	logic			flush_out,
 	output	logic			valid_out,
 	input	logic			ready_in,
+	input	logic			flush_in,
 
 	input	logic			valid_in_mul,
 	output	logic			ready_out_mul,
@@ -19,6 +22,7 @@ module EX_stage
 	output	logic			ready_out_fpu,
 	
 	input	logic	[2:0]	fpu_rm_csr,
+	input	logic			trap_taken_csr,
 
 	input	logic	[31:0]	PC_ID,
 	input	logic	[31:0]	IR_ID,
@@ -141,15 +145,16 @@ module EX_stage
 	assign			b					= sel_IM_ID ? IM_ID : rs2_data;
 	assign			c					= rs3_data;
 
-	assign			jump_taken			= jump_ena_ID && (alu_out[0] || jump_alw_ID);
+	assign			jump_taken			= jump_ena_ID && (jump_alw_ID || alu_out[0]);
 	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
 	assign			maligned_inst_addr	= jump_taken  && |jump_addr[1:0];
 	
-	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && !exc_pend_EX;
-	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && !exc_pend_EX;
-	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && !exc_pend_EX;
+	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && !exc_pend_EX && !flush_out;
+	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && !exc_pend_EX && !flush_out;
+	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && !exc_pend_EX && !flush_out;
 
 	assign			ready_out			= ready_in && !stall;
+	assign			flush_out			= flush_in || jump_mpred_EX;
 	assign			stall				= exc_pend_EX || csr_wena_EX || csr_rena_EX || 
 										  (!exc_pend_ID && (rd_after_ld_hazard ||
 										  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
@@ -234,9 +239,9 @@ module EX_stage
 		end
 	end
 
-	// EX/MMA pipeline registers
+	// EX/MEM pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush_in) begin
 			valid_out				<= 1'b0;
 			PC_EX					<= 32'h00000000;
 			IR_EX					<= 32'h00000000;
@@ -270,7 +275,7 @@ module EX_stage
 			dmem_axi_arvalid_int	<= 1'b0;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in && ready_out && !flush_out) begin
 			valid_out				<= 1'b1;
 			PC_EX					<= PC_ID;
 			IR_EX					<= IR_ID;
@@ -417,7 +422,7 @@ module EX_stage
 		.reset(reset),
 		.flush(flush),
 		
-		.valid_in(valid_in_mul && !exc_pend_ID),
+		.valid_in(valid_in && valid_in_mul && !exc_pend_ID),
 		.ready_out(ready_out_mul),
 		.valid_out(valid_out_mul),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -436,7 +441,7 @@ module EX_stage
 		.reset(reset),
 		.flush(flush),
 
-		.valid_in(valid_in_div && !exc_pend_ID),
+		.valid_in(valid_in && valid_in_div && !exc_pend_ID),
 		.ready_out(ready_out_div),
 		.valid_out(valid_out_div),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -455,7 +460,7 @@ module EX_stage
 		.reset(reset),
 		.flush(flush),
 
-		.valid_in(valid_in_fpu && !exc_pend_ID),
+		.valid_in(valid_in && valid_in_fpu && !exc_pend_ID),
 		.ready_out(ready_out_fpu),
 		.valid_out(valid_out_fpu),
 		.ready_in(ready_in && !rd_after_ld_hazard),

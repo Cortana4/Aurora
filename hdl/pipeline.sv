@@ -65,6 +65,7 @@ module pipeline
 	// IF signals / IF/ID pipeline registers
 	logic			valid_out_IF;
 	logic			ready_in_IF;
+	logic			flush_in_IF;
 	logic	[31:0]	PC_IF;
 	logic	[31:0]	IR_IF;
 	logic			exc_pend_IF;
@@ -73,9 +74,9 @@ module pipeline
 	logic	[31:0]	jump_addr_IF;
 
 	// ID signals / ID/EX pipeline registers
-	logic			flush_ID;
 	logic			valid_out_ID;
 	logic			ready_in_ID;
+	logic			flush_in_ID;
 	logic			valid_out_mul_ID;
 	logic			ready_in_mul_ID;
 	logic			valid_out_div_ID;
@@ -118,9 +119,9 @@ module pipeline
 	logic	[31:0]	exc_cause_ID;
 
 	// EX signals / EX/mem pipeline registers
-	logic			flush_EX;
 	logic			valid_out_EX;
 	logic			ready_in_EX;
+	logic			flush_in_EX;
 	logic	[31:0]	PC_EX;
 	logic	[31:0]	IR_EX;
 	logic			rd_wena_EX;
@@ -146,6 +147,7 @@ module pipeline
 	// MEM signals / MEM/WB pipeline registers
 	logic			valid_out_MEM;
 	logic			ready_in_MEM;
+	logic			flush_in_MEM;
 	logic	[31:0]	PC_MEM;
 	logic	[31:0]	IR_MEM;
 	logic			rd_wena_MEM;
@@ -193,6 +195,15 @@ module pipeline
 	assign			imem_axi_bready		= 1'b0;
 	
 	
+	logic			flush_IF;
+	logic			flush_ID;
+	logic			flush_EX;
+	
+	assign			flush_IF			= flush_ID;
+	assign			flush_ID			= flush_EX || jump_mpred_EX;
+	assign			flush_EX			= trap_taken_csr;
+	
+	
 
 	IF_stage IF_stage_inst
 	(
@@ -201,6 +212,7 @@ module pipeline
 
 		.valid_out(valid_out_IF),
 		.ready_in(ready_in_IF),
+		.flush_in(flush_in_IF),
 		
 		.imem_axi_araddr(imem_axi_araddr),
 		.imem_axi_arprot(imem_axi_arprot),
@@ -232,12 +244,13 @@ module pipeline
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(trap_taken_csr || jump_mpred_EX),
 
 		.valid_in(valid_out_IF),
 		.ready_out(ready_in_IF),
+		.flush_out(flush_in_IF),
 		.valid_out(valid_out_ID),
 		.ready_in(ready_in_ID),
+		.flush_in(flush_in_ID),
 		
 		.valid_out_mul(valid_out_mul_ID),
 		.ready_in_mul(ready_in_mul_ID),
@@ -307,12 +320,13 @@ module pipeline
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(trap_taken_csr),
 
 		.valid_in(valid_out_ID),
 		.ready_out(ready_in_ID),
+		.flush_out(flush_in_ID),
 		.valid_out(valid_out_EX),
 		.ready_in(ready_in_EX),
+		.flush_in(flush_in_EX),
 		
 		.valid_in_mul(valid_out_mul_ID),
 		.ready_out_mul(ready_in_mul_ID),
@@ -405,8 +419,10 @@ module pipeline
 		
 		.valid_in(valid_out_EX),
 		.ready_out(ready_in_EX),
+		.flush_out(flush_in_EX),
 		.valid_out(valid_out_MEM),
 		.ready_in(ready_in_MEM),
+		.flush_in(flush_in_MEM),
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),
