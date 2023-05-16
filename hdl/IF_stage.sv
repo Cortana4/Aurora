@@ -47,8 +47,6 @@ module IF_stage
 
 	logic			jump_taken;
 	logic	[31:0]	jump_addr;
-	
-	logic			flush_out;
 
 	assign			imem_addr_buf_wena	= imem_axi_arvalid && imem_axi_arready;
 	assign			imem_addr_buf_rena	= imem_axi_rvalid  && imem_axi_rready;
@@ -58,9 +56,6 @@ module IF_stage
 	assign			imem_axi_arvalid	= PC_valid;
 	assign			imem_axi_rready		= ready_in;
 
-	assign			flush_out			= flush_in || jump_pred_IF;
-	
-	
 	addr_buf
 	#(
 		.ADDR_WIDTH(1),
@@ -95,13 +90,13 @@ module IF_stage
 			start_cycle	<= 1'b0;
 			PC_valid	<= 1'b1;
 		end
-		
+
 		else begin
 			if (jump_taken) begin
 				jump_addr_buf	<= jump_addr;
 				jump_pend		<= 1'b1;
 			end
-			
+
 			if (imem_axi_arready) begin
 				if (imem_addr_buf_empty || imem_addr_buf_rena) begin
 					if (jump_taken) begin
@@ -142,7 +137,7 @@ module IF_stage
 			exc_cause_IF	<= 32'h00000000;
 		end
 
-		else if (imem_addr_buf_rena && imem_addr_buf_valid && !flush_out) begin
+		else if (imem_addr_buf_rena && imem_addr_buf_valid && !jump_pred_IF) begin
 			if (|imem_axi_rresp) begin
 				valid_out		<= 1'b1;
 				PC_IF			<= imem_addr_buf_rdata;
