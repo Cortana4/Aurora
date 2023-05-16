@@ -5,7 +5,7 @@ module ftoi_converter
 	input	logic			clk,
 	input	logic			reset,
 	input	logic			flush,
-	
+
 	input	logic			valid_in,
 	output	logic			ready_out,
 	output	logic			valid_out,
@@ -55,12 +55,14 @@ module ftoi_converter
 	logic			upper_limit_exc;
 	logic			rounded_zero;
 
+	logic			valid_in_int;
+
 	assign			lower_limit_exc	= inf_a && sgn_a;
 	assign			upper_limit_exc	= (inf_a && !sgn_a) || sNaN_a || qNaN_a;
 	assign			rounded_zero	= op == FPU_OP_CVTFU && sgn_a;
 
 	assign			offset			= 8'h9e - exp_a;
-	
+
 	/* calculate offset:
 	 *   31 - exp_unbiased
 	 * = 31 + bias - (exp_unbiased + bias)
@@ -68,7 +70,8 @@ module ftoi_converter
 	 * = 31 + 127 - exp_biased
 	 */
 
-	assign			ready_out		= ready_in && (op == FPU_OP_CVTFI || op == FPU_OP_CVTFU);
+	assign			valid_in_int	= valid_in && (op == FPU_OP_CVTFI || op == FPU_OP_CVTFU);
+	assign			ready_out		= ready_in;
 
 	always_comb begin
 		if (skip_round) begin
@@ -98,7 +101,7 @@ module ftoi_converter
 			skip_round		<= 1'b0;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in_int && ready_out) begin
 			valid_out		<= 1'b1;
 			reg_rm			<= rm;
 			reg_int			<= shifter_out[32:1];

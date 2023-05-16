@@ -109,13 +109,13 @@ module FPGA_top
 	end
 	
 	// ip cores
-	MMCM MMCM_inst
+	MMCM_IP MMCM_inst
 	(
 		.clk_in1(ref_clk),
 		.clk_out1(clk)
 	);
 
-	BRAM_Controller imem_controller
+	BRAM_Controller_IP imem_controller
 	(
 		.s_axi_aclk(clk),
 		.s_axi_aresetn(!reset),
@@ -153,7 +153,7 @@ module FPGA_top
 		.bram_rddata_a(bram_rddata_a)
 	);
 	
-	BRAM_Controller dmem_controller
+	BRAM_Controller_IP dmem_controller
 	(
 		.s_axi_aclk(clk),
 		.s_axi_aresetn(!reset),
@@ -191,7 +191,7 @@ module FPGA_top
 		.bram_rddata_a(bram_rddata_b)
 	);
 	
-	RAM RAM_inst
+	RAM_IP RAM_inst
 	(
 		.clka(bram_clk_a),
 		.addra(bram_addr_a[15:2]),

@@ -72,7 +72,8 @@ module float_adder
 	logic			[24:0]	sum;
 
 	logic			[4:0]	leading_zeros;
-	
+
+	logic					valid_in_int;
 	logic					stall;
 
 	enum	logic	[2:0]	{IDLE, INIT, ALIGN, ADD, NORM} state;
@@ -83,7 +84,8 @@ module float_adder
 	assign	align			= reg_exp_a - reg_exp_b;
 	assign	shifter_in		= reg_sub ? -{reg_man_b, 2'b00} : {reg_man_b, 2'b00};
 
-	assign	ready_out		= ready_in && !stall && (op == FPU_OP_ADD || op == FPU_OP_SUB);
+	assign	valid_in_int	= valid_in && (op == FPU_OP_ADD || op == FPU_OP_SUB);
+	assign	ready_out		= ready_in && !stall;
 	assign	stall			= state != IDLE;
 
 	always_ff @(posedge clk, posedge reset) begin
@@ -117,7 +119,7 @@ module float_adder
 			state		<= IDLE;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in_int && ready_out) begin
 			valid_out	<= 1'b0;
 			reg_man_a	<= man_a;
 			reg_exp_a	<= exp_a;
@@ -242,7 +244,7 @@ module float_adder
 							sgn_y		<= reg_sgn_b;
 							state		<= ALIGN;
 						end
-						
+
 						else begin
 							sgn_y		<= reg_sgn_a;
 							state		<= ALIGN;

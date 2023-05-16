@@ -56,6 +56,7 @@ module WB_stage
 	assign			rd_data_to_WB	= wb_src_MEM == SEL_CSR ? csr_rdata : rd_data_MEM;
 	
 	assign			ready_out		= ready_in;
+	assign			flush_out		= flush_in;
 	
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin

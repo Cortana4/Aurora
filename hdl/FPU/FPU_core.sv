@@ -3,7 +3,7 @@ module FPU_core
 	input	logic			clk,
 	input	logic			reset,
 	input	logic			flush,
-	
+
 	input	logic			valid_in,
 	output	logic			ready_out,
 	output	logic			valid_out,
@@ -15,7 +15,7 @@ module FPU_core
 	input	logic	[31:0]	a,
 	input	logic	[31:0]	b,
 
-	output	logic	[31:0]	result,
+	output	logic	[31:0]	y,
 
 	output	logic			IV,
 	output	logic			DZ,
@@ -51,7 +51,7 @@ module FPU_core
 	// arithmetic
 	logic			ready_out_arith;
 	logic			valid_out_arith;
-	logic 	[31:0]	result_arith;
+	logic 	[31:0]	y_arith;
 	logic			IV_arith;
 	logic			DZ_arith;
 	logic			OF_arith;
@@ -61,46 +61,46 @@ module FPU_core
 	// sign modifier
 	logic			ready_out_sgn_mod;
 	logic			valid_out_sgn_mod;
-	logic	[31:0]	result_sgn_mod;
+	logic	[31:0]	y_sgn_mod;
 
 	// ftoi converter
 	logic			ready_out_ftoi;
 	logic			valid_out_ftoi;
-	logic	[31:0]	result_ftoi;
+	logic	[31:0]	y_ftoi;
 	logic			IV_ftoi;
 	logic			IE_ftoi;
 
 	// itof converter
 	logic			ready_out_itof;
 	logic			valid_out_itof;
-	logic	[31:0]	result_itof;
+	logic	[31:0]	y_itof;
 	logic			IE_itof;
 
 	// comparator
 	logic			ready_out_cmp;
 	logic			valid_out_cmp;
-	logic	[31:0]	result_cmp;
+	logic	[31:0]	y_cmp;
 	logic			IV_cmp;
 
 	// selector
 	logic			ready_out_sel;
 	logic			valid_out_sel;
-	logic	[31:0]	result_sel;
+	logic	[31:0]	y_sel;
 	logic			IV_sel;
 
 	// classifier
 	logic			ready_out_class;
 	logic			valid_out_class;
-	logic	[31:0]	result_class;
+	logic	[31:0]	y_class;
 
-	assign			ready_out	= ready_out_arith	|| ready_out_sgn_mod	||
-								  ready_out_ftoi	|| ready_out_itof		||
-								  ready_out_cmp		|| ready_out_sel		||
+	assign			ready_out	= ready_out_arith	&& ready_out_sgn_mod	&&
+								  ready_out_ftoi	&& ready_out_itof		&&
+								  ready_out_cmp		&& ready_out_sel		&&
 								  ready_out_class;
 
 	always_comb begin
 		valid_out	= valid_out_arith;
-		result		= result_arith;
+		y			= y_arith;
 		IV			= IV_arith;
 		DZ			= DZ_arith;
 		OF			= OF_arith;
@@ -109,7 +109,7 @@ module FPU_core
 
 		if (valid_out_sgn_mod) begin
 			valid_out	= valid_out_sgn_mod;
-			result		= result_sgn_mod;
+			y			= y_sgn_mod;
 			IV			= 1'b0;
 			DZ			= 1'b0;
 			OF			= 1'b0;
@@ -119,7 +119,7 @@ module FPU_core
 
 		else if (valid_out_ftoi) begin
 			valid_out	= valid_out_ftoi;
-			result		= result_ftoi;
+			y			= y_ftoi;
 			IV			= IV_ftoi;
 			DZ			= 1'b0;
 			OF			= 1'b0;
@@ -129,7 +129,7 @@ module FPU_core
 
 		else if (valid_out_itof) begin
 			valid_out	= valid_out_itof;
-			result		= result_itof;
+			y			= y_itof;
 			IV			= 1'b0;
 			DZ			= 1'b0;
 			OF			= 1'b0;
@@ -139,7 +139,7 @@ module FPU_core
 
 		else if (valid_out_cmp) begin
 			valid_out	= valid_out_cmp;
-			result		= result_cmp;
+			y			= y_cmp;
 			IV			= IV_cmp;
 			DZ			= 1'b0;
 			OF			= 1'b0;
@@ -149,7 +149,7 @@ module FPU_core
 
 		else if (valid_out_sel) begin
 			valid_out	= valid_out_sel;
-			result		= result_sel;
+			y			= y_sel;
 			IV			= IV_sel;
 			DZ			= 1'b0;
 			OF			= 1'b0;
@@ -159,7 +159,7 @@ module FPU_core
 
 		else if (valid_out_class) begin
 			valid_out	= valid_out_class;
-			result		= result_class;
+			y			= y_class;
 			IV			= 1'b0;
 			DZ			= 1'b0;
 			OF			= 1'b0;
@@ -232,7 +232,7 @@ module FPU_core
 		.ready_out(ready_out_arith),
 		.valid_out(valid_out_arith),
 		.ready_in(ready_in),
-		
+
 		.op(op),
 		.rm(rm),
 
@@ -252,7 +252,7 @@ module FPU_core
 		.sNaN_b(sNaN_b),
 		.qNaN_b(qNaN_b),
 
-		.float_out(result_arith),
+		.float_out(y_arith),
 
 		.IV(IV_arith),
 		.DZ(DZ_arith),
@@ -271,13 +271,13 @@ module FPU_core
 		.ready_out(ready_out_sgn_mod),
 		.valid_out(valid_out_sgn_mod),
 		.ready_in(ready_in),
-		
+
 		.op(op),
 
 		.a(a),
 		.sgn_b(b[31]),
 
-		.float_out(result_sgn_mod)
+		.float_out(y_sgn_mod)
 	);
 
 	ftoi_converter ftoi_converter_inst
@@ -290,7 +290,7 @@ module FPU_core
 		.ready_out(ready_out_ftoi),
 		.valid_out(valid_out_ftoi),
 		.ready_in(ready_in),
-		
+
 		.op(op),
 		.rm(rm),
 
@@ -302,7 +302,7 @@ module FPU_core
 		.sNaN_a(sNaN_a),
 		.qNaN_a(qNaN_a),
 
-		.int_out(result_ftoi),
+		.int_out(y_ftoi),
 
 		.IV(IV_ftoi),
 		.IE(IE_ftoi)
@@ -318,12 +318,12 @@ module FPU_core
 		.ready_out(ready_out_itof),
 		.valid_out(valid_out_itof),
 		.ready_in(ready_in),
-		
+
 		.op(op),
 		.rm(rm),
 
 		.int_in(a),
-		.float_out(result_itof),
+		.float_out(y_itof),
 		.IE(IE_itof)
 	);
 
@@ -337,13 +337,13 @@ module FPU_core
 		.ready_out(ready_out_cmp),
 		.valid_out(valid_out_cmp),
 		.ready_in(ready_in),
-		
+
 		.op(op),
 
 		.a(a),
 		.b(b),
 
-		.int_out(result_cmp),
+		.int_out(y_cmp),
 		.IV(IV_cmp)
 	);
 
@@ -357,13 +357,13 @@ module FPU_core
 		.ready_out(ready_out_sel),
 		.valid_out(valid_out_sel),
 		.ready_in(ready_in),
-		
+
 		.op(op),
 
 		.a(a),
 		.b(b),
 
-		.float_out(result_sel),
+		.float_out(y_sel),
 		.IV(IV_sel)
 	);
 
@@ -377,7 +377,7 @@ module FPU_core
 		.ready_out(ready_out_class),
 		.valid_out(valid_out_class),
 		.ready_in(ready_in),
-		
+
 		.op(op),
 
 		.sgn_a(sgn_a),
@@ -387,7 +387,7 @@ module FPU_core
 		.qNaN_a(qNaN_a),
 		.denormal_a(denormal_a),
 
-		.int_out(result_class)
+		.int_out(y_class)
 	);
 
 endmodule

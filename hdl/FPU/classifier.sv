@@ -5,12 +5,12 @@ module classifier
 	input	logic			clk,
 	input	logic			reset,
 	input	logic			flush,
-	
+
 	input	logic			valid_in,
 	output	logic			ready_out,
 	output	logic			valid_out,
 	input	logic			ready_in,
-	
+
 	input	logic	[4:0]	op,
 
 	input	logic			sgn_a,
@@ -22,8 +22,9 @@ module classifier
 
 	output	logic	[31:0]	int_out
 );
-
-	assign	ready_out	= ready_in && op == FPU_OP_CLASS;
+	logic	valid_in_int;
+	assign	valid_in_int	= valid_in && (op == FPU_OP_CLASS);
+	assign	ready_out		= ready_in;
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
@@ -31,10 +32,10 @@ module classifier
 			int_out		<= 32'h00000000;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in_int && ready_out) begin
 			valid_out	<= 1'b1;
 			int_out		<= 32'h00000000;
-			
+
 			// 0.0
 			if (!sgn_a && zero_a)
 				int_out		<= 32'h00000010;

@@ -5,7 +5,7 @@ module post_processor
 	input	logic			clk,
 	input	logic			reset,
 	input	logic			flush,
-	
+
 	input	logic			valid_in,
 	output	logic			ready_out,
 	output	logic			valid_out,
@@ -63,7 +63,7 @@ module post_processor
 	assign			RTZ			= reg_rm == FPU_RM_RTZ;
 	assign			RDN			= reg_rm == FPU_RM_RDN;
 	assign			RUP			= reg_rm == FPU_RM_RUP;
-	
+
 	assign			ready_out	= ready_in;
 
 	// input logic

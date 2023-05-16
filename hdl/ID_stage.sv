@@ -4,7 +4,6 @@ module ID_stage
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -28,7 +27,6 @@ module ID_stage
 	input	logic	[31:0]	IR_IF,
 	input	logic			exc_pend_IF,
 	input	logic	[31:0]	exc_cause_IF,
-
 	output	logic			jump_pred_IF,
 	output	logic	[31:0]	jump_addr_IF,
 

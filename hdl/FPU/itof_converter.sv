@@ -33,11 +33,14 @@ module itof_converter
 	logic	[2:0]	reg_rm;
 	logic			reg_sgn_y;
 
-	assign			sgn_y		= int_in[31] && op == FPU_OP_CVTIF;
-	assign			man_denorm	= sgn_y ? -int_in : int_in;
-	assign			float_out	= {reg_sgn_y, exp_y + inc_exp, man_y};
-	
-	assign			ready_out	= ready_in && (op == FPU_OP_CVTIF || op == FPU_OP_CVTUF);
+	logic			valid_in_int;
+
+	assign			sgn_y			= int_in[31] && op == FPU_OP_CVTIF;
+	assign			man_denorm		= sgn_y ? -int_in : int_in;
+	assign			float_out		= {reg_sgn_y, exp_y + inc_exp, man_y};
+
+	assign			valid_in_int	= valid_in && (op == FPU_OP_CVTIF || op == FPU_OP_CVTUF);
+	assign			ready_out		= ready_in;
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
@@ -48,7 +51,7 @@ module itof_converter
 			reg_sgn_y	<= 1'b0;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in_int && ready_out) begin
 			valid_out	<= 1'b1;
 			reg_rm		<= rm;
 			man_norm	<= 32'h00000000;

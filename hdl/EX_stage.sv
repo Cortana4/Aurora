@@ -5,7 +5,6 @@ module EX_stage
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -20,9 +19,8 @@ module EX_stage
 	output	logic			ready_out_div,
 	input	logic			valid_in_fpu,
 	output	logic			ready_out_fpu,
-	
+
 	input	logic	[2:0]	fpu_rm_csr,
-	input	logic			trap_taken_csr,
 
 	input	logic	[31:0]	PC_ID,
 	input	logic	[31:0]	IR_ID,
@@ -93,7 +91,7 @@ module EX_stage
 	output	logic	[2:0]	dmem_axi_arprot,
 	output	logic			dmem_axi_arvalid,
 	input	logic			dmem_axi_arready,
-	
+
 	input	logic			rd_wena_MEM,
 	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM
@@ -102,7 +100,7 @@ module EX_stage
 	logic	[31:0]	rs1_data;
 	logic	[31:0]	rs2_data;
 	logic	[31:0]	rs3_data;
-	
+
 	logic	[31:0]	csr_wdata;
 	logic	[31:0]	a;
 	logic	[31:0]	b;
@@ -111,7 +109,7 @@ module EX_stage
 	logic			jump_taken;
 	logic			jump_mpred;
 	logic	[31:0]	jump_addr;
-	
+
 	logic			dmem_axi_awvalid_int;
 	logic	[31:0]	dmem_axi_wdata_int;
 	logic	[3:0]	dmem_axi_wstrb_int;
@@ -119,24 +117,24 @@ module EX_stage
 	logic			dmem_axi_arvalid_int;
 
 	logic	[31:0]	alu_out;
-	
+
 	logic	[31:0]	mul_out;
 	logic			valid_out_mul;
-	
+
 	logic	[31:0]	div_out;
 	logic			valid_out_div;
-	
+
 	logic	[31:0]	fpu_out;
 	logic	[4:0]	fpu_flags;
 	logic			valid_out_fpu;
-	
+
 	logic			maligned_inst_addr;
 	logic			maligned_load_addr;
 	logic			maligned_store_addr;
 
 	logic			exc_pend;
 	logic	[31:0]	exc_cause;
-	
+
 	logic			rd_after_ld_hazard;
 	logic			stall;
 
@@ -148,19 +146,19 @@ module EX_stage
 	assign			jump_taken			= jump_ena_ID && (jump_alw_ID || alu_out[0]);
 	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
 	assign			maligned_inst_addr	= jump_taken  && |jump_addr[1:0];
-	
+
 	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && !exc_pend_EX && !flush_out;
 	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && !exc_pend_EX && !flush_out;
 	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && !exc_pend_EX && !flush_out;
 
 	assign			ready_out			= ready_in && !stall;
 	assign			flush_out			= flush_in || jump_mpred_EX;
-	assign			stall				= exc_pend_EX || csr_wena_EX || csr_rena_EX || 
+	assign			stall				= exc_pend_EX || csr_wena_EX || csr_rena_EX ||
 										  (!exc_pend_ID && (rd_after_ld_hazard ||
 										  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
 										  (wb_src_ID == SEL_DIV && !valid_out_div) ||
 										  (wb_src_ID == SEL_FPU && !valid_out_fpu)));
-	
+
 	// jump address computation
 	always_comb begin
 		if (!jump_taken)
@@ -172,7 +170,7 @@ module EX_stage
 		else
 			jump_addr	= PC_ID + IM_ID;
 	end
-	
+
 	// wdata and byte enable computation
 	always_comb begin
 		dmem_axi_wdata_int	= 32'h00000000;
@@ -217,7 +215,7 @@ module EX_stage
 			exc_pend	= 1'b1;
 			exc_cause	= exc_cause_ID;
 		end
-		
+
 		else if (maligned_inst_addr) begin
 			exc_pend	= 1'b1;
 			exc_cause	= CAUSE_MISALIGNED_INST;
@@ -378,7 +376,7 @@ module EX_stage
 				dmem_axi_arvalid_int	<= 1'b0;
 		end
 	end
-	
+
 	bypass_logic bypass_logic_inst
 	(
 		.rs1_rena_ID(rs1_rena_ID),
@@ -420,9 +418,9 @@ module EX_stage
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(flush),
-		
-		.valid_in(valid_in && valid_in_mul && !exc_pend_ID),
+		.flush(flush_in),
+
+		.valid_in(valid_in_mul && !flush_out && !exc_pend_ID),
 		.ready_out(ready_out_mul),
 		.valid_out(valid_out_mul),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -439,9 +437,9 @@ module EX_stage
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(flush),
+		.flush(flush_in),
 
-		.valid_in(valid_in && valid_in_div && !exc_pend_ID),
+		.valid_in(valid_in_div && !flush_out && !exc_pend_ID),
 		.ready_out(ready_out_div),
 		.valid_out(valid_out_div),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -458,9 +456,9 @@ module EX_stage
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(flush),
+		.flush(flush_in),
 
-		.valid_in(valid_in && valid_in_fpu && !exc_pend_ID),
+		.valid_in(valid_in_fpu && !flush_out && !exc_pend_ID),
 		.ready_out(ready_out_fpu),
 		.valid_out(valid_out_fpu),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -472,7 +470,7 @@ module EX_stage
 		.b(b),
 		.c(c),
 
-		.result(fpu_out),
+		.y(fpu_out),
 
 		.IV(fpu_flags[4]),
 		.DZ(fpu_flags[3]),

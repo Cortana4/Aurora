@@ -26,15 +26,14 @@ module int_multiplier
 	logic	[1:0]		prev_op;
 	logic	[n-1:0]		prev_a;
 	logic	[n-1:0]		prev_b;
-	
+
 	logic	[1:0]		reg_op;
 	logic	[n-1:0]		reg_b;
 	logic	[2*n-1:0]	reg_res;
 	logic				reg_sgn;
 
 	logic	[n+m-1:0]	acc;
-	
-	logic				valid_out_int;
+
 	logic				stall;
 
 	integer				counter;
@@ -42,8 +41,7 @@ module int_multiplier
 	enum	logic		{IDLE, CALC} state;
 
 	assign				prev_op		= reg_op;
-	
-	assign				valid_out	= valid_out_int && !flush;
+
 	assign				ready_out	= ready_in && !stall;
 	assign				stall		= state != IDLE;
 
@@ -58,33 +56,33 @@ module int_multiplier
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out_int	<= 1'b0;
-			prev_a			<= 0;
-			prev_b			<= 0;
-			reg_op			<= 2'd0;
-			reg_b			<= 0;
-			reg_res			<= 0;
-			reg_sgn			<= 1'b0;
-			counter			<= 0;
-			state			<= IDLE;
+			valid_out	<= 1'b0;
+			prev_a		<= 0;
+			prev_b		<= 0;
+			reg_op		<= 2'd0;
+			reg_b		<= 0;
+			reg_res		<= 0;
+			reg_sgn		<= 1'b0;
+			counter		<= 0;
+			state		<= IDLE;
 		end
 
 		else if (valid_in && ready_out) begin
 			prev_a		<= a;
 			prev_b		<= b;
 			reg_op		<= op;
-			
+
 			if ((prev_op != UMULL && op == UMULL  ||
 				 prev_op == UMULL && op == UMULH) &&
 				 prev_a == a && prev_b == b) begin
-				valid_out_int	<= 1'b1;
-				state			<= IDLE;
+				valid_out	<= 1'b1;
+				state		<= IDLE;
 			end
-			
+
 			else begin
-				valid_out_int	<= 1'b0;
-				counter			<= 0;
-				state			<= CALC;
+				valid_out	<= 1'b0;
+				counter		<= 0;
+				state		<= CALC;
 
 				case (op)
 				UMULL,
@@ -108,19 +106,19 @@ module int_multiplier
 		end
 
 		else case (state)
-			IDLE:	if (valid_out_int && ready_in) begin
-						valid_out_int	<= 1'b0;
+			IDLE:	if (valid_out && ready_in) begin
+						valid_out	<= 1'b0;
 					end
 			CALC:	begin
 						reg_res	<= {acc, reg_res[n-1:m]};
 
 						if (counter == n/m-1) begin
-							valid_out_int	<= 1'b1;
-							state			<= IDLE;
+							valid_out	<= 1'b1;
+							state		<= IDLE;
 						end
 
 						else
-							counter			<= counter + 1;
+							counter		<= counter + 1;
 					end
 		endcase
 	end
