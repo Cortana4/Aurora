@@ -69,7 +69,7 @@ module csr_file
 						M_ena,			// 12		M		(integer multiply/divide)
 						1'b0,			// 11		L		(reserved)
 						1'b0,			// 10		K		(reserved)
-						1'b0,			// 9		J		(dynamically translated languages)
+						1'b0,			// 9		J		(reserved)
 						1'b1,			// 8		I		(base ISA)
 						1'b0,			// 7		H		(H-mode)
 						1'b0,			// 6		G		(reserved)
@@ -77,7 +77,7 @@ module csr_file
 						1'b0,			// 4		E		(RV32E base ISA)
 						1'b0,			// 3		D		(double-precision floating-point)
 						1'b0,			// 2		C		(compressed)
-						1'b0,			// 1		B		(bit-manipulation)
+						1'b0,			// 1		B		(reserved)
 						1'b0			// 0		A		(atomic)
 					};
 	

@@ -431,7 +431,7 @@ module pipeline
 		.dmem_axi_bresp(dmem_axi_bresp),
 		.dmem_axi_bvalid(dmem_axi_bvalid),
 		.dmem_axi_bready(dmem_axi_bready),
-		.dmem_axi_araddr(dmem_axi_araddr),
+		.dmem_axi_araddr(dmem_axi_araddr[1:0]),
 		.dmem_axi_rdata(dmem_axi_rdata),
 		.dmem_axi_rresp(dmem_axi_rresp),
 		.dmem_axi_rvalid(dmem_axi_rvalid),

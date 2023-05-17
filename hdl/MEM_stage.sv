@@ -32,7 +32,7 @@ module MEM_stage
 	input	logic	[1:0]	dmem_axi_bresp,		// write response channel
 	input	logic			dmem_axi_bvalid,
 	output	logic			dmem_axi_bready,
-	input	logic	[31:0]	dmem_axi_araddr,	// read address channel
+	input	logic	[1:0]	dmem_axi_araddr,	// read address channel
 	input	logic	[31:0]	dmem_axi_rdata,		// read data channel
 	input	logic	[1:0]	dmem_axi_rresp,
 	input	logic			dmem_axi_rvalid,
@@ -58,7 +58,7 @@ module MEM_stage
 	logic			stall;
 
 	logic	[31:0]	dmem_axi_rdata_aligned;
-	assign			dmem_axi_rdata_aligned	= dmem_axi_rdata >> (dmem_axi_araddr[1:0] << 3);
+	assign			dmem_axi_rdata_aligned	= dmem_axi_rdata >> (8*dmem_axi_araddr[1:0]);
 
 	assign			dmem_axi_bready			= wb_src_EX == SEL_MEM && !rd_wena_EX && valid_in && ready_out;
 	assign			dmem_axi_rready			= wb_src_EX == SEL_MEM &&  rd_wena_EX && valid_in && ready_out;
