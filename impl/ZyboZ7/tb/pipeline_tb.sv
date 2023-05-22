@@ -185,7 +185,7 @@ module pipeline_tb();
 		.web(bram_we_b)
 	);
 	
-	initial $readmemh("test.mem", RAM_inst.mem);
+	initial $readmemh("madd.mem", RAM_inst.mem);
 `endif
 	
 	pipeline aurora

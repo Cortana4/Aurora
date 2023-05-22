@@ -15,13 +15,13 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
-      <ZoomEndTime time="201.957 ns"></ZoomEndTime>
-      <Cursor1Time time="170.000 ns"></Cursor1Time>
+      <ZoomStartTime time="449.170 ns"></ZoomStartTime>
+      <ZoomEndTime time="646.971 ns"></ZoomEndTime>
+      <Cursor1Time time="530.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="209"></NameColumnWidth>
-      <ValueColumnWidth column_width="64"></ValueColumnWidth>
+      <ValueColumnWidth column_width="60"></ValueColumnWidth>
    </column_width_setting>
    <WVObjectSize size="4" />
    <wvobject fp_name="/pipeline_tb/clk" type="logic">
@@ -291,7 +291,6 @@
       <wvobject fp_name="group429" type="group">
          <obj_property name="label">PC</obj_property>
          <obj_property name="DisplayName">label</obj_property>
-         <obj_property name="isExpanded"></obj_property>
          <wvobject fp_name="/pipeline_tb/aurora/IF_stage_inst/PC_IF" type="array">
             <obj_property name="ElementShortName">PC_IF[31:0]</obj_property>
             <obj_property name="ObjectShortName">PC_IF[31:0]</obj_property>
