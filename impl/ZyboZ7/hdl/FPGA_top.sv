@@ -213,30 +213,26 @@ module FPGA_top
 		.clk(clk),
 		.reset(reset),
 		
-		.irq_ext(16'h0000),
-		.irq_int_controller(1'b0),
-		.irq_timer(1'b0),
-		.irq_software(1'b0),
+		.int_req_ext(16'h0000),
+		.int_req_ictrl(1'b0),
+		.int_req_timer(1'b0),
+		.int_req_soft(1'b0),
 
 		.imem_axi_awaddr(imem_axi_awaddr),
 		.imem_axi_awprot(imem_axi_awprot),
 		.imem_axi_awvalid(imem_axi_awvalid),
 		.imem_axi_awready(imem_axi_awready),
-
 		.imem_axi_wdata(imem_axi_wdata),
 		.imem_axi_wstrb(imem_axi_wstrb),
 		.imem_axi_wvalid(imem_axi_wvalid),
 		.imem_axi_wready(imem_axi_wready),
-
 		.imem_axi_bresp(imem_axi_bresp),
 		.imem_axi_bvalid(imem_axi_bvalid),
 		.imem_axi_bready(imem_axi_bready),
-
 		.imem_axi_araddr(imem_axi_araddr),
 		.imem_axi_arprot(imem_axi_arprot),
 		.imem_axi_arvalid(imem_axi_arvalid),
 		.imem_axi_arready(imem_axi_arready),
-
 		.imem_axi_rdata(imem_axi_rdata),
 		.imem_axi_rresp(imem_axi_rresp),
 		.imem_axi_rvalid(imem_axi_rvalid),
@@ -246,21 +242,17 @@ module FPGA_top
 		.dmem_axi_awprot(dmem_axi_awprot),
 		.dmem_axi_awvalid(dmem_axi_awvalid),
 		.dmem_axi_awready(dmem_axi_awready),
-
 		.dmem_axi_wdata(dmem_axi_wdata),
 		.dmem_axi_wstrb(dmem_axi_wstrb),
 		.dmem_axi_wvalid(dmem_axi_wvalid),
 		.dmem_axi_wready(dmem_axi_wready),
-
 		.dmem_axi_bresp(dmem_axi_bresp),
 		.dmem_axi_bvalid(dmem_axi_bvalid),
 		.dmem_axi_bready(dmem_axi_bready),
-
 		.dmem_axi_araddr(dmem_axi_araddr),
 		.dmem_axi_arprot(dmem_axi_arprot),
 		.dmem_axi_arvalid(dmem_axi_arvalid),
 		.dmem_axi_arready(dmem_axi_arready),
-
 		.dmem_axi_rdata(dmem_axi_rdata),
 		.dmem_axi_rresp(dmem_axi_rresp),
 		.dmem_axi_rvalid(dmem_axi_rvalid),

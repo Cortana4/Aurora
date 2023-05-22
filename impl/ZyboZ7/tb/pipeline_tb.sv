@@ -193,10 +193,10 @@ module pipeline_tb();
 		.clk(clk),
 		.reset(reset),
 		
-		.irq_ext(16'h0000),
-		.irq_int_controller(1'b0),
-		.irq_timer(1'b0),
-		.irq_software(1'b0),
+		.int_req_ext(16'h0000),
+		.int_req_ictrl(1'b0),
+		.int_req_timer(1'b0),
+		.int_req_soft(1'b0),
 		
 		.imem_axi_awaddr(imem_axi_awaddr),
 		.imem_axi_awprot(imem_axi_awprot),

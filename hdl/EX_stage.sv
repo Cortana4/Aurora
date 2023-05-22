@@ -20,8 +20,6 @@ module EX_stage
 	input	logic			valid_in_fpu,
 	output	logic			ready_out_fpu,
 
-	input	logic	[2:0]	fpu_rm_csr,
-
 	input	logic	[31:0]	PC_ID,
 	input	logic	[31:0]	IR_ID,
 	input	logic	[31:0]	IM_ID,
@@ -94,7 +92,10 @@ module EX_stage
 
 	input	logic			rd_wena_MEM,
 	input	logic	[5:0]	rd_addr_MEM,
-	input	logic	[31:0]	rd_data_MEM
+	input	logic	[31:0]	rd_data_MEM,
+
+	input	logic	[2:0]	fpu_rm_csr,
+	input	logic			int_taken_csr
 );
 
 	logic	[31:0]	rs1_data;
@@ -147,12 +148,12 @@ module EX_stage
 	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
 	assign			maligned_inst_addr	= jump_taken  && |jump_addr[1:0];
 
-	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && !exc_pend_EX && !flush_out;
-	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && !exc_pend_EX && !flush_out;
-	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && !exc_pend_EX && !flush_out;
+	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && !exc_pend_EX && !flush_in;
+	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && !exc_pend_EX && !flush_in;
+	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && !exc_pend_EX && !flush_in;
 
 	assign			ready_out			= ready_in && !stall;
-	assign			flush_out			= flush_in || jump_mpred_EX;
+	assign			flush_out			= flush_in || jump_mpred_EX || int_taken_csr;
 	assign			stall				= exc_pend_EX || csr_wena_EX || csr_rena_EX ||
 										  (!exc_pend_ID && (rd_after_ld_hazard ||
 										  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
@@ -418,9 +419,9 @@ module EX_stage
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(flush_in),
+		.flush(flush_out),
 
-		.valid_in(valid_in_mul && !flush_out && !exc_pend_ID),
+		.valid_in(valid_in_mul && !exc_pend_ID),
 		.ready_out(ready_out_mul),
 		.valid_out(valid_out_mul),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -437,9 +438,9 @@ module EX_stage
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(flush_in),
+		.flush(flush_out),
 
-		.valid_in(valid_in_div && !flush_out && !exc_pend_ID),
+		.valid_in(valid_in_div && !exc_pend_ID),
 		.ready_out(ready_out_div),
 		.valid_out(valid_out_div),
 		.ready_in(ready_in && !rd_after_ld_hazard),
@@ -456,9 +457,9 @@ module EX_stage
 	(
 		.clk(clk),
 		.reset(reset),
-		.flush(flush_in),
+		.flush(flush_out),
 
-		.valid_in(valid_in_fpu && !flush_out && !exc_pend_ID),
+		.valid_in(valid_in_fpu && !exc_pend_ID),
 		.ready_out(ready_out_fpu),
 		.valid_out(valid_out_fpu),
 		.ready_in(ready_in && !rd_after_ld_hazard),

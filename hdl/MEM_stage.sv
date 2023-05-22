@@ -28,7 +28,7 @@ module MEM_stage
 	input	logic			trap_ret_EX,
 	input	logic			exc_pend_EX,
 	input	logic	[31:0]	exc_cause_EX,
-	
+
 	input	logic	[1:0]	dmem_axi_bresp,		// write response channel
 	input	logic			dmem_axi_bvalid,
 	output	logic			dmem_axi_bready,
@@ -52,7 +52,9 @@ module MEM_stage
 	output	logic	[4:0]	fpu_flags_MEM,
 	output	logic			trap_ret_MEM,
 	output	logic			exc_pend_MEM,
-	output	logic	[31:0]	exc_cause_MEM
+	output	logic	[31:0]	exc_cause_MEM,
+
+	input	logic			exc_taken_csr
 );
 
 	logic			stall;
@@ -64,7 +66,7 @@ module MEM_stage
 	assign			dmem_axi_rready			= wb_src_EX == SEL_MEM &&  rd_wena_EX && valid_in && ready_out;
 
 	assign			ready_out				= ready_in && !stall;
-	assign			flush_out				= flush_in;
+	assign			flush_out				= flush_in || exc_taken_csr;
 	assign			stall					= exc_pend_MEM || csr_wena_MEM || csr_rena_MEM ||
 											  (!exc_pend_EX && wb_src_EX == SEL_MEM &&
 											  ((rd_wena_EX && !dmem_axi_rvalid) ||
@@ -108,7 +110,7 @@ module MEM_stage
 			trap_ret_MEM	<= trap_ret_EX;
 			exc_pend_MEM	<= exc_pend_EX;
 			exc_cause_MEM	<= exc_cause_EX;
-			
+
 			if (wb_src_EX == SEL_MEM) begin
 				// dmem read access (load)
 				if (rd_wena_EX) begin
@@ -116,7 +118,7 @@ module MEM_stage
 						exc_pend_MEM	<= 1'b1;
 						exc_cause_MEM	<= CAUSE_DMEM_BUS_ERROR;
 					end
-					
+
 					else case (mem_op_EX)
 						MEM_LB:		rd_data_MEM	<= {{24{dmem_axi_rdata_aligned[7]}}, dmem_axi_rdata_aligned[7:0]};
 						MEM_LBU:	rd_data_MEM	<= {24'h000000, dmem_axi_rdata_aligned[7:0]};

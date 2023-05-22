@@ -3,7 +3,7 @@
 module branch_predictor
 #(
 	parameter	n			= 2,	// considered PC bits
-	parameter	WITH_RESET	= 0		// add/remove PHT reset and thus
+	parameter	INFER_RAM	= 1		// add/remove PHT reset and thus
 )									// infer registers or distributed RAM
 (
 	input	logic			clk,
@@ -31,7 +31,7 @@ module branch_predictor
 
 	// prediction history table (PHT), global branch history (GBH)
 	// all branches are initially considered "strongly taken"
-	logic	[1:0]	PHT		[2**n]	= '{default:2'b11};
+	logic	[1:0]	PHT		[2**n]	= '{default: 2'b11};
 	logic	[n-1:0]	GBH;
 
 	logic	[n-1:0]	wPtr;
@@ -61,7 +61,18 @@ module branch_predictor
 	end
 
 	generate
-		if (WITH_RESET) begin
+		if (INFER_RAM) begin
+			always_ff @(posedge clk) begin
+				if (update_history) begin
+					if (jump_taken_EX)
+						PHT[wPtr]	<= PHT[wPtr] + ~&PHT[wPtr];
+					else
+						PHT[wPtr]	<= PHT[wPtr] - |PHT[wPtr];
+				end
+			end
+		end
+		
+		else begin
 			always_ff @(posedge clk, posedge reset) begin
 				if (reset) begin
 					for (integer i = 0; i < 2**n; i = i+1)
@@ -72,17 +83,6 @@ module branch_predictor
 					if (jump_taken_EX)
 						PHT[wPtr]	<= PHT[wPtr] + ~&PHT[wPtr];
 
-					else
-						PHT[wPtr]	<= PHT[wPtr] - |PHT[wPtr];
-				end
-			end
-		end
-		
-		else begin
-			always_ff @(posedge clk) begin
-				if (update_history) begin
-					if (jump_taken_EX)
-						PHT[wPtr]	<= PHT[wPtr] + ~&PHT[wPtr];
 					else
 						PHT[wPtr]	<= PHT[wPtr] - |PHT[wPtr];
 				end

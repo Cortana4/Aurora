@@ -18,20 +18,19 @@ module IF_stage
 	input	logic			imem_axi_rvalid,
 	output	logic			imem_axi_rready,
 
-	input	logic			trap_taken_csr,
-	input	logic	[31:0]	trap_addr_csr,
-
-	output	logic	[31:0]	PC_int,
-
 	output	logic	[31:0]	PC_IF,
 	output	logic	[31:0]	IR_IF,
 	output	logic			exc_pend_IF,
 	output	logic	[31:0]	exc_cause_IF,
+
 	input	logic			jump_pred_IF,
 	input	logic	[31:0]	jump_addr_IF,
 
 	input	logic			jump_mpred_EX,
-	input	logic	[31:0]	jump_addr_EX
+	input	logic	[31:0]	jump_addr_EX,
+
+	input	logic			trap_taken_csr,
+	input	logic	[31:0]	trap_addr_csr
 );
 
 	logic			start_cycle;
@@ -39,6 +38,7 @@ module IF_stage
 	logic			jump_pend;
 	logic			PC_valid;
 	logic	[31:0]	PC;
+	logic	[31:0]	PC_IF_int;
 
 	logic			imem_addr_buf_wena;
 	logic			imem_addr_buf_rena;
@@ -131,7 +131,7 @@ module IF_stage
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush_in) begin
 			valid_out		<= 1'b0;
-			PC_IF			<= 32'h00000000;
+			PC_IF_int		<= 32'h00000000;
 			IR_IF			<= 32'h00000000;
 			exc_pend_IF		<= 1'b0;
 			exc_cause_IF	<= 32'h00000000;
@@ -140,7 +140,7 @@ module IF_stage
 		else if (imem_addr_buf_rena && imem_addr_buf_valid && !jump_pred_IF) begin
 			if (|imem_axi_rresp) begin
 				valid_out		<= 1'b1;
-				PC_IF			<= imem_addr_buf_rdata;
+				PC_IF_int		<= imem_addr_buf_rdata;
 				IR_IF			<= RV32I_NOP;
 				exc_pend_IF		<= 1'b1;
 				exc_cause_IF	<= CAUSE_IMEM_BUS_ERROR;
@@ -148,7 +148,7 @@ module IF_stage
 
 			else begin
 				valid_out		<= 1'b1;
-				PC_IF			<= imem_addr_buf_rdata;
+				PC_IF_int		<= imem_addr_buf_rdata;
 				IR_IF			<= imem_axi_rdata;
 				exc_pend_IF		<= 1'b0;
 				exc_cause_IF	<= 32'h00000000;
@@ -157,7 +157,7 @@ module IF_stage
 
 		else if (valid_out && ready_in) begin
 			valid_out		<= 1'b0;
-			PC_IF			<= 32'h00000000;
+			PC_IF_int		<= 32'h00000000;
 			IR_IF			<= 32'h00000000;
 			exc_pend_IF		<= 1'b0;
 			exc_cause_IF	<= 32'h00000000;
@@ -186,13 +186,13 @@ module IF_stage
 
 	always_comb begin
 		if (valid_out)
-			PC_int	= PC_IF;
+			PC_IF	= PC_IF_int;
 
 		else if (imem_addr_buf_valid)
-			PC_int	= imem_addr_buf_rdata;
+			PC_IF	= imem_addr_buf_rdata;
 
 		else
-			PC_int	= PC;
+			PC_IF	= PC;
 	end
 
 

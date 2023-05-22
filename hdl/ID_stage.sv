@@ -19,14 +19,11 @@ module ID_stage
 	output	logic			valid_out_fpu,
 	input	logic			ready_in_fpu,
 
-	input	logic			M_ena_csr,
-	input	logic			F_ena_csr,
-	input	logic	[31:0]	trap_raddr_csr,
-
 	input	logic	[31:0]	PC_IF,
 	input	logic	[31:0]	IR_IF,
 	input	logic			exc_pend_IF,
 	input	logic	[31:0]	exc_cause_IF,
+
 	output	logic			jump_pred_IF,
 	output	logic	[31:0]	jump_addr_IF,
 
@@ -70,9 +67,13 @@ module ID_stage
 	input	logic			jump_alw_EX,
 	input	logic			jump_taken_EX,
 
-	input	logic			rd_wena_to_WB,
-	input	logic	[5:0]	rd_addr_to_WB,
-	input	logic	[31:0]	rd_data_to_WB
+	input	logic			rd_wena_WB,
+	input	logic	[5:0]	rd_addr_WB,
+	input	logic	[31:0]	rd_data_WB,
+
+	input	logic			M_ena_csr,
+	input	logic			F_ena_csr,
+	input	logic	[31:0]	trap_raddr_csr
 );
 
 	logic	[31:0]	immediate;
@@ -312,7 +313,7 @@ module ID_stage
 		.illegal_inst(illegal_inst)
 	);
 
-	branch_predictor #(5, 0) branch_predictor_inst
+	branch_predictor #(6, 1) branch_predictor_inst
 	(
 		.clk(clk),
 		.reset(reset),
@@ -341,9 +342,9 @@ module ID_stage
 	(
 		.clk(clk),
 
-		.rd_wena(rd_wena_to_WB),
-		.rd_addr(rd_addr_to_WB),
-		.rd_data(rd_data_to_WB),
+		.rd_wena(rd_wena_WB),
+		.rd_addr(rd_addr_WB),
+		.rd_data(rd_data_WB),
 
 		.rs1_rena(rs1_rena),
 		.rs1_addr(rs1_addr),

@@ -4,10 +4,10 @@ module pipeline
 	input	logic			reset,
 
 // interrupt request signals
-	input	logic	[15:0]	irq_ext,
-	input	logic			irq_int_controller,
-	input	logic			irq_timer,
-	input	logic			irq_software,
+	input	logic	[15:0]	int_req_ext,
+	input	logic			int_req_ictrl,
+	input	logic			int_req_timer,
+	input	logic			int_req_soft,
 
 // imem port
 	// write address channel
@@ -62,7 +62,7 @@ module pipeline
 	output	logic			dmem_axi_rready
 );
 
-	// IF signals / IF/ID pipeline registers
+	// IF signals, IF/ID pipeline registers
 	logic			valid_out_IF;
 	logic			ready_in_IF;
 	logic			flush_in_IF;
@@ -73,7 +73,7 @@ module pipeline
 	logic			jump_pred_IF;
 	logic	[31:0]	jump_addr_IF;
 
-	// ID signals / ID/EX pipeline registers
+	// ID signals, ID/EX pipeline registers
 	logic			valid_out_ID;
 	logic			ready_in_ID;
 	logic			flush_in_ID;
@@ -118,7 +118,7 @@ module pipeline
 	logic			exc_pend_ID;
 	logic	[31:0]	exc_cause_ID;
 
-	// EX signals / EX/mem pipeline registers
+	// EX signals, EX/mem pipeline registers
 	logic			valid_out_EX;
 	logic			ready_in_EX;
 	logic			flush_in_EX;
@@ -144,7 +144,7 @@ module pipeline
 	logic			exc_pend_EX;
 	logic	[31:0]	exc_cause_EX;
 
-	// MEM signals / MEM/WB pipeline registers
+	// MEM signals, MEM/WB pipeline registers
 	logic			valid_out_MEM;
 	logic			ready_in_MEM;
 	logic			flush_in_MEM;
@@ -167,9 +167,9 @@ module pipeline
 	// WB signals
 	logic	[31:0]	PC_WB;
 	logic	[31:0]	IR_WB;
-	logic			rd_wena_to_WB;
-	logic	[5:0]	rd_addr_to_WB;
-	logic	[31:0]	rd_data_to_WB;
+	logic			rd_wena_WB;
+	logic	[5:0]	rd_addr_WB;
+	logic	[31:0]	rd_data_WB;
 
 	// csr signals
 	logic			M_ena_csr;
@@ -210,11 +210,6 @@ module pipeline
 		.imem_axi_rvalid(imem_axi_rvalid),
 		.imem_axi_rready(imem_axi_rready),
 
-		.trap_taken_csr(trap_taken_csr),
-		.trap_addr_csr(trap_addr_csr),
-
-		.PC_int(),
-
 		.PC_IF(PC_IF),
 		.IR_IF(IR_IF),
 		.exc_pend_IF(exc_pend_IF),
@@ -224,7 +219,10 @@ module pipeline
 		.jump_addr_IF(jump_addr_IF),
 
 		.jump_mpred_EX(jump_mpred_EX),
-		.jump_addr_EX(jump_addr_EX)
+		.jump_addr_EX(jump_addr_EX),
+
+		.trap_taken_csr(trap_taken_csr),
+		.trap_addr_csr(trap_addr_csr)
 	);
 
 	ID_stage ID_stage_inst
@@ -245,10 +243,6 @@ module pipeline
 		.ready_in_div(ready_in_div_ID),
 		.valid_out_fpu(valid_out_fpu_ID),
 		.ready_in_fpu(ready_in_fpu_ID),
-
-		.M_ena_csr(M_ena_csr),
-		.F_ena_csr(F_ena_csr),
-		.trap_raddr_csr(trap_raddr_csr),
 
 		.PC_IF(PC_IF),
 		.IR_IF(IR_IF),
@@ -298,9 +292,13 @@ module pipeline
 		.jump_alw_EX(jump_alw_EX),
 		.jump_taken_EX(jump_taken_EX),
 
-		.rd_wena_to_WB(rd_wena_to_WB),
-		.rd_addr_to_WB(rd_addr_to_WB),
-		.rd_data_to_WB(rd_data_to_WB)
+		.rd_wena_WB(rd_wena_WB),
+		.rd_addr_WB(rd_addr_WB),
+		.rd_data_WB(rd_data_WB),
+
+		.M_ena_csr(M_ena_csr),
+		.F_ena_csr(F_ena_csr),
+		.trap_raddr_csr(trap_raddr_csr)
 	);
 
 	EX_stage EX_stage_inst
@@ -321,8 +319,6 @@ module pipeline
 		.ready_out_div(ready_in_div_ID),
 		.valid_in_fpu(valid_out_fpu_ID),
 		.ready_out_fpu(ready_in_fpu_ID),
-
-		.fpu_rm_csr(fpu_rm_csr),
 
 		.PC_ID(PC_ID),
 		.IR_ID(IR_ID),
@@ -396,7 +392,10 @@ module pipeline
 
 		.rd_wena_MEM(rd_wena_MEM),
 		.rd_addr_MEM(rd_addr_MEM),
-		.rd_data_MEM(rd_data_MEM)
+		.rd_data_MEM(rd_data_MEM),
+
+		.fpu_rm_csr(fpu_rm_csr),
+		.int_taken_csr(int_taken_csr)
 	);
 
 	MEM_stage MEM_stage_inst
@@ -451,7 +450,9 @@ module pipeline
 		.fpu_flags_MEM(fpu_flags_MEM),
 		.trap_ret_MEM(trap_ret_MEM),
 		.exc_pend_MEM(exc_pend_MEM),
-		.exc_cause_MEM(exc_cause_MEM)
+		.exc_cause_MEM(exc_cause_MEM),
+
+		.exc_taken_csr(exc_taken_csr)
 	);
 
 	WB_stage WB_stage_inst
@@ -466,19 +467,15 @@ module pipeline
 		.ready_in(1'b1),
 		.flush_in(1'b0),
 
-		.irq_ext(irq_ext),
-		.irq_int_controller(irq_int_controller),
-		.irq_timer(irq_timer),
-		.irq_software(irq_software),
+		.int_PC(valid_out_ID ? PC_ID : PC_IF),
+		.int_req_ext(int_req_ext),
+		.int_req_ictrl(int_req_ictrl),
+		.int_req_timer(int_req_timer),
+		.int_req_soft(int_req_soft),
 
-		.M_ena_csr(M_ena_csr),
-		.F_ena_csr(F_ena_csr),
-		.fpu_rm_csr(fpu_rm_csr),
-		.int_taken_csr(int_taken_csr),
-		.exc_taken_csr(exc_taken_csr),
-		.trap_taken_csr(trap_taken_csr),
-		.trap_addr_csr(trap_addr_csr),
-		.trap_raddr_csr(trap_raddr_csr),
+		.csr_rena_EX(csr_rena_EX),
+		.csr_wena_EX(csr_wena_EX),
+		.exc_pend_EX(exc_pend_EX),
 
 		.PC_MEM(PC_MEM),
 		.IR_MEM(IR_MEM),
@@ -498,9 +495,18 @@ module pipeline
 
 		.PC_WB(PC_WB),
 		.IR_WB(IR_WB),
-		.rd_wena_to_WB(rd_wena_to_WB),
-		.rd_addr_to_WB(rd_addr_to_WB),
-		.rd_data_to_WB(rd_data_to_WB)
+		.rd_wena_WB(rd_wena_WB),
+		.rd_addr_WB(rd_addr_WB),
+		.rd_data_WB(rd_data_WB),
+
+		.M_ena_csr(M_ena_csr),
+		.F_ena_csr(F_ena_csr),
+		.fpu_rm_csr(fpu_rm_csr),
+		.int_taken_csr(int_taken_csr),
+		.exc_taken_csr(exc_taken_csr),
+		.trap_taken_csr(trap_taken_csr),
+		.trap_addr_csr(trap_addr_csr),
+		.trap_raddr_csr(trap_raddr_csr)
 	);
 
 endmodule
