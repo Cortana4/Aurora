@@ -2,7 +2,8 @@ module float_arithmetic
 (
 	input	logic			clk,
 	input	logic			reset,
-	
+	input	logic			flush,
+
 	input	logic			valid_in,
 	output	logic			ready_out,
 	output	logic			valid_out,
@@ -84,7 +85,7 @@ module float_arithmetic
 	logic			skip_round_sqrt;
 	logic			IV_sqrt;
 	logic	[2:0]	rm_sqrt;
-	
+
 	// post processor
 	logic			valid_in_pp;
 	logic			ready_out_pp;
@@ -97,8 +98,11 @@ module float_arithmetic
 	logic			IV_in_pp;
 	logic			DZ_in_pp;
 	logic	[2:0]	rm_pp;
-	
-	assign			ready_out	= ready_out_add || ready_out_mul || ready_out_div || ready_out_sqrt;
+
+	assign			ready_out	= ready_out_add  && !valid_out_add &&
+								  ready_out_mul  && !valid_out_mul &&
+								  ready_out_div  && !valid_out_div &&
+								  ready_out_sqrt && !valid_out_sqrt;
 
 	// output selector
 	always_comb begin
@@ -157,7 +161,8 @@ module float_arithmetic
 	(
 		.clk(clk),
 		.reset(reset),
-		
+		.flush(flush),
+
 		.valid_in(valid_in),
 		.ready_out(ready_out_add),
 		.valid_out(valid_out_add),
@@ -191,7 +196,7 @@ module float_arithmetic
 		.skip_round(skip_round_add),
 
 		.IV(IV_add),
-		
+
 		.rm_out(rm_add)
 	);
 
@@ -199,7 +204,8 @@ module float_arithmetic
 	(
 		.clk(clk),
 		.reset(reset),
-		
+		.flush(flush),
+
 		.valid_in(valid_in),
 		.ready_out(ready_out_mul),
 		.valid_out(valid_out_mul),
@@ -233,7 +239,7 @@ module float_arithmetic
 		.skip_round(skip_round_mul),
 
 		.IV(IV_mul),
-		
+
 		.rm_out(rm_mul)
 	);
 
@@ -241,7 +247,8 @@ module float_arithmetic
 	(
 		.clk(clk),
 		.reset(reset),
-		
+		.flush(flush),
+
 		.valid_in(valid_in),
 		.ready_out(ready_out_div),
 		.valid_out(valid_out_div),
@@ -276,7 +283,7 @@ module float_arithmetic
 
 		.IV(IV_div),
 		.DZ(DZ_div),
-		
+
 		.rm_out(rm_div)
 	);
 
@@ -284,7 +291,8 @@ module float_arithmetic
 	(
 		.clk(clk),
 		.reset(reset),
-		
+		.flush(flush),
+
 		.valid_in(valid_in),
 		.ready_out(ready_out_sqrt),
 		.valid_out(valid_out_sqrt),
@@ -310,7 +318,7 @@ module float_arithmetic
 		.skip_round(skip_round_sqrt),
 
 		.IV(IV_sqrt),
-		
+
 		.rm_out(rm_sqrt)
 	);
 
@@ -318,7 +326,8 @@ module float_arithmetic
 	(
 		.clk(clk),
 		.reset(reset),
-		
+		.flush(flush),
+
 		.valid_in(valid_in_pp),
 		.ready_out(ready_out_pp),
 		.valid_out(valid_out),

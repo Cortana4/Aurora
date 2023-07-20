@@ -109,13 +109,13 @@ module FPGA_top
 	end
 	
 	// ip cores
-	MMCM MMCM_inst
+	MMCM_IP MMCM_inst
 	(
 		.clk_in1(ref_clk),
 		.clk_out1(clk)
 	);
 
-	BRAM_Controller imem_controller
+	BRAM_Controller_IP imem_controller
 	(
 		.s_axi_aclk(clk),
 		.s_axi_aresetn(!reset),
@@ -153,7 +153,7 @@ module FPGA_top
 		.bram_rddata_a(bram_rddata_a)
 	);
 	
-	BRAM_Controller dmem_controller
+	BRAM_Controller_IP dmem_controller
 	(
 		.s_axi_aclk(clk),
 		.s_axi_aresetn(!reset),
@@ -191,7 +191,7 @@ module FPGA_top
 		.bram_rddata_a(bram_rddata_b)
 	);
 	
-	RAM RAM_inst
+	RAM_IP RAM_inst
 	(
 		.clka(bram_clk_a),
 		.addra(bram_addr_a[15:2]),
@@ -212,26 +212,27 @@ module FPGA_top
 	(
 		.clk(clk),
 		.reset(reset),
+		
+		.int_req_ext(16'h0000),
+		.int_req_ictrl(1'b0),
+		.int_req_timer(1'b0),
+		.int_req_soft(1'b0),
 
 		.imem_axi_awaddr(imem_axi_awaddr),
 		.imem_axi_awprot(imem_axi_awprot),
 		.imem_axi_awvalid(imem_axi_awvalid),
 		.imem_axi_awready(imem_axi_awready),
-
 		.imem_axi_wdata(imem_axi_wdata),
 		.imem_axi_wstrb(imem_axi_wstrb),
 		.imem_axi_wvalid(imem_axi_wvalid),
 		.imem_axi_wready(imem_axi_wready),
-
 		.imem_axi_bresp(imem_axi_bresp),
 		.imem_axi_bvalid(imem_axi_bvalid),
 		.imem_axi_bready(imem_axi_bready),
-
 		.imem_axi_araddr(imem_axi_araddr),
 		.imem_axi_arprot(imem_axi_arprot),
 		.imem_axi_arvalid(imem_axi_arvalid),
 		.imem_axi_arready(imem_axi_arready),
-
 		.imem_axi_rdata(imem_axi_rdata),
 		.imem_axi_rresp(imem_axi_rresp),
 		.imem_axi_rvalid(imem_axi_rvalid),
@@ -241,21 +242,17 @@ module FPGA_top
 		.dmem_axi_awprot(dmem_axi_awprot),
 		.dmem_axi_awvalid(dmem_axi_awvalid),
 		.dmem_axi_awready(dmem_axi_awready),
-
 		.dmem_axi_wdata(dmem_axi_wdata),
 		.dmem_axi_wstrb(dmem_axi_wstrb),
 		.dmem_axi_wvalid(dmem_axi_wvalid),
 		.dmem_axi_wready(dmem_axi_wready),
-
 		.dmem_axi_bresp(dmem_axi_bresp),
 		.dmem_axi_bvalid(dmem_axi_bvalid),
 		.dmem_axi_bready(dmem_axi_bready),
-
 		.dmem_axi_araddr(dmem_axi_araddr),
 		.dmem_axi_arprot(dmem_axi_arprot),
 		.dmem_axi_arvalid(dmem_axi_arvalid),
 		.dmem_axi_arready(dmem_axi_arready),
-
 		.dmem_axi_rdata(dmem_axi_rdata),
 		.dmem_axi_rresp(dmem_axi_rresp),
 		.dmem_axi_rvalid(dmem_axi_rvalid),

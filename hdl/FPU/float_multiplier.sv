@@ -4,12 +4,13 @@ module float_multiplier
 (
 	input	logic			clk,
 	input	logic			reset,
-	
+	input	logic			flush,
+
 	input	logic			valid_in,
 	output	logic			ready_out,
 	output	logic			valid_out,
 	input	logic			ready_in,
-	
+
 	input	logic	[4:0]	op,
 	input	logic	[2:0]	rm,
 
@@ -49,14 +50,16 @@ module float_multiplier
 	logic	[1:0]	counter;
 
 	logic	[29:0]	acc;
-	
+
+	logic			valid_in_int;
 	logic			stall;
 
 	enum	logic	{IDLE, CALC} state;
-	
-	assign			ready_out	= ready_in && !stall && op == FPU_OP_MUL;
-	assign			stall		= state != IDLE;
-	
+
+	assign			valid_in_int	= valid_in && (op == FPU_OP_MUL);
+	assign			ready_out		= ready_in && !stall;
+	assign			stall			= state != IDLE;
+
 	always_comb begin
 		if (reg_res[47] || skip_round) begin
 			sgn_y		= reg_sgn_y;
@@ -76,7 +79,7 @@ module float_multiplier
 	end
 
 	always @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush) begin
 			valid_out	<= 1'b0;
 			reg_man_b	<= 24'h000000;
 			reg_res		<= 48'h000000000000;
@@ -89,7 +92,7 @@ module float_multiplier
 			state		<= IDLE;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in_int && ready_out) begin
 			valid_out	<= 1'b0;
 			reg_man_b	<= man_b;
 			reg_res		<= {24'h000000, man_a};

@@ -2,12 +2,13 @@ import CPU_pkg::*;
 
 module int_divider
 #(
-	parameter		n = 32,
-	parameter		m = 8
+	parameter		n = 32,	// data width
+	parameter		m = 8	// bits calculated per cycle
 )
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 	
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -56,7 +57,7 @@ module int_divider
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush) begin
 			valid_out	<= 1'b0;
 			prev_a		<= 0;
 			prev_b		<= 0;
@@ -124,7 +125,7 @@ module int_divider
 						end
 
 						else
-							counter	<= counter + 1;
+							counter		<= counter + 1;
 					end
 		endcase
 	end

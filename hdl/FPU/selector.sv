@@ -4,12 +4,13 @@ module selector
 (
 	input	logic			clk,
 	input	logic			reset,
-	
+	input	logic			flush,
+
 	input	logic			valid_in,
 	output	logic			ready_out,
 	output	logic			valid_out,
 	input	logic			ready_in,
-	
+
 	input	logic	[4:0]	op,
 
 	input	logic	[31:0]	a,
@@ -26,21 +27,22 @@ module selector
 	logic	qNaN_a;
 	logic	sNaN_b;
 	logic	qNaN_b;
-	
-	assign	ready_out	= ready_in && (op == FPU_OP_MIN || op == FPU_OP_MAX);
+
+	logic	valid_in_int	= valid_in && (op == FPU_OP_MIN || op == FPU_OP_MAX);
+	assign	ready_out		= ready_in;
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush) begin
 			valid_out	<= 1'b0;
 			float_out	<= 32'h00000000;
 			IV			<= 1'b0;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in_int && ready_out) begin
 			valid_out	<= 1'b1;
 			float_out	<= 32'h00000000;
 			IV			<= sNaN_a || sNaN_b;
-			
+
 			case (op)
 			FPU_OP_MIN:	begin
 							if ((qNaN_a || sNaN_a) && (qNaN_b || sNaN_b))

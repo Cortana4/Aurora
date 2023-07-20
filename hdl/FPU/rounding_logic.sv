@@ -28,7 +28,7 @@ module rounding_logic
 	assign	r_and_not_s		= round_bit && !sticky_bit;
 	assign	r_or_s			= round_bit || sticky_bit;
 	assign	inexact			= r_or_s;
-	
+
 	assign	{carry, out}	= in + inc;
 
 	always_comb begin

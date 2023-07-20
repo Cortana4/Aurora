@@ -4,12 +4,13 @@ module float_sqrt
 (
 	input	logic					clk,
 	input	logic					reset,
+	input	logic					flush,
 
 	input	logic					valid_in,
 	output	logic					ready_out,
 	output	logic					valid_out,
 	input	logic					ready_in,
-	
+
 	input	logic			[4:0]	op,
 	input	logic			[2:0]	rm,
 
@@ -40,20 +41,22 @@ module float_sqrt
 
 	logic	[27:0]	acc [2:0];
 	logic	[1:0]	s;
-	
+
+	logic			valid_in_int;
 	logic			stall;
 
 	enum	logic	{IDLE, CALC} state;
 
-	assign			man_y		= reg_res[25:2];
-	assign			round_bit	= reg_res[1];
-	assign			sticky_bit	= |reg_rem || reg_res[0];
-	
-	assign			ready_out	= ready_in && !stall && op == FPU_OP_SQRT;
-	assign			stall		= state != IDLE;
+	assign			man_y			= reg_res[25:2];
+	assign			round_bit		= reg_res[1];
+	assign			sticky_bit		= |reg_rem || reg_res[0];
+
+	assign			valid_in_int	= valid_in && (op == FPU_OP_SQRT);
+	assign			ready_out		= ready_in && !stall;
+	assign			stall			= state != IDLE;
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush) begin
 			valid_out	<= 1'b0;
 			reg_rad		<= 26'h0000000;
 			reg_res		<= 26'h0000000;
@@ -66,7 +69,7 @@ module float_sqrt
 			state		<= IDLE;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in_int && ready_out) begin
 			valid_out	<= 1'b0;
 			reg_rad		<= {1'b0, man_a, 1'b0} << exp_a[0];
 			reg_res		<= 26'h0000000;
@@ -130,7 +133,7 @@ module float_sqrt
 						reg_rad	<= reg_rad << 4;
 						reg_res	<= (reg_res << 2) | s;
 						reg_rem	<= acc[2]; //[27:0];
-					
+
 						// when the calculation is finished,
 						// the MSB of the result is always 1
 						if (reg_res[23]) begin

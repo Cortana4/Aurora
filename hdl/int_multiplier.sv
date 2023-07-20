@@ -2,12 +2,13 @@ import CPU_pkg::*;
 
 module int_multiplier
 #(
-	parameter		n = 32,
-	parameter		m = 8
+	parameter		n = 32,	// data width
+	parameter		m = 8	// add stages per cycle
 )
 (
 	input	logic			clk,
 	input	logic			reset,
+	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -25,14 +26,14 @@ module int_multiplier
 	logic	[1:0]		prev_op;
 	logic	[n-1:0]		prev_a;
 	logic	[n-1:0]		prev_b;
-	
+
 	logic	[1:0]		reg_op;
 	logic	[n-1:0]		reg_b;
 	logic	[2*n-1:0]	reg_res;
 	logic				reg_sgn;
 
 	logic	[n+m-1:0]	acc;
-	
+
 	logic				stall;
 
 	integer				counter;
@@ -40,7 +41,7 @@ module int_multiplier
 	enum	logic		{IDLE, CALC} state;
 
 	assign				prev_op		= reg_op;
-	
+
 	assign				ready_out	= ready_in && !stall;
 	assign				stall		= state != IDLE;
 
@@ -54,7 +55,7 @@ module int_multiplier
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush) begin
 			valid_out	<= 1'b0;
 			prev_a		<= 0;
 			prev_b		<= 0;
@@ -70,14 +71,14 @@ module int_multiplier
 			prev_a		<= a;
 			prev_b		<= b;
 			reg_op		<= op;
-			
+
 			if ((prev_op != UMULL && op == UMULL  ||
 				 prev_op == UMULL && op == UMULH) &&
 				 prev_a == a && prev_b == b) begin
 				valid_out	<= 1'b1;
 				state		<= IDLE;
 			end
-			
+
 			else begin
 				valid_out	<= 1'b0;
 				counter		<= 0;

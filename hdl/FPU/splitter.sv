@@ -16,7 +16,7 @@ module splitter
 	logic	max_exp;
 	logic	man_NZ;
 	logic	NaN;
-	
+
 	assign	sgn			= float_in[31];
 	assign	Exp			= float_in[30:23];
 	assign	man[22:0]	= float_in[22:0];

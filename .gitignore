@@ -3,3 +3,6 @@ impl/**/Vivado/*
 !impl/**/Vivado/create_project.bat
 !impl/**/Vivado/create_project.tcl
 !impl/**/Vivado/vivado.tcl
+sw/**/obj/*
+sw/**/bin/*
+sw/**/objdump/*

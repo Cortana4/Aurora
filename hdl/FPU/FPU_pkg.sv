@@ -1,17 +1,6 @@
 package FPU_pkg;
-	/*
-	// these instructions are not performed by the FPU
-	// they are only listed for completeness
-	// load/store RAM					// assembler instruction
-	localparam FPU_OP_SW	= 5'd2;		// FSW
-	localparam FPU_OP_LW	= 5'd1;		// FLW
 
-	// load/store int register
-	localparam FPU_OP_SR	= 5'd19;	// FMV.X.W
-	localparam FPU_OP_LR	= 5'd26;	// FMV.W.X
-	*/
-
-	// multiply add/multiply sub
+	// multiply accumulate
 	localparam FPU_OP_MADD	= 5'd3;		// FMADD.S
 	localparam FPU_OP_MSUB	= 5'd4;		// FMSUB.S
 	localparam FPU_OP_NMSUB	= 5'd5;		// FNMSUB.S

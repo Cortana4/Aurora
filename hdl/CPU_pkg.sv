@@ -44,6 +44,18 @@ package CPU_pkg;
 	localparam RV32I_ECALL				= 32'b00000000000000000000000001110011;
 	localparam RV32I_EBREAK				= 32'b00000000000100000000000001110011;
 	
+	localparam RV32I_MRET				= 32'b00110000001000000000000001110011;
+	localparam RV32I_WFI				= 32'b00010000010100000000000001110011;
+	
+	//*************************************************************************
+	// RV32Zicsr instructions
+	localparam RV32Zicsr_CSRRW			= 32'b?????????????????001?????1110011;
+	localparam RV32Zicsr_CSRRS			= 32'b?????????????????010?????1110011;
+	localparam RV32Zicsr_CSRRC			= 32'b?????????????????011?????1110011;
+	localparam RV32Zicsr_CSRRWI			= 32'b?????????????????101?????1110011;
+	localparam RV32Zicsr_CSRRSI			= 32'b?????????????????110?????1110011;
+	localparam RV32Zicsr_CSRRCI			= 32'b?????????????????111?????1110011;
+	
 	//*************************************************************************
 	// RV32M instructions
 	localparam RV32M_MUL				= 32'b0000001??????????000?????0110011;
@@ -88,9 +100,10 @@ package CPU_pkg;
 	// write back sources
 	localparam SEL_ALU					= 3'd0;
 	localparam SEL_MEM					= 3'd1;
-	localparam SEL_MUL					= 3'd2;
-	localparam SEL_DIV					= 3'd3;
-	localparam SEL_FPU					= 3'd4;
+	localparam SEL_CSR					= 3'd2;
+	localparam SEL_MUL					= 3'd3;
+	localparam SEL_DIV					= 3'd4;
+	localparam SEL_FPU					= 3'd5;
 	
 	//*************************************************************************
 	// ALU operations
@@ -122,6 +135,12 @@ package CPU_pkg;
 	localparam MEM_SW					= 3'd7;
 	
 	//*************************************************************************
+	// CSR operations
+	localparam CSR_RW					= 2'd0;
+	localparam CSR_RS					= 2'd1;
+	localparam CSR_RC					= 2'd2;
+	
+	//*************************************************************************
 	// MUL operations
 	localparam UMULL					= 2'd0;
 	localparam UMULH					= 2'd1;
@@ -136,11 +155,16 @@ package CPU_pkg;
 	localparam SREM						= 2'd3;
 	
 	//*************************************************************************
-	// CSR operations
-	localparam CSR_RW					= 2'd0;
-	localparam CSR_RS					= 2'd1;
-	localparam CSR_RC					= 2'd2;
-	
+	// trap causes
+	localparam CAUSE_MISALIGNED_INST	= 32'h00000000;
+	localparam CAUSE_ILLEGAL_INST		= 32'h00000002;
+	localparam CAUSE_BREAKPOINT			= 32'h00000003;
+	localparam CAUSE_MISALIGNED_LOAD	= 32'h00000004;
+	localparam CAUSE_MISALIGNED_STORE	= 32'h00000006;
+	localparam CAUSE_ENV_CALL_FROM_M	= 32'h0000000b;
+	localparam CAUSE_IMEM_BUS_ERROR		= 32'h00000018;	// custom (24)
+	localparam CAUSE_DMEM_BUS_ERROR		= 32'h00000019;	// custom (25)
+
 	//*************************************************************************
 	// CSR addresses
 	localparam CSR_ADDR_MVENDORID		= 12'hf11;
@@ -158,8 +182,6 @@ package CPU_pkg;
 	localparam CSR_ADDR_MCAUSE			= 12'h342;
 	localparam CSR_ADDR_MTVAL			= 12'h343;
 	localparam CSR_ADDR_MIP				= 12'h344;
-	localparam CSR_ADDR_MSECCFG			= 12'h747;
-	localparam CSR_ADDR_MSECCFGH		= 12'h757;
 	localparam CSR_ADDR_MCYCLE			= 12'hb00;
 	localparam CSR_ADDR_MINSTRET		= 12'hb02;
 	localparam CSR_ADDR_MCYCLEH			= 12'hb80;

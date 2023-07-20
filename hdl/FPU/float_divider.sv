@@ -4,7 +4,8 @@ module float_divider
 (
 	input	logic			clk,
 	input	logic			reset,
-	
+	input	logic			flush,
+
 	input	logic			valid_in,
 	output	logic			ready_out,
 	output	logic			valid_out,
@@ -12,7 +13,7 @@ module float_divider
 
 	input	logic	[4:0]	op,
 	input	logic	[2:0]	rm,
-	
+
 	input	logic	[23:0]	man_a,
 	input	logic	[9:0]	exp_a,
 	input	logic			sgn_a,
@@ -51,7 +52,8 @@ module float_divider
 	logic	[3:0]	counter;
 
 	logic			IV_int;
-	
+
+	logic			valid_in_int;
 	logic			stall;
 
 	logic	[26:0]	acc [2:0];
@@ -60,10 +62,11 @@ module float_divider
 	enum	logic	{IDLE, CALC} state;
 
 	assign			IV_int		= sNaN_a || sNaN_b || (zero_a && zero_b) || (inf_a && inf_b);
-	
-	assign			ready_out	= ready_in && !stall && op == FPU_OP_DIV;
-	assign			stall		= state != IDLE;
-	
+
+	assign			valid_in_int	= valid_in && (op == FPU_OP_DIV);
+	assign			ready_out		= ready_in && !stall;
+	assign			stall			= state != IDLE;
+
 	always_comb begin
 		if (reg_res[25] || skip_round) begin
 			sgn_y		= reg_sgn_y;
@@ -83,7 +86,7 @@ module float_divider
 	end
 
 	always_ff @(posedge clk, posedge reset) begin
-		if (reset) begin
+		if (reset || flush) begin
 			valid_out	<= 1'b0;
 			reg_man_b	<= 24'h000000;
 			reg_res		<= {24'hc00000, 2'b00};
@@ -98,7 +101,7 @@ module float_divider
 			state		<= IDLE;
 		end
 
-		else if (valid_in && ready_out) begin
+		else if (valid_in_int && ready_out) begin
 			valid_out	<= 1'b0;
 			reg_man_b	<= man_b;
 			reg_res		<= 26'd0;
