@@ -2,6 +2,8 @@
 
 module pipeline_tb();
 
+	parameter		USE_BRAM_IP = 0;
+
 	logic			clk;
 	logic			reset;
 	
@@ -150,43 +152,52 @@ module pipeline_tb();
 		.bram_rddata_a(bram_rddata_b)
 	);
 
-`ifdef USE_BRAM_IP
-	RAM_IP RAM_IP_inst
-	(
-		.clka(bram_clk_a),
-		.addra(bram_addr_a[15:2]),
-		.dina(bram_wrdata_a),
-		.douta(bram_rddata_a),
-		.ena(bram_en_a),
-		.wea(bram_we_a),
+	generate
+		if (USE_BRAM_IP) begin
+			RAM_IP RAM_IP_inst
+			(
+				.clka(bram_clk_a),
+				.addra(bram_addr_a[15:2]),
+				.dina(bram_wrdata_a),
+				.douta(bram_rddata_a),
+				.ena(bram_en_a),
+				.wea(bram_we_a),
+				
+				.clkb(bram_clk_b),
+				.addrb(bram_addr_b[15:2]),
+				.dinb(bram_wrdata_b),
+				.doutb(bram_rddata_b),
+				.enb(bram_en_b),
+				.web(bram_we_b)
+			);
+		end
 		
-		.clkb(bram_clk_b),
-		.addrb(bram_addr_b[15:2]),
-		.dinb(bram_wrdata_b),
-		.doutb(bram_rddata_b),
-		.enb(bram_en_b),
-		.web(bram_we_b)
-	);
-`else
-	RAM #(14) RAM_inst
-	(
-		.clk(clk),
+		else begin
+			RAM
+			#(
+				.RAM_DEPTH(2**14),
+				.COL_WIDTH(8),
+				.COL_NUM(4)
+			) RAM_inst
+			(
+				.clk(clk),
 
-		.addra(bram_addr_a[15:2]),
-		.dina(bram_wrdata_a),
-		.douta(bram_rddata_a),
-		.ena(bram_en_a),
-		.wea(bram_we_a),
+				.addra(bram_addr_a[15:2]),
+				.dina(bram_wrdata_a),
+				.douta(bram_rddata_a),
+				.ena(bram_en_a),
+				.wea(bram_we_a),
 
-		.addrb(bram_addr_b[15:2]),
-		.dinb(bram_wrdata_b),
-		.doutb(bram_rddata_b),
-		.enb(bram_en_b),
-		.web(bram_we_b)
-	);
-	
-	initial $readmemh("madd.mem", RAM_inst.mem);
-`endif
+				.addrb(bram_addr_b[15:2]),
+				.dinb(bram_wrdata_b),
+				.doutb(bram_rddata_b),
+				.enb(bram_en_b),
+				.web(bram_we_b)
+			);
+			
+			initial $readmemh("sb.mem", RAM_inst.ram);
+		end
+	endgenerate
 	
 	pipeline aurora
 	(

@@ -1,6 +1,9 @@
 import CPU_pkg::*;
 
 module FPGA_top
+#(
+	parameter				USE_BRAM_IP = 0
+)
 (
 	input	logic			ref_clk,
 	input	logic			reset_btn,
@@ -191,23 +194,51 @@ module FPGA_top
 		.bram_rddata_a(bram_rddata_b)
 	);
 	
-	RAM_IP RAM_inst
-	(
-		.clka(bram_clk_a),
-		.addra(bram_addr_a[15:2]),
-		.dina(bram_wrdata_a),
-		.douta(bram_rddata_a),
-		.ena(bram_en_a),
-		.wea(bram_we_a),
+	generate
+		if (USE_BRAM_IP) begin
+			RAM_IP RAM_inst
+			(
+				.clka(bram_clk_a),
+				.addra(bram_addr_a[15:2]),
+				.dina(bram_wrdata_a),
+				.douta(bram_rddata_a),
+				.ena(bram_en_a),
+				.wea(bram_we_a),
+				
+				.clkb(bram_clk_b),
+				.addrb(bram_addr_b[15:2]),
+				.dinb(bram_wrdata_b),
+				.doutb(bram_rddata_b),
+				.enb(bram_en_b),
+				.web(bram_we_b)
+			);
+		end
 		
-		.clkb(bram_clk_b),
-		.addrb(bram_addr_b[15:2]),
-		.dinb(bram_wrdata_b),
-		.doutb(bram_rddata_b),
-		.enb(bram_en_b),
-		.web(bram_we_b)
-	);
-	
+		else begin
+			RAM
+			#(
+				.RAM_DEPTH(2**14),
+				.COL_WIDTH(8),
+				.COL_NUM(4)
+			) RAM_inst
+			(
+				.clk(clk),
+
+				.addra(bram_addr_a[15:2]),
+				.dina(bram_wrdata_a),
+				.douta(bram_rddata_a),
+				.ena(bram_en_a),
+				.wea(bram_we_a),
+
+				.addrb(bram_addr_b[15:2]),
+				.dinb(bram_wrdata_b),
+				.doutb(bram_rddata_b),
+				.enb(bram_en_b),
+				.web(bram_we_b)
+			);
+		end
+	endgenerate
+
 	CPU aurora
 	(
 		.clk(clk),
