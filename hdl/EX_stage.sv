@@ -55,6 +55,10 @@ module EX_stage
 	input	logic			exc_pend_ID,
 	input	logic	[31:0]	exc_cause_ID,
 
+	output	logic	[31:0]	rs1_data_bypassed_ID,
+	output	logic	[31:0]	rs2_data_bypassed_ID,
+	output	logic	[31:0]	rs3_data_bypassed_ID,
+
 	output	logic	[31:0]	PC_EX,
 	output	logic	[31:0]	IR_EX,
 	output	logic			rd_wena_EX,
@@ -139,26 +143,30 @@ module EX_stage
 	logic			rd_after_ld_hazard;
 	logic			stall;
 
-	assign			csr_wdata			= sel_IM_ID ? IM_ID : rs1_data;
-	assign			a					= sel_PC_ID ? PC_ID : rs1_data;
-	assign			b					= sel_IM_ID ? IM_ID : rs2_data;
-	assign			c					= rs3_data;
+	assign			rs1_data_bypassed_ID	= rs1_data;
+	assign			rs2_data_bypassed_ID	= rs2_data;
+	assign			rs3_data_bypassed_ID	= rs3_data;
 
-	assign			jump_taken			= jump_ena_ID && (jump_alw_ID || alu_out[0]);
-	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
-	assign			maligned_inst_addr	= jump_taken  && |jump_addr[1:0];
+	assign			csr_wdata				= sel_IM_ID ? IM_ID : rs1_data;
+	assign			a						= sel_PC_ID ? PC_ID : rs1_data;
+	assign			b						= sel_IM_ID ? IM_ID : rs2_data;
+	assign			c						= rs3_data;
 
-	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && !exc_pend_EX && !flush_in;
-	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && !exc_pend_EX && !flush_in;
-	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && !exc_pend_EX && !flush_in;
+	assign			jump_taken				= jump_ena_ID && (jump_alw_ID || alu_out[0]);
+	assign			jump_mpred				= jump_ena_ID && jump_pred_ID != jump_taken;
+	assign			maligned_inst_addr		= jump_taken  && |jump_addr[1:0];
 
-	assign			ready_out			= ready_in && !stall;
-	assign			flush_out			= flush_in || jump_mpred_EX || int_taken_csr;
-	assign			stall				= exc_pend_EX || csr_wena_EX || csr_rena_EX ||
-										  (!exc_pend_ID && (rd_after_ld_hazard ||
-										  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
-										  (wb_src_ID == SEL_DIV && !valid_out_div) ||
-										  (wb_src_ID == SEL_FPU && !valid_out_fpu)));
+	assign			dmem_axi_awvalid		= dmem_axi_awvalid_int && !exc_pend_EX && !flush_in;
+	assign			dmem_axi_wvalid			= dmem_axi_wvalid_int  && !exc_pend_EX && !flush_in;
+	assign			dmem_axi_arvalid		= dmem_axi_arvalid_int && !exc_pend_EX && !flush_in;
+
+	assign			ready_out				= ready_in && !stall;
+	assign			flush_out				= flush_in || jump_mpred_EX || int_taken_csr;
+	assign			stall					= exc_pend_EX || csr_wena_EX || csr_rena_EX ||
+											  (!exc_pend_ID && (rd_after_ld_hazard ||
+											  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
+											  (wb_src_ID == SEL_DIV && !valid_out_div) ||
+											  (wb_src_ID == SEL_FPU && !valid_out_fpu)));
 
 	// jump address computation
 	always_comb begin

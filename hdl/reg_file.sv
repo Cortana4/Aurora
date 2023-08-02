@@ -60,6 +60,7 @@ module reg_file
 		end
 	end
 
+	// rd port
 	always_ff @(posedge clk) begin
 		if (|rd_addr && rd_wena)
 			registers[rd_addr]	<= rd_data;

@@ -117,6 +117,9 @@ module pipeline
 	logic			trap_ret_ID;
 	logic			exc_pend_ID;
 	logic	[31:0]	exc_cause_ID;
+	logic	[31:0]	rs1_data_bypassed_ID;
+	logic	[31:0]	rs2_data_bypassed_ID;
+	logic	[31:0]	rs3_data_bypassed_ID;
 
 	// EX signals, EX/mem pipeline registers
 	logic			valid_out_EX;
@@ -287,6 +290,10 @@ module pipeline
 		.exc_pend_ID(exc_pend_ID),
 		.exc_cause_ID(exc_cause_ID),
 
+		.rs1_data_bypassed_ID(rs1_data_bypassed_ID),
+		.rs2_data_bypassed_ID(rs2_data_bypassed_ID),
+		.rs3_data_bypassed_ID(rs3_data_bypassed_ID),
+
 		.PC_EX(PC_EX),
 		.jump_ena_EX(jump_ena_EX),
 		.jump_alw_EX(jump_alw_EX),
@@ -354,6 +361,10 @@ module pipeline
 		.trap_ret_ID(trap_ret_ID),
 		.exc_pend_ID(exc_pend_ID),
 		.exc_cause_ID(exc_cause_ID),
+
+		.rs1_data_bypassed_ID(rs1_data_bypassed_ID),
+		.rs2_data_bypassed_ID(rs2_data_bypassed_ID),
+		.rs3_data_bypassed_ID(rs3_data_bypassed_ID),
 
 		.PC_EX(PC_EX),
 		.IR_EX(IR_EX),

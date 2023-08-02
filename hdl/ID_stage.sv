@@ -62,6 +62,10 @@ module ID_stage
 	output	logic			exc_pend_ID,
 	output	logic	[31:0]	exc_cause_ID,
 
+	input	logic	[31:0]	rs1_data_bypassed_ID,
+	input	logic	[31:0]	rs2_data_bypassed_ID,
+	input	logic	[31:0]	rs3_data_bypassed_ID,
+
 	input	logic	[31:0]	PC_EX,
 	input	logic			jump_ena_EX,
 	input	logic			jump_alw_EX,
@@ -265,6 +269,10 @@ module ID_stage
 		end
 
 		else begin
+			rs1_data_ID		<= rs1_data_bypassed_ID;
+			rs2_data_ID		<= rs2_data_bypassed_ID;
+			rs3_data_ID		<= rs3_data_bypassed_ID;
+
 			if (valid_out_mul && ready_in_mul)
 				valid_out_mul	<= 1'b0;
 
