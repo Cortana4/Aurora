@@ -20,31 +20,31 @@ module RAM
 	input	logic	[COL_NUM-1:0]			web
 );
 
-	logic	[COL_NUM*COL_WIDTH-1:0]	ram	[RAM_DEPTH];
-
 	generate
 		for (genvar i = 0; i < COL_NUM; i = i+1) begin
+			logic	[COL_WIDTH-1:0]	ram	[RAM_DEPTH];
+			
 			always_ff @(posedge clk) begin
 				if (ena) begin
 					if (wea[i]) begin
-						ram[addra][i*COL_WIDTH+:COL_WIDTH]	<= dina[i*COL_WIDTH+:COL_WIDTH];
-						douta[i*COL_WIDTH+:COL_WIDTH]		<= dina[i*COL_WIDTH+:COL_WIDTH];
+						ram[addra]						<= dina[i*COL_WIDTH+:COL_WIDTH];
+						douta[i*COL_WIDTH+:COL_WIDTH]	<= dina[i*COL_WIDTH+:COL_WIDTH];
 					end
 					
 					else
-						douta[i*COL_WIDTH+:COL_WIDTH]		<= ram[addra][i*COL_WIDTH+:COL_WIDTH];
+						douta[i*COL_WIDTH+:COL_WIDTH]	<= ram[addra];
 				end
 			end
 			
 			always_ff @(posedge clk) begin
 				if (enb) begin
 					if (web[i]) begin
-						ram[addrb][i*COL_WIDTH+:COL_WIDTH]	<= dinb[i*COL_WIDTH+:COL_WIDTH];
-						doutb[i*COL_WIDTH+:COL_WIDTH]		<= dinb[i*COL_WIDTH+:COL_WIDTH];
+						ram[addrb]						<= dinb[i*COL_WIDTH+:COL_WIDTH];
+						doutb[i*COL_WIDTH+:COL_WIDTH]	<= dinb[i*COL_WIDTH+:COL_WIDTH];
 					end
 					
 					else
-						doutb[i*COL_WIDTH+:COL_WIDTH]		<= ram[addrb][i*COL_WIDTH+:COL_WIDTH];
+						doutb[i*COL_WIDTH+:COL_WIDTH]	<= ram[addrb];
 				end
 			end
 		end
