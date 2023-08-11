@@ -177,10 +177,12 @@ module pipeline_tb();
 			#(
 				.RAM_DEPTH(2**14),
 				.COL_WIDTH(8),
-				.COL_NUM(4)
+				.COL_NUM(4),
+				.LATENCY(1)
 			) RAM_inst
 			(
 				.clk(clk),
+				.rst(1'b0),
 
 				.addra(bram_addr_a[15:2]),
 				.dina(bram_wrdata_a),

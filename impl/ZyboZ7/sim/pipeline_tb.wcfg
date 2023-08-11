@@ -16,14 +16,14 @@
    </db_ref_list>
    <zoom_setting>
       <ZoomStartTime time="50.000 ns"></ZoomStartTime>
-      <ZoomEndTime time="303.018 ns"></ZoomEndTime>
+      <ZoomEndTime time="467.925 ns"></ZoomEndTime>
       <Cursor1Time time="190.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="207"></NameColumnWidth>
-      <ValueColumnWidth column_width="100"></ValueColumnWidth>
+      <ValueColumnWidth column_width="92"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="13" />
+   <WVObjectSize size="4" />
    <wvobject fp_name="/pipeline_tb/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -39,6 +39,7 @@
       <wvobject fp_name="group105" type="group">
          <obj_property name="label">imem write address ch</obj_property>
          <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="isExpanded"></obj_property>
          <wvobject fp_name="/pipeline_tb/imem_axi_awaddr" type="array">
             <obj_property name="ElementShortName">imem_axi_awaddr[31:0]</obj_property>
             <obj_property name="ObjectShortName">imem_axi_awaddr[31:0]</obj_property>
@@ -335,7 +336,6 @@
       <wvobject fp_name="/pipeline_tb/aurora/ID_stage_inst/reg_file_inst/registers" type="array">
          <obj_property name="ElementShortName">registers[63:1][31:0]</obj_property>
          <obj_property name="ObjectShortName">registers[63:1][31:0]</obj_property>
-         <obj_property name="isExpanded"></obj_property>
       </wvobject>
       <wvobject fp_name="group303" type="group">
          <obj_property name="label">hazards</obj_property>
@@ -345,41 +345,5 @@
             <obj_property name="ObjectShortName">rd_after_ld_hazard</obj_property>
          </wvobject>
       </wvobject>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/rs2_data" type="array">
-      <obj_property name="ElementShortName">rs2_data[31:0]</obj_property>
-      <obj_property name="ObjectShortName">rs2_data[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/rs2_data_ID" type="array">
-      <obj_property name="ElementShortName">rs2_data_ID[31:0]</obj_property>
-      <obj_property name="ObjectShortName">rs2_data_ID[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/mem_op_ID" type="array">
-      <obj_property name="ElementShortName">mem_op_ID[2:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_op_ID[2:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/bypass_logic_inst/bypass_rs2_MEM" type="logic">
-      <obj_property name="ElementShortName">bypass_rs2_MEM</obj_property>
-      <obj_property name="ObjectShortName">bypass_rs2_MEM</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/stall" type="logic">
-      <obj_property name="ElementShortName">stall</obj_property>
-      <obj_property name="ObjectShortName">stall</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/valid_out" type="logic">
-      <obj_property name="ElementShortName">valid_out</obj_property>
-      <obj_property name="ObjectShortName">valid_out</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/ready_out" type="logic">
-      <obj_property name="ElementShortName">ready_out</obj_property>
-      <obj_property name="ObjectShortName">ready_out</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/EX_stage_inst/rd_data_MEM" type="array">
-      <obj_property name="ElementShortName">rd_data_MEM[31:0]</obj_property>
-      <obj_property name="ObjectShortName">rd_data_MEM[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pipeline_tb/aurora/ID_stage_inst/rs2_data" type="array">
-      <obj_property name="ElementShortName">rs2_data[31:0]</obj_property>
-      <obj_property name="ObjectShortName">rs2_data[31:0]</obj_property>
    </wvobject>
 </wave_config>

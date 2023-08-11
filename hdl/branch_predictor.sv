@@ -71,7 +71,7 @@ module branch_predictor
 				end
 			end
 		end
-		
+
 		else begin
 			always_ff @(posedge clk, posedge reset) begin
 				if (reset) begin
