@@ -2,7 +2,7 @@ import CPU_pkg::*;
 
 module FPGA_top
 #(
-	parameter				USE_BRAM_IP = 0
+	parameter				USE_BRAM_IP = 1
 )
 (
 	input	logic			ref_clk,

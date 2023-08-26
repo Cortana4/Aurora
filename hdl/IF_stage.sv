@@ -22,6 +22,11 @@ module IF_stage
 	output	logic	[31:0]	IR_IF,
 	output	logic			exc_pend_IF,
 	output	logic	[31:0]	exc_cause_IF,
+	
+	output	logic	[31:0]	PC_IF_buf,
+	output	logic	[31:0]	IR_IF_buf,
+	output	logic			exc_pend_IF_buf,
+	output	logic	[31:0]	exc_cause_IF_buf,
 
 	input	logic			jump_pred_IF,
 	input	logic	[31:0]	jump_addr_IF,
@@ -47,6 +52,9 @@ module IF_stage
 
 	logic			jump_taken;
 	logic	[31:0]	jump_addr;
+	
+	logic			valid_out_buf;
+	logic			stall;
 
 	assign			imem_addr_buf_wena	= imem_axi_arvalid && imem_axi_arready;
 	assign			imem_addr_buf_rena	= imem_axi_rvalid  && imem_axi_rready;
@@ -54,27 +62,29 @@ module IF_stage
 	assign			imem_axi_araddr		= PC;
 	assign			imem_axi_arprot		= 3'b110;
 	assign			imem_axi_arvalid	= PC_valid;
-	assign			imem_axi_rready		= ready_in;
+	assign			imem_axi_rready		= !valid_out_buf;
+	
+	assign			stall				= !imem_addr_buf_valid || jump_pred_IF;
 
 	addr_buf
 	#(
-		.ADDR_WIDTH(1),
-		.DATA_WIDTH(32)
+		.ADDR_WIDTH	(1),
+		.DATA_WIDTH	(32)
 	) imem_addr_buf
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(jump_taken || jump_pend),
+		.clk		(clk),
+		.reset		(reset),
+		.flush		(jump_taken || jump_pend),
 
-		.wena(imem_addr_buf_wena),
-		.wdata(imem_axi_araddr),
+		.wena		(imem_addr_buf_wena),
+		.wdata		(imem_axi_araddr),
 
-		.rena(imem_addr_buf_rena),
-		.rdata(imem_addr_buf_rdata),
-		.valid(imem_addr_buf_valid),
+		.rena		(imem_addr_buf_rena),
+		.rdata		(imem_addr_buf_rdata),
+		.valid		(imem_addr_buf_valid),
 
-		.empty(imem_addr_buf_empty),
-		.full()
+		.empty		(imem_addr_buf_empty),
+		.full		()
 	);
 
 	always_ff @(posedge clk, posedge reset) begin
@@ -130,37 +140,58 @@ module IF_stage
 	// IF/ID pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush_in) begin
-			valid_out		<= 1'b0;
-			PC_IF_int		<= 32'h00000000;
-			IR_IF			<= 32'h00000000;
-			exc_pend_IF		<= 1'b0;
-			exc_cause_IF	<= 32'h00000000;
+			{PC_IF_int		, PC_IF_buf			}	<= {2{32'h00000000	}};
+			{IR_IF			, IR_IF_buf			}	<= {2{32'h00000000	}};
+			{exc_pend_IF	, exc_pend_IF_buf	}	<= {2{1'b0			}};
+			{exc_cause_IF	, exc_cause_IF_buf	}	<= {2{32'h00000000	}};
+			{valid_out		, valid_out_buf		}	<= {2{1'b0			}};
 		end
-
-		else if (imem_addr_buf_rena && imem_addr_buf_valid && !jump_pred_IF) begin
-			if (|imem_axi_rresp) begin
-				valid_out		<= 1'b1;
-				PC_IF_int		<= imem_addr_buf_rdata;
-				IR_IF			<= RV32I_NOP;
-				exc_pend_IF		<= 1'b1;
-				exc_cause_IF	<= CAUSE_IMEM_BUS_ERROR;
+		
+		else if (!valid_out_buf) begin
+			// input to output
+			if (imem_axi_rvalid && (ready_in || !valid_out) && !stall) begin
+				PC_IF_int			<= imem_addr_buf_rdata;
+				IR_IF				<= imem_axi_rdata;
+				exc_pend_IF			<= 1'b0;
+				exc_cause_IF		<= 32'h00000000;
+				valid_out			<= 1'b1;
+					
+				if (|imem_axi_rresp) begin
+					IR_IF				<= RV32I_NOP;
+					exc_pend_IF			<= 1'b1;
+					exc_cause_IF		<= CAUSE_IMEM_BUS_ERROR;
+				end
 			end
-
-			else begin
-				valid_out		<= 1'b1;
-				PC_IF_int		<= imem_addr_buf_rdata;
-				IR_IF			<= imem_axi_rdata;
-				exc_pend_IF		<= 1'b0;
-				exc_cause_IF	<= 32'h00000000;
+			// input to buffer
+			else if (imem_axi_rvalid && !stall) begin
+				PC_IF_buf			<= imem_addr_buf_rdata;
+				IR_IF_buf			<= imem_axi_rdata;
+				exc_pend_IF_buf		<= 1'b0;
+				exc_cause_IF_buf	<= 32'h00000000;
+				valid_out_buf		<= 1'b1;
+					
+				if (|imem_axi_rresp) begin
+					IR_IF_buf			<= RV32I_NOP;
+					exc_pend_IF_buf		<= 1'b1;
+					exc_cause_IF_buf	<= CAUSE_IMEM_BUS_ERROR;
+				end
+			end
+			// bubble
+			else if (valid_out && ready_in) begin
+				PC_IF_int			<= 32'h00000000;
+				IR_IF				<= 32'h00000000;
+				exc_pend_IF			<= 1'b0;
+				exc_cause_IF		<= 32'h00000000;
+				valid_out			<= 1'b0;
 			end
 		end
-
-		else if (valid_out && ready_in) begin
-			valid_out		<= 1'b0;
-			PC_IF_int		<= 32'h00000000;
-			IR_IF			<= 32'h00000000;
-			exc_pend_IF		<= 1'b0;
-			exc_cause_IF	<= 32'h00000000;
+		// buffer to output
+		else if (ready_in) begin
+			{PC_IF_int		, PC_IF_buf			}	<= {PC_IF_buf		, 32'h00000000	};
+			{IR_IF			, IR_IF_buf			}	<= {IR_IF_buf		, 32'h00000000	};
+			{exc_pend_IF	, exc_pend_IF_buf	}	<= {exc_pend_IF_buf	, 1'b0			};
+			{exc_cause_IF	, exc_cause_IF_buf	}	<= {exc_cause_IF_buf, 32'h00000000	};
+			{valid_out		, valid_out_buf		}	<= {1'b1			, 1'b0			};
 		end
 	end
 

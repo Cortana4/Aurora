@@ -9,9 +9,6 @@ module branch_predictor
 	input	logic			clk,
 	input	logic			reset,
 
-	input	logic			valid_in,
-	input	logic			ready_in,
-
 	input	logic	[31:0]	trap_raddr_csr,
 
 	input	logic	[31:0]	PC_IF,
@@ -41,7 +38,7 @@ module branch_predictor
 
 	// only branches (!jump_alw) update the history
 	logic			update_history;
-	assign			update_history	= ready_in && jump_ena_EX && !jump_alw_EX;
+	assign			update_history	= jump_ena_EX && !jump_alw_EX;
 
 	// direct jumps (jump_alw):
 	// JAL	is always "predicted" taken
@@ -49,7 +46,7 @@ module branch_predictor
 	// 		address is not known until the instruction reaches EX stage
 	// MRET	is also always "predicted" taken
 	assign			jump_addr_IF	= trap_ret_IF ? trap_raddr_csr : PC_IF + IM_IF;
-	assign			jump_pred_IF	= valid_in && jump_ena_IF && !jump_ind_IF &&
+	assign			jump_pred_IF	= jump_ena_IF && !jump_ind_IF &&
 									  (PHT[rPtr][1] || jump_alw_IF);
 
 	always_ff @(posedge clk, posedge reset) begin
@@ -89,5 +86,7 @@ module branch_predictor
 			end
 		end
 	endgenerate
+
+	
 
 endmodule

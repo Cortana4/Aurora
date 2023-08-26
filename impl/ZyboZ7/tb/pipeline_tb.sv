@@ -251,5 +251,20 @@ module pipeline_tb();
 		.dmem_axi_rvalid(dmem_axi_rvalid),
 		.dmem_axi_rready(dmem_axi_rready)
 	);
+	
+	
+	always_ff @(posedge clk) begin
+		assert (aurora.IF_stage_inst.valid_out || !aurora.IF_stage_inst.valid_out_buf) else
+			$error("write to IF_buf while IF is empty");
+			
+		assert (aurora.ID_stage_inst.valid_out || !aurora.ID_stage_inst.valid_out_buf) else
+			$error("write to ID_buf while ID is empty");
+			
+		assert (aurora.EX_stage_inst.valid_out || !aurora.EX_stage_inst.valid_out_buf) else
+			$error("write to EX_buf while EX is empty");
+		
+		assert (aurora.MEM_stage_inst.valid_out || !aurora.MEM_stage_inst.valid_out_buf) else
+			$error("write to MEM_buf while MEM is empty");
+	end
 
 endmodule

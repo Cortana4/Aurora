@@ -81,5 +81,5 @@ module addr_buf
 		else if (rena && !empty)
 			valid_buf[rPtr]	<= 1'b0;
 	end
-
+	
 endmodule

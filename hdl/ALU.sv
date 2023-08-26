@@ -3,10 +3,10 @@ import CPU_pkg::*;
 module ALU
 (
 	input	logic	[3:0]	op,
-	
+
 	input	logic	[31:0]	a,
 	input	logic	[31:0]	b,
-	
+
 	output	logic	[31:0]	y
 );
 

@@ -55,10 +55,6 @@ module EX_stage
 	input	logic			exc_pend_ID,
 	input	logic	[31:0]	exc_cause_ID,
 
-	output	logic	[31:0]	rs1_data_bypassed_ID,
-	output	logic	[31:0]	rs2_data_bypassed_ID,
-	output	logic	[31:0]	rs3_data_bypassed_ID,
-
 	output	logic	[31:0]	PC_EX,
 	output	logic	[31:0]	IR_EX,
 	output	logic			rd_wena_EX,
@@ -81,6 +77,28 @@ module EX_stage
 	output	logic			exc_pend_EX,
 	output	logic	[31:0]	exc_cause_EX,
 
+	output	logic	[31:0]	PC_EX_buf,
+	output	logic	[31:0]	IR_EX_buf,
+	output	logic			rd_wena_EX_buf,
+	output	logic	[5:0]	rd_addr_EX_buf,
+	output	logic	[31:0]	rd_data_EX_buf,
+	output	logic	[11:0]	csr_addr_EX_buf,
+	output	logic			csr_rena_EX_buf,
+	output	logic			csr_wena_EX_buf,
+	output	logic	[31:0]	csr_wdata_EX_buf,
+	output	logic	[2:0]	wb_src_EX_buf,
+	output	logic	[2:0]	mem_op_EX_buf,
+	output	logic	[1:0]	csr_op_EX_buf,
+	output	logic	[4:0]	fpu_flags_EX_buf,
+	output	logic			jump_ena_EX_buf,
+	output	logic			jump_alw_EX_buf,
+	output	logic			jump_taken_EX_buf,
+	output	logic			jump_mpred_EX_buf,
+	output	logic	[31:0]	jump_addr_EX_buf,
+	output	logic			trap_ret_EX_buf,
+	output	logic			exc_pend_EX_buf,
+	output	logic	[31:0]	exc_cause_EX_buf,
+
 	output	logic	[31:0]	dmem_axi_awaddr,	// write address channel
 	output	logic	[2:0]	dmem_axi_awprot,
 	output	logic			dmem_axi_awvalid,
@@ -97,6 +115,10 @@ module EX_stage
 	input	logic			rd_wena_MEM,
 	input	logic	[5:0]	rd_addr_MEM,
 	input	logic	[31:0]	rd_data_MEM,
+
+	input	logic			rd_wena_MEM_buf,
+	input	logic	[5:0]	rd_addr_MEM_buf,
+	input	logic	[31:0]	rd_data_MEM_buf,
 
 	input	logic	[2:0]	fpu_rm_csr,
 	input	logic			int_taken_csr
@@ -121,6 +143,16 @@ module EX_stage
 	logic			dmem_axi_wvalid_int;
 	logic			dmem_axi_arvalid_int;
 
+	logic	[31:0]	dmem_axi_awaddr_buf;
+	logic	[2:0]	dmem_axi_awprot_buf;
+	logic			dmem_axi_awvalid_buf;
+	logic	[31:0]	dmem_axi_wdata_buf;
+	logic	[3:0]	dmem_axi_wstrb_buf;
+	logic			dmem_axi_wvalid_buf;
+	logic	[31:0]	dmem_axi_araddr_buf;
+	logic	[2:0]	dmem_axi_arprot_buf;
+	logic			dmem_axi_arvalid_buf;
+
 	logic	[31:0]	alu_out;
 
 	logic	[31:0]	mul_out;
@@ -141,32 +173,29 @@ module EX_stage
 	logic	[31:0]	exc_cause;
 
 	logic			rd_after_ld_hazard;
+	logic			valid_out_buf;
 	logic			stall;
 
-	assign			rs1_data_bypassed_ID	= rs1_data;
-	assign			rs2_data_bypassed_ID	= rs2_data;
-	assign			rs3_data_bypassed_ID	= rs3_data;
+	assign			csr_wdata			= sel_IM_ID ? IM_ID : rs1_data;
+	assign			a					= sel_PC_ID ? PC_ID : rs1_data;
+	assign			b					= sel_IM_ID ? IM_ID : rs2_data;
+	assign			c					= rs3_data;
 
-	assign			csr_wdata				= sel_IM_ID ? IM_ID : rs1_data;
-	assign			a						= sel_PC_ID ? PC_ID : rs1_data;
-	assign			b						= sel_IM_ID ? IM_ID : rs2_data;
-	assign			c						= rs3_data;
+	assign			jump_taken			= jump_ena_ID && (jump_alw_ID || alu_out[0]);
+	assign			jump_mpred			= jump_ena_ID && jump_pred_ID != jump_taken;
+	assign			maligned_inst_addr	= jump_taken  && |jump_addr[1:0];
 
-	assign			jump_taken				= jump_ena_ID && (jump_alw_ID || alu_out[0]);
-	assign			jump_mpred				= jump_ena_ID && jump_pred_ID != jump_taken;
-	assign			maligned_inst_addr		= jump_taken  && |jump_addr[1:0];
+	assign			dmem_axi_awvalid	= dmem_axi_awvalid_int && !exc_pend_EX && !flush_in;
+	assign			dmem_axi_wvalid		= dmem_axi_wvalid_int  && !exc_pend_EX && !flush_in;
+	assign			dmem_axi_arvalid	= dmem_axi_arvalid_int && !exc_pend_EX && !flush_in;
 
-	assign			dmem_axi_awvalid		= dmem_axi_awvalid_int && !exc_pend_EX && !flush_in;
-	assign			dmem_axi_wvalid			= dmem_axi_wvalid_int  && !exc_pend_EX && !flush_in;
-	assign			dmem_axi_arvalid		= dmem_axi_arvalid_int && !exc_pend_EX && !flush_in;
-
-	assign			ready_out				= ready_in && !stall;
-	assign			flush_out				= flush_in || jump_mpred_EX || int_taken_csr;
-	assign			stall					= exc_pend_EX || csr_wena_EX || csr_rena_EX ||
-											  (!exc_pend_ID && (rd_after_ld_hazard ||
-											  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
-											  (wb_src_ID == SEL_DIV && !valid_out_div) ||
-											  (wb_src_ID == SEL_FPU && !valid_out_fpu)));
+	assign			ready_out			= !valid_out_buf && !stall;
+	assign			flush_out			= flush_in || jump_mpred_EX || int_taken_csr;
+	assign			stall				= exc_pend_EX || csr_wena_EX || csr_rena_EX || flush_out ||
+										  (!exc_pend_ID && (rd_after_ld_hazard ||
+										  (wb_src_ID == SEL_MUL && !valid_out_mul) ||
+										  (wb_src_ID == SEL_DIV && !valid_out_div) ||
+										  (wb_src_ID == SEL_FPU && !valid_out_fpu)));
 
 	// jump address computation
 	always_comb begin
@@ -249,132 +278,229 @@ module EX_stage
 	// EX/MEM pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush_in) begin
-			valid_out				<= 1'b0;
-			PC_EX					<= 32'h00000000;
-			IR_EX					<= 32'h00000000;
-			rd_wena_EX				<= 1'b0;
-			rd_addr_EX				<= 6'd0;
-			rd_data_EX				<= 32'h00000000;
-			csr_addr_EX				<= 12'h000;
-			csr_rena_EX				<= 1'b0;
-			csr_wena_EX				<= 1'b0;
-			csr_wdata_EX			<= 32'h00000000;
-			wb_src_EX				<= 3'd0;
-			mem_op_EX				<= 3'd0;
-			csr_op_EX				<= 2'd0;
-			fpu_flags_EX			<= 5'b00000;
-			jump_ena_EX				<= 1'b0;
-			jump_alw_EX				<= 1'b0;
-			jump_taken_EX			<= 1'b0;
-			jump_mpred_EX			<= 1'b0;
-			jump_addr_EX			<= 32'h00000000;
-			trap_ret_EX				<= 1'b0;
-			exc_pend_EX				<= 1'b0;
-			exc_cause_EX			<= 32'h00000000;
-			dmem_axi_awaddr			<= 32'h00000000;
-			dmem_axi_awprot			<= 3'b000;
-			dmem_axi_awvalid_int	<= 1'b0;
-			dmem_axi_wdata			<= 32'h00000000;
-			dmem_axi_wstrb			<= 4'b0000;
-			dmem_axi_wvalid_int		<= 1'b0;
-			dmem_axi_araddr			<= 32'h00000000;
-			dmem_axi_arprot			<= 3'b000;
-			dmem_axi_arvalid_int	<= 1'b0;
+			{PC_EX					, PC_EX_buf				}	<= {2{32'h00000000	}};
+			{IR_EX					, IR_EX_buf				}	<= {2{32'h00000000	}};
+			{rd_wena_EX				, rd_wena_EX_buf		}	<= {2{1'b0			}};
+			{rd_addr_EX				, rd_addr_EX_buf		}	<= {2{6'd0			}};
+			{rd_data_EX				, rd_data_EX_buf		}	<= {2{32'h00000000	}};
+			{csr_addr_EX			, csr_addr_EX_buf		}	<= {2{12'h000		}};
+			{csr_rena_EX			, csr_rena_EX_buf		}	<= {2{1'b0			}};
+			{csr_wena_EX			, csr_wena_EX_buf		}	<= {2{1'b0			}};
+			{csr_wdata_EX			, csr_wdata_EX_buf		}	<= {2{32'h00000000	}};
+			{wb_src_EX				, wb_src_EX_buf			}	<= {2{3'd0			}};
+			{mem_op_EX				, mem_op_EX_buf			}	<= {2{3'd0			}};
+			{csr_op_EX				, csr_op_EX_buf			}	<= {2{2'd0			}};
+			{fpu_flags_EX			, fpu_flags_EX_buf		}	<= {2{5'b00000		}};
+			{jump_ena_EX			, jump_ena_EX_buf		}	<= {2{1'b0			}};
+			{jump_alw_EX			, jump_alw_EX_buf		}	<= {2{1'b0			}};
+			{jump_taken_EX			, jump_taken_EX_buf		}	<= {2{1'b0			}};
+			{jump_mpred_EX			, jump_mpred_EX_buf		}	<= {2{1'b0			}};
+			{jump_addr_EX			, jump_addr_EX_buf		}	<= {2{32'h00000000	}};
+			{trap_ret_EX			, trap_ret_EX_buf		}	<= {2{1'b0			}};
+			{exc_pend_EX			, exc_pend_EX_buf		}	<= {2{1'b0			}};
+			{exc_cause_EX			, exc_cause_EX_buf		}	<= {2{32'h00000000	}};
+			{dmem_axi_awaddr		, dmem_axi_awaddr_buf	}	<= {2{32'h00000000	}};
+			{dmem_axi_awprot		, dmem_axi_awprot_buf	}	<= {2{3'b000		}};
+			{dmem_axi_awvalid_int	, dmem_axi_awvalid_buf	}	<= {2{1'b0			}};
+			{dmem_axi_wdata			, dmem_axi_wdata_buf	}	<= {2{32'h00000000	}};
+			{dmem_axi_wstrb			, dmem_axi_wstrb_buf	}	<= {2{4'b0000		}};
+			{dmem_axi_wvalid_int	, dmem_axi_wvalid_buf	}	<= {2{1'b0			}};
+			{dmem_axi_araddr		, dmem_axi_araddr_buf	}	<= {2{32'h00000000	}};
+			{dmem_axi_arprot		, dmem_axi_arprot_buf	}	<= {2{3'b000		}};
+			{dmem_axi_arvalid_int	, dmem_axi_arvalid_buf	}	<= {2{1'b0			}};
+			{valid_out				, valid_out_buf			}	<= {2{1'b0			}};
 		end
 
-		else if (valid_in && ready_out && !flush_out) begin
-			valid_out				<= 1'b1;
-			PC_EX					<= PC_ID;
-			IR_EX					<= IR_ID;
-			rd_wena_EX				<= rd_wena_ID;
-			rd_addr_EX				<= rd_addr_ID;
-			rd_data_EX				<= 32'h00000000;
-			csr_addr_EX				<= csr_addr_ID;
-			csr_rena_EX				<= csr_rena_ID;
-			csr_wena_EX				<= csr_wena_ID;
-			csr_wdata_EX			<= csr_wdata;
-			wb_src_EX				<= wb_src_ID;
-			mem_op_EX				<= mem_op_ID;
-			csr_op_EX				<= csr_op_ID;
-			fpu_flags_EX			<= fpu_flags;
-			jump_ena_EX				<= jump_ena_ID;
-			jump_alw_EX				<= jump_alw_ID;
-			jump_taken_EX			<= jump_taken;
-			jump_mpred_EX			<= jump_mpred;
-			jump_addr_EX			<= jump_addr;
-			trap_ret_EX				<= trap_ret_ID;
-			exc_pend_EX				<= exc_pend;
-			exc_cause_EX			<= exc_cause;
-			dmem_axi_awaddr			<= 32'h00000000;
-			dmem_axi_awprot			<= 3'b000;
-			dmem_axi_awvalid_int	<= 1'b0;
-			dmem_axi_wdata			<= 32'h00000000;
-			dmem_axi_wstrb			<= 4'b0000;
-			dmem_axi_wvalid_int		<= 1'b0;
-			dmem_axi_araddr			<= 32'h00000000;
-			dmem_axi_arprot			<= 3'b000;
-			dmem_axi_arvalid_int	<= 1'b0;
+		else if (!valid_out_buf) begin
+			// input to output
+			if (valid_in && (ready_in || !valid_out) && !stall) begin
+				PC_EX					<= PC_ID;
+				IR_EX					<= IR_ID;
+				rd_wena_EX				<= rd_wena_ID;
+				rd_addr_EX				<= rd_addr_ID;
+				rd_data_EX				<= 32'h00000000;
+				csr_addr_EX				<= csr_addr_ID;
+				csr_rena_EX				<= csr_rena_ID;
+				csr_wena_EX				<= csr_wena_ID;
+				csr_wdata_EX			<= csr_wdata;
+				wb_src_EX				<= wb_src_ID;
+				mem_op_EX				<= mem_op_ID;
+				csr_op_EX				<= csr_op_ID;
+				fpu_flags_EX			<= fpu_flags;
+				jump_ena_EX				<= jump_ena_ID;
+				jump_alw_EX				<= jump_alw_ID;
+				jump_taken_EX			<= jump_taken;
+				jump_mpred_EX			<= jump_mpred;
+				jump_addr_EX			<= jump_addr;
+				trap_ret_EX				<= trap_ret_ID;
+				exc_pend_EX				<= exc_pend;
+				exc_cause_EX			<= exc_cause;
+				dmem_axi_awaddr			<= 32'h00000000;
+				dmem_axi_awprot			<= 3'b000;
+				dmem_axi_awvalid_int	<= 1'b0;
+				dmem_axi_wdata			<= 32'h00000000;
+				dmem_axi_wstrb			<= 4'b0000;
+				dmem_axi_wvalid_int		<= 1'b0;
+				dmem_axi_araddr			<= 32'h00000000;
+				dmem_axi_arprot			<= 3'b000;
+				dmem_axi_arvalid_int	<= 1'b0;
+				valid_out				<= 1'b1;
 
-			case (wb_src_ID)
-			SEL_MEM:	begin
-							// dmem read access (load)
-							if (rd_wena_ID) begin
-								dmem_axi_araddr			<= alu_out;
-								dmem_axi_arprot			<= 3'b010;
-								dmem_axi_arvalid_int	<= 1'b1;
+				case (wb_src_ID)
+				SEL_MEM:	begin
+								// dmem read access (load)
+								if (rd_wena_ID) begin
+									dmem_axi_araddr			<= alu_out;
+									dmem_axi_arprot			<= 3'b010;
+									dmem_axi_arvalid_int	<= 1'b1;
+								end
+								// dmem write access (store)
+								else begin
+									dmem_axi_awaddr			<= alu_out;
+									dmem_axi_awprot			<= 3'b010;
+									dmem_axi_awvalid_int	<= 1'b1;
+									dmem_axi_wdata			<= dmem_axi_wdata_int;
+									dmem_axi_wstrb			<= dmem_axi_wstrb_int;
+									dmem_axi_wvalid_int		<= 1'b1;
+								end
 							end
-							// dmem write access (store)
-							else begin
-								dmem_axi_awaddr			<= alu_out;
-								dmem_axi_awprot			<= 3'b010;
-								dmem_axi_awvalid_int	<= 1'b1;
-								dmem_axi_wdata			<= dmem_axi_wdata_int;
-								dmem_axi_wstrb			<= dmem_axi_wstrb_int;
-								dmem_axi_wvalid_int		<= 1'b1;
+				SEL_MUL:	rd_data_EX	<= mul_out;
+				SEL_DIV:	rd_data_EX	<= div_out;
+				SEL_FPU:	rd_data_EX	<= fpu_out;
+				default:	rd_data_EX	<= alu_out;
+				endcase
+			end
+			// input to buffer
+			else if (valid_in && !stall) begin
+				PC_EX_buf				<= PC_ID;
+				IR_EX_buf				<= IR_ID;
+				rd_wena_EX_buf			<= rd_wena_ID;
+				rd_addr_EX_buf			<= rd_addr_ID;
+				rd_data_EX_buf			<= 32'h00000000;
+				csr_addr_EX_buf			<= csr_addr_ID;
+				csr_rena_EX_buf			<= csr_rena_ID;
+				csr_wena_EX_buf			<= csr_wena_ID;
+				csr_wdata_EX_buf		<= csr_wdata;
+				wb_src_EX_buf			<= wb_src_ID;
+				mem_op_EX_buf			<= mem_op_ID;
+				csr_op_EX_buf			<= csr_op_ID;
+				fpu_flags_EX_buf		<= fpu_flags;
+				jump_ena_EX_buf			<= jump_ena_ID;
+				jump_alw_EX_buf			<= jump_alw_ID;
+				jump_taken_EX_buf		<= jump_taken;
+				jump_mpred_EX_buf		<= jump_mpred;
+				jump_addr_EX_buf		<= jump_addr;
+				trap_ret_EX_buf			<= trap_ret_ID;
+				exc_pend_EX_buf			<= exc_pend;
+				exc_cause_EX_buf		<= exc_cause;
+				dmem_axi_awaddr_buf		<= 32'h00000000;
+				dmem_axi_awprot_buf		<= 3'b000;
+				dmem_axi_awvalid_buf	<= 1'b0;
+				dmem_axi_wdata_buf		<= 32'h00000000;
+				dmem_axi_wstrb_buf		<= 4'b0000;
+				dmem_axi_wvalid_buf		<= 1'b0;
+				dmem_axi_araddr_buf		<= 32'h00000000;
+				dmem_axi_arprot_buf		<= 3'b000;
+				dmem_axi_arvalid_buf	<= 1'b0;
+				valid_out_buf			<= 1'b1;
+
+				case (wb_src_ID)
+				SEL_MEM:	begin
+								// dmem read access (load)
+								if (rd_wena_ID) begin
+									dmem_axi_araddr_buf		<= alu_out;
+									dmem_axi_arprot_buf		<= 3'b010;
+									dmem_axi_arvalid_buf	<= 1'b1;
+								end
+								// dmem write access (store)
+								else begin
+									dmem_axi_awaddr_buf		<= alu_out;
+									dmem_axi_awprot_buf		<= 3'b010;
+									dmem_axi_awvalid_buf	<= 1'b1;
+									dmem_axi_wdata_buf		<= dmem_axi_wdata_int;
+									dmem_axi_wstrb_buf		<= dmem_axi_wstrb_int;
+									dmem_axi_wvalid_buf		<= 1'b1;
+								end
 							end
-						end
-			SEL_MUL:	rd_data_EX	<= mul_out;
-			SEL_DIV:	rd_data_EX	<= div_out;
-			SEL_FPU:	rd_data_EX	<= fpu_out;
-			default:	rd_data_EX	<= alu_out;
-			endcase
+				SEL_MUL:	rd_data_EX_buf	<= mul_out;
+				SEL_DIV:	rd_data_EX_buf	<= div_out;
+				SEL_FPU:	rd_data_EX_buf	<= fpu_out;
+				default:	rd_data_EX_buf	<= alu_out;
+				endcase
+			end
+			// bubble
+			else if (valid_out && ready_in) begin
+				PC_EX					<= 32'h00000000;
+				IR_EX					<= 32'h00000000;
+				rd_wena_EX				<= 1'b0;
+				rd_addr_EX				<= 6'd0;
+				rd_data_EX				<= 32'h00000000;
+				csr_addr_EX				<= 12'h000;
+				csr_rena_EX				<= 1'b0;
+				csr_wena_EX				<= 1'b0;
+				csr_wdata_EX			<= 32'h00000000;
+				wb_src_EX				<= 3'd0;
+				mem_op_EX				<= 3'd0;
+				csr_op_EX				<= 2'd0;
+				fpu_flags_EX			<= 5'b00000;
+				jump_ena_EX				<= 1'b0;
+				jump_alw_EX				<= 1'b0;
+				jump_taken_EX			<= 1'b0;
+				jump_mpred_EX			<= 1'b0;
+				jump_addr_EX			<= 32'h00000000;
+				trap_ret_EX				<= 1'b0;
+				exc_pend_EX				<= 1'b0;
+				exc_cause_EX			<= 32'h00000000;
+				dmem_axi_awaddr			<= 32'h00000000;
+				dmem_axi_awprot			<= 3'b000;
+				dmem_axi_awvalid_int	<= 1'b0;
+				dmem_axi_wdata			<= 32'h00000000;
+				dmem_axi_wstrb			<= 4'b0000;
+				dmem_axi_wvalid_int		<= 1'b0;
+				dmem_axi_araddr			<= 32'h00000000;
+				dmem_axi_arprot			<= 3'b000;
+				dmem_axi_arvalid_int	<= 1'b0;
+				valid_out				<= 1'b0;
+			end
 		end
-
-		else if (valid_out && ready_in) begin
-			valid_out				<= 1'b0;
-			PC_EX					<= 32'h00000000;
-			IR_EX					<= 32'h00000000;
-			rd_wena_EX				<= 1'b0;
-			rd_addr_EX				<= 6'd0;
-			rd_data_EX				<= 32'h00000000;
-			csr_addr_EX				<= 12'h000;
-			csr_rena_EX				<= 1'b0;
-			csr_wena_EX				<= 1'b0;
-			csr_wdata_EX			<= 32'h00000000;
-			wb_src_EX				<= 3'd0;
-			mem_op_EX				<= 3'd0;
-			csr_op_EX				<= 2'd0;
-			fpu_flags_EX			<= 5'b00000;
-			jump_ena_EX				<= 1'b0;
-			jump_alw_EX				<= 1'b0;
-			jump_taken_EX			<= 1'b0;
-			jump_mpred_EX			<= 1'b0;
-			jump_addr_EX			<= 32'h00000000;
-			trap_ret_EX				<= 1'b0;
-			exc_pend_EX				<= 1'b0;
-			exc_cause_EX			<= 32'h00000000;
-			dmem_axi_awaddr			<= 32'h00000000;
-			dmem_axi_awprot			<= 3'b000;
-			dmem_axi_awvalid_int	<= 1'b0;
-			dmem_axi_wdata			<= 32'h00000000;
-			dmem_axi_wstrb			<= 4'b0000;
-			dmem_axi_wvalid_int		<= 1'b0;
-			dmem_axi_araddr			<= 32'h00000000;
-			dmem_axi_arprot			<= 3'b000;
-			dmem_axi_arvalid_int	<= 1'b0;
+		// buffer to output
+		else if (ready_in) begin
+			{PC_EX					, PC_EX_buf				}	<= {PC_EX_buf			, 32'h00000000	};
+			{IR_EX					, IR_EX_buf				}	<= {IR_EX_buf			, 32'h00000000	};
+			{rd_wena_EX				, rd_wena_EX_buf		}	<= {rd_wena_EX_buf		, 1'b0			};
+			{rd_addr_EX				, rd_addr_EX_buf		}	<= {rd_addr_EX_buf		, 6'd0			};
+			{rd_data_EX				, rd_data_EX_buf		}	<= {rd_data_EX_buf		, 32'h00000000	};
+			{csr_addr_EX			, csr_addr_EX_buf		}	<= {csr_addr_EX_buf		, 12'h000		};
+			{csr_rena_EX			, csr_rena_EX_buf		}	<= {csr_rena_EX_buf		, 1'b0			};
+			{csr_wena_EX			, csr_wena_EX_buf		}	<= {csr_wena_EX_buf		, 1'b0			};
+			{csr_wdata_EX			, csr_wdata_EX_buf		}	<= {csr_wdata_EX_buf	, 32'h00000000	};
+			{wb_src_EX				, wb_src_EX_buf			}	<= {wb_src_EX_buf		, 3'd0			};
+			{mem_op_EX				, mem_op_EX_buf			}	<= {mem_op_EX_buf		, 3'd0			};
+			{csr_op_EX				, csr_op_EX_buf			}	<= {csr_op_EX_buf		, 2'd0			};
+			{fpu_flags_EX			, fpu_flags_EX_buf		}	<= {fpu_flags_EX_buf	, 5'b00000		};
+			{jump_ena_EX			, jump_ena_EX_buf		}	<= {jump_ena_EX_buf		, 1'b0			};
+			{jump_alw_EX			, jump_alw_EX_buf		}	<= {jump_alw_EX_buf		, 1'b0			};
+			{jump_taken_EX			, jump_taken_EX_buf		}	<= {jump_taken_EX_buf	, 1'b0			};
+			{jump_mpred_EX			, jump_mpred_EX_buf		}	<= {jump_mpred_EX_buf	, 1'b0			};
+			{jump_addr_EX			, jump_addr_EX_buf		}	<= {jump_addr_EX_buf	, 32'h00000000	};
+			{trap_ret_EX			, trap_ret_EX_buf		}	<= {trap_ret_EX_buf		, 1'b0			};
+			{exc_pend_EX			, exc_pend_EX_buf		}	<= {exc_pend_EX_buf		, 1'b0			};
+			{exc_cause_EX			, exc_cause_EX_buf		}	<= {exc_cause_EX_buf	, 32'h00000000	};
+			{dmem_axi_awaddr		, dmem_axi_awaddr_buf	}	<= {dmem_axi_awaddr_buf	, 32'h00000000	};
+			{dmem_axi_awprot		, dmem_axi_awprot_buf	}	<= {dmem_axi_awprot_buf	, 3'b000		};
+			{dmem_axi_awvalid_int	, dmem_axi_awvalid_buf	}	<= {dmem_axi_awvalid_buf, 1'b0			};
+			{dmem_axi_wdata			, dmem_axi_wdata_buf	}	<= {dmem_axi_wdata_buf	, 32'h00000000	};
+			{dmem_axi_wstrb			, dmem_axi_wstrb_buf	}	<= {dmem_axi_wstrb_buf	, 4'b0000		};
+			{dmem_axi_wvalid_int	, dmem_axi_wvalid_buf	}	<= {dmem_axi_wvalid_buf	, 1'b0			};
+			{dmem_axi_araddr		, dmem_axi_araddr_buf	}	<= {dmem_axi_araddr_buf	, 32'h00000000	};
+			{dmem_axi_arprot		, dmem_axi_arprot_buf	}	<= {dmem_axi_arprot_buf	, 3'b000		};
+			{dmem_axi_arvalid_int	, dmem_axi_arvalid_buf	}	<= {dmem_axi_arvalid_buf, 1'b0			};
+			{valid_out				, valid_out_buf			}	<= {1'b1				, 1'b0			};
 		end
 
 		else begin
+			jump_ena_EX				<= 1'b0;
+
 			if (dmem_axi_awvalid_int && dmem_axi_awready)
 				dmem_axi_awvalid_int	<= 1'b0;
 
@@ -388,104 +514,108 @@ module EX_stage
 
 	bypass_logic bypass_logic_inst
 	(
-		.rs1_rena_ID(rs1_rena_ID),
-		.rs1_addr_ID(rs1_addr_ID),
-		.rs1_data_ID(rs1_data_ID),
-		.rs2_rena_ID(rs2_rena_ID),
-		.rs2_addr_ID(rs2_addr_ID),
-		.rs2_data_ID(rs2_data_ID),
-		.rs3_rena_ID(rs3_rena_ID),
-		.rs3_addr_ID(rs3_addr_ID),
-		.rs3_data_ID(rs3_data_ID),
+		.rs1_rena_ID		(rs1_rena_ID),
+		.rs1_addr_ID		(rs1_addr_ID),
+		.rs1_data_ID		(rs1_data_ID),
+		.rs2_rena_ID		(rs2_rena_ID),
+		.rs2_addr_ID		(rs2_addr_ID),
+		.rs2_data_ID		(rs2_data_ID),
+		.rs3_rena_ID		(rs3_rena_ID),
+		.rs3_addr_ID		(rs3_addr_ID),
+		.rs3_data_ID		(rs3_data_ID),
 
-		.rd_wena_EX(rd_wena_EX),
-		.rd_addr_EX(rd_addr_EX),
-		.rd_data_EX(rd_data_EX),
-		.wb_src_EX(wb_src_EX),
+		.rd_wena_EX			(rd_wena_EX),
+		.rd_addr_EX			(rd_addr_EX),
+		.rd_data_EX			(rd_data_EX),
+		.wb_src_EX			(wb_src_EX),
 
-		.rd_wena_MEM(rd_wena_MEM),
-		.rd_addr_MEM(rd_addr_MEM),
-		.rd_data_MEM(rd_data_MEM),
+		.rd_wena_MEM		(rd_wena_MEM),
+		.rd_addr_MEM		(rd_addr_MEM),
+		.rd_data_MEM		(rd_data_MEM),
 
-		.rs1_data(rs1_data),
-		.rs2_data(rs2_data),
-		.rs3_data(rs3_data),
-		.rd_after_ld_hazard(rd_after_ld_hazard)
+		.rd_wena_MEM_buf	(rd_wena_MEM_buf),
+		.rd_addr_MEM_buf	(rd_addr_MEM_buf),
+		.rd_data_MEM_buf	(rd_data_MEM_buf),
+
+		.rs1_data			(rs1_data),
+		.rs2_data			(rs2_data),
+		.rs3_data			(rs3_data),
+		.rd_after_ld_hazard	(rd_after_ld_hazard)
 	);
 
 	ALU ALU_inst
 	(
-		.op(alu_op_ID),
+		.op					(alu_op_ID),
 
-		.a(a),
-		.b(b),
+		.a					(a),
+		.b					(b),
 
-		.y(alu_out)
+		.y					(alu_out)
 	);
 
 	int_multiplier #(32, 8) int_multiplier_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush_out),
+		.clk				(clk),
+		.reset				(reset),
+		.flush				(flush_out),
 
-		.valid_in(valid_in_mul && !exc_pend_ID),
-		.ready_out(ready_out_mul),
-		.valid_out(valid_out_mul),
-		.ready_in(ready_in && !rd_after_ld_hazard),
+		.valid_in			(valid_in_mul && !exc_pend_ID),
+		.ready_out			(ready_out_mul),
+		.valid_out			(valid_out_mul),
+		.ready_in			(ready_in && !rd_after_ld_hazard),
 
-		.op(mul_op_ID),
+		.op					(mul_op_ID),
 
-		.a(a),
-		.b(b),
+		.a					(a),
+		.b					(b),
 
-		.y(mul_out)
+		.y					(mul_out)
 	);
 
 	int_divider #(32, 2) int_divider_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush_out),
+		.clk				(clk),
+		.reset				(reset),
+		.flush				(flush_out),
 
-		.valid_in(valid_in_div && !exc_pend_ID),
-		.ready_out(ready_out_div),
-		.valid_out(valid_out_div),
-		.ready_in(ready_in && !rd_after_ld_hazard),
+		.valid_in			(valid_in_div && !exc_pend_ID),
+		.ready_out			(ready_out_div),
+		.valid_out			(valid_out_div),
+		.ready_in			(ready_in && !rd_after_ld_hazard),
 
-		.op(div_op_ID),
+		.op					(div_op_ID),
 
-		.a(a),
-		.b(b),
+		.a					(a),
+		.b					(b),
 
-		.y(div_out)
+		.y					(div_out)
 	);
 
 	FPU FPU_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush_out),
+		.clk				(clk),
+		.reset				(reset),
+		.flush				(flush_out),
 
-		.valid_in(valid_in_fpu && !exc_pend_ID),
-		.ready_out(ready_out_fpu),
-		.valid_out(valid_out_fpu),
-		.ready_in(ready_in && !rd_after_ld_hazard),
+		.valid_in			(valid_in_fpu && !exc_pend_ID),
+		.ready_out			(ready_out_fpu),
+		.valid_out			(valid_out_fpu),
+		.ready_in			(ready_in && !rd_after_ld_hazard),
 
-		.op(fpu_op_ID),
-		.rm(fpu_rm_ID == FPU_RM_DYN ? fpu_rm_csr : fpu_rm_ID),
+		.op					(fpu_op_ID),
+		.rm					(fpu_rm_ID == FPU_RM_DYN ? fpu_rm_csr : fpu_rm_ID),
 
-		.a(a),
-		.b(b),
-		.c(c),
+		.a					(a),
+		.b					(b),
+		.c					(c),
 
-		.y(fpu_out),
+		.y					(fpu_out),
 
-		.IV(fpu_flags[4]),
-		.DZ(fpu_flags[3]),
-		.OF(fpu_flags[2]),
-		.UF(fpu_flags[1]),
-		.IE(fpu_flags[0])
+		.IV					(fpu_flags[4]),
+		.DZ					(fpu_flags[3]),
+		.OF					(fpu_flags[2]),
+		.UF					(fpu_flags[1]),
+		.IE					(fpu_flags[0])
 	);
 
 endmodule
