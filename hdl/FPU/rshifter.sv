@@ -19,28 +19,28 @@ module rshifter
 	assign			sticky_bit	= |sticky_bit_int;
 
 	generate
-		for (genvar i = 0; i < s; i = i+1) begin: gen_rshifter_static
+		for (genvar i = 0; i < s; i = i+1) begin
 			if (i == 0) begin
 				rshifter_static #(n, 2**i) rshifter_static_inst
 				(
-					.in(in),
-					.sel(sel[i]),
-					.sgn(sgn),
+					.in			(in),
+					.sel		(sel[i]),
+					.sgn		(sgn),
 
-					.out(out_int[i]),
-					.sticky_bit(sticky_bit_int[i])
+					.out		(out_int[i]),
+					.sticky_bit	(sticky_bit_int[i])
 				);
 			end
 
 			else begin
 				rshifter_static #(n, 2**i) rshifter_static_inst
 				(
-					.in(out_int[i-1]),
-					.sel(sel[i]),
-					.sgn(sgn),
+					.in			(out_int[i-1]),
+					.sel		(sel[i]),
+					.sgn		(sgn),
 
-					.out(out_int[i]),
-					.sticky_bit(sticky_bit_int[i])
+					.out		(out_int[i]),
+					.sticky_bit	(sticky_bit_int[i])
 				);
 			end
 		end

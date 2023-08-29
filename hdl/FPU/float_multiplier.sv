@@ -43,10 +43,10 @@ module float_multiplier
 	output	logic	[2:0]	rm_out
 );
 
-	logic	[23:0]	reg_man_b;
-	logic	[47:0]	reg_res;
-	logic	[9:0]	reg_exp_y;
-	logic			reg_sgn_y;
+	logic	[23:0]	man_b_buf;
+	logic	[47:0]	res_buf;
+	logic	[9:0]	exp_y_buf;
+	logic			sgn_y_buf;
 	logic	[1:0]	counter;
 
 	logic	[29:0]	acc;
@@ -61,98 +61,98 @@ module float_multiplier
 	assign			stall			= state != IDLE;
 
 	always_comb begin
-		if (reg_res[47] || skip_round) begin
-			sgn_y		= reg_sgn_y;
-			exp_y		= reg_exp_y + !skip_round;
-			man_y		= reg_res[47:24];
-			round_bit	= reg_res[23];
-			sticky_bit	= |reg_res[22:0];
+		if (res_buf[47] || skip_round) begin
+			sgn_y		= sgn_y_buf;
+			exp_y		= exp_y_buf + !skip_round;
+			man_y		= res_buf[47:24];
+			round_bit	= res_buf[23];
+			sticky_bit	= |res_buf[22:0];
 		end
 
 		else begin
-			sgn_y		= reg_sgn_y;
-			exp_y		= reg_exp_y;
-			man_y		= reg_res[46:23];
-			round_bit	= reg_res[22];
-			sticky_bit	= |reg_res[21:0];
+			sgn_y		= sgn_y_buf;
+			exp_y		= exp_y_buf;
+			man_y		= res_buf[46:23];
+			round_bit	= res_buf[22];
+			sticky_bit	= |res_buf[21:0];
 		end
 	end
 
 	always @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out	<= 1'b0;
-			reg_man_b	<= 24'h000000;
-			reg_res		<= 48'h000000000000;
-			reg_exp_y	<= 10'h000;
-			reg_sgn_y	<= 1'b0;
+			man_b_buf	<= 24'h000000;
+			res_buf		<= 48'h000000000000;
+			exp_y_buf	<= 10'h000;
+			sgn_y_buf	<= 1'b0;
 			skip_round	<= 1'b0;
 			IV			<= 1'b0;
 			rm_out		<= 3'b000;
 			counter		<= 2'd0;
+			valid_out	<= 1'b0;
 			state		<= IDLE;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out	<= 1'b0;
-			reg_man_b	<= man_b;
-			reg_res		<= {24'h000000, man_a};
-			reg_exp_y	<= exp_a + exp_b;
-			reg_sgn_y	<= sgn_a ^ sgn_b;
+			man_b_buf	<= man_b;
+			res_buf		<= {24'h000000, man_a};
+			exp_y_buf	<= exp_a + exp_b;
+			sgn_y_buf	<= sgn_a ^ sgn_b;
 			skip_round	<= 1'b0;
 			IV			<= 1'b0;
 			rm_out		<= rm;
 			counter		<= 2'd0;
+			valid_out	<= 1'b0;
 			state		<= CALC;
 
 			// NaN
 			if (sNaN_a || sNaN_b || qNaN_a || qNaN_b ||
 				(zero_a && inf_b) || (inf_a && zero_b)) begin
-				valid_out	<= 1'b1;
-				reg_man_b	<= 24'h000000;
-				reg_res		<= {24'hc00000, 24'h000000};
-				reg_exp_y	<= 10'h0ff;
-				reg_sgn_y	<= 1'b0;
+				man_b_buf	<= 24'h000000;
+				res_buf		<= {24'hc00000, 24'h000000};
+				exp_y_buf	<= 10'h0ff;
+				sgn_y_buf	<= 1'b0;
 				skip_round	<= 1'b1;
 				IV			<= ~(qNaN_a || qNaN_b);
+				valid_out	<= 1'b1;
 				state		<= IDLE;
 			end
 			// inf
 			else if (inf_a || inf_b) begin
-				valid_out	<= 1'b1;
-				reg_man_b	<= 24'h000000;
-				reg_res		<= {24'h800000, 24'h000000};
-				reg_exp_y	<= 10'h0ff;
-				reg_sgn_y	<= sgn_a ^ sgn_b;
+				man_b_buf	<= 24'h000000;
+				res_buf		<= {24'h800000, 24'h000000};
+				exp_y_buf	<= 10'h0ff;
+				sgn_y_buf	<= sgn_a ^ sgn_b;
 				skip_round	<= 1'b1;
+				valid_out	<= 1'b1;
 				state		<= IDLE;
 			end
 			// zero
 			else if (zero_a || zero_b) begin
-				valid_out	<= 1'b1;
-				reg_man_b	<= 24'h000000;
-				reg_res		<= {24'h000000, 24'h000000};
-				reg_exp_y	<= 10'h000;
-				reg_sgn_y	<= sgn_a ^ sgn_b;
+				man_b_buf	<= 24'h000000;
+				res_buf		<= {24'h000000, 24'h000000};
+				exp_y_buf	<= 10'h000;
+				sgn_y_buf	<= sgn_a ^ sgn_b;
 				skip_round	<= 1'b1;
+				valid_out	<= 1'b1;
 				state		<= IDLE;
 			end
 		end
 
 		else case (state)
 			IDLE:	if (valid_out && ready_in) begin
-						valid_out	<= 1'b0;
-						reg_man_b	<= 24'h000000;
-						reg_res		<= 48'h000000000000;
-						reg_exp_y	<= 10'h000;
-						reg_sgn_y	<= 1'b0;
+						man_b_buf	<= 24'h000000;
+						res_buf		<= 48'h000000000000;
+						exp_y_buf	<= 10'h000;
+						sgn_y_buf	<= 1'b0;
 						skip_round	<= 1'b0;
 						IV			<= 1'b0;
 						rm_out		<= 3'b000;
 						counter		<= 2'd0;
+						valid_out	<= 1'b0;
 					end
 
 			CALC:	begin
-						reg_res		<= {acc, reg_res[23:6]};
+						res_buf		<= {acc, res_buf[23:6]};
 
 						if (counter == 2'd3) begin
 							valid_out	<= 1'b1;
@@ -166,11 +166,11 @@ module float_multiplier
 	end
 
 	always_comb begin
-		acc	= {6'b000000, reg_res[47:24]};
+		acc	= {6'b000000, res_buf[47:24]};
 
 		for (integer i = 0; i < 6; i = i+1) begin
-			if (reg_res[i])
-				acc = acc + (reg_man_b << i);
+			if (res_buf[i])
+				acc = acc + (man_b_buf << i);
 		end
 	end
 

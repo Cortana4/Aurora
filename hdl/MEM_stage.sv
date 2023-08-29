@@ -59,6 +59,7 @@ module MEM_stage
 
 	logic			stall;
 
+	logic	[31:0]	dmem_axi_rdata_sgn_ext;
 	logic	[31:0]	dmem_axi_rdata_aligned;
 	assign			dmem_axi_rdata_aligned	= dmem_axi_rdata >> (8*dmem_axi_araddr[1:0]);
 
@@ -72,10 +73,19 @@ module MEM_stage
 											  ((rd_wena_EX && !dmem_axi_rvalid) ||
 											  (!rd_wena_EX && !dmem_axi_bvalid)));
 
+	always_comb begin
+		case (mem_op_EX)
+		MEM_LB:		dmem_axi_rdata_sgn_ext	= {{24{dmem_axi_rdata_aligned[7]}}, dmem_axi_rdata_aligned[7:0]};
+		MEM_LBU:	dmem_axi_rdata_sgn_ext	= {24'h000000, dmem_axi_rdata_aligned[7:0]};
+		MEM_LH:		dmem_axi_rdata_sgn_ext	= {{16{dmem_axi_rdata_aligned[15]}}, dmem_axi_rdata_aligned[15:0]};
+		MEM_LHU:	dmem_axi_rdata_sgn_ext	= {16'h0000, dmem_axi_rdata_aligned[15:0]};
+		default:	dmem_axi_rdata_sgn_ext	= dmem_axi_rdata_aligned;
+		endcase
+	end
+	
 	// MEM/WB pipeline registers
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush_in) begin
-			valid_out		<= 1'b0;
 			PC_MEM			<= 32'h00000000;
 			IR_MEM			<= 32'h00000000;
 			rd_wena_MEM		<= 1'b0;
@@ -91,10 +101,10 @@ module MEM_stage
 			trap_ret_MEM	<= 1'b0;
 			exc_pend_MEM	<= 1'b0;
 			exc_cause_MEM	<= 32'h00000000;
+			valid_out		<= 1'b0;
 		end
 
 		else if (valid_in && ready_out && !flush_out) begin
-			valid_out		<= 1'b1;
 			PC_MEM			<= PC_EX;
 			IR_MEM			<= IR_EX;
 			rd_wena_MEM		<= rd_wena_EX;
@@ -110,6 +120,7 @@ module MEM_stage
 			trap_ret_MEM	<= trap_ret_EX;
 			exc_pend_MEM	<= exc_pend_EX;
 			exc_cause_MEM	<= exc_cause_EX;
+			valid_out		<= 1'b1;
 
 			if (wb_src_EX == SEL_MEM) begin
 				// dmem read access (load)
@@ -119,13 +130,8 @@ module MEM_stage
 						exc_cause_MEM	<= CAUSE_DMEM_BUS_ERROR;
 					end
 
-					else case (mem_op_EX)
-						MEM_LB:		rd_data_MEM	<= {{24{dmem_axi_rdata_aligned[7]}}, dmem_axi_rdata_aligned[7:0]};
-						MEM_LBU:	rd_data_MEM	<= {24'h000000, dmem_axi_rdata_aligned[7:0]};
-						MEM_LH:		rd_data_MEM	<= {{16{dmem_axi_rdata_aligned[15]}}, dmem_axi_rdata_aligned[15:0]};
-						MEM_LHU:	rd_data_MEM	<= {16'h0000, dmem_axi_rdata_aligned[15:0]};
-						default:	rd_data_MEM	<= dmem_axi_rdata_aligned;
-					endcase
+					else
+						rd_data_MEM		<= dmem_axi_rdata_sgn_ext;
 				end
 				// dmem write access (store)
 				else if (|dmem_axi_bresp) begin
@@ -136,7 +142,6 @@ module MEM_stage
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out		<= 1'b0;
 			PC_MEM			<= 32'h00000000;
 			IR_MEM			<= 32'h00000000;
 			rd_wena_MEM		<= 1'b0;
@@ -152,6 +157,7 @@ module MEM_stage
 			trap_ret_MEM	<= 1'b0;
 			exc_pend_MEM	<= 1'b0;
 			exc_cause_MEM	<= 32'h00000000;
+			valid_out		<= 1'b0;
 		end
 	end
 

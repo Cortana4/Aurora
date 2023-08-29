@@ -58,7 +58,6 @@ module FPU
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_in_core	<= 1'b0;
 			op_core			<= 5'd0;
 			rm_core			<= 3'b000;
 			a_core			<= 32'h00000000;
@@ -71,10 +70,10 @@ module FPU
 			OF_buf			<= 1'b0;
 			UF_buf			<= 1'b0;
 			IE_buf			<= 1'b0;
+			valid_in_core	<= 1'b0;
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_in_core	<= 1'b1;
 			op_core			<= op;
 			rm_core			<= rm;
 			a_core			<= a;
@@ -87,6 +86,7 @@ module FPU
 			OF_buf			<= 1'b0;
 			UF_buf			<= 1'b0;
 			IE_buf			<= 1'b0;
+			valid_in_core	<= 1'b1;
 
 			case (op)
 			FPU_OP_MADD,
@@ -100,7 +100,6 @@ module FPU
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_in_core	<= 1'b0;
 			op_core			<= 5'd0;
 			rm_core			<= 3'b000;
 			a_core			<= 32'h00000000;
@@ -113,13 +112,13 @@ module FPU
 			OF_buf			<= 1'b0;
 			UF_buf			<= 1'b0;
 			IE_buf			<= 1'b0;
+			valid_in_core	<= 1'b0;
 		end
 
 		else if (valid_in_core && ready_out_core)
 			valid_in_core	<= 1'b0;
 
 		else if (valid_out_core && wb_ena) begin
-			valid_in_core	<= 1'b1;
 			b_core			<= reg_c;
 			wb_ena			<= 1'b0;
 			IV_buf			<= IV_core;
@@ -127,6 +126,7 @@ module FPU
 			OF_buf			<= OF_core;
 			UF_buf			<= UF_core;
 			IE_buf			<= IE_core;
+			valid_in_core	<= 1'b1;
 
 			case (reg_op)
 			FPU_OP_MADD,
@@ -145,28 +145,28 @@ module FPU
 
 	FPU_core FPU_core_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
+		.flush		(flush),
 
-		.valid_in(valid_in_core),
-		.ready_out(ready_out_core),
-		.valid_out(valid_out_core),
-		.ready_in(ready_in),
+		.valid_in	(valid_in_core),
+		.ready_out	(ready_out_core),
+		.valid_out	(valid_out_core),
+		.ready_in	(ready_in),
 
-		.op(op_core),
-		.rm(rm_core),
+		.op			(op_core),
+		.rm			(rm_core),
 
-		.a(a_core),
-		.b(b_core),
+		.a			(a_core),
+		.b			(b_core),
 
-		.y(y),
+		.y			(y),
 
-		.IV(IV_core),
-		.DZ(DZ_core),
-		.OF(OF_core),
-		.UF(UF_core),
-		.IE(IE_core)
+		.IV			(IV_core),
+		.DZ			(DZ_core),
+		.OF			(OF_core),
+		.UF			(UF_core),
+		.IE			(IE_core)
 	);
 
 endmodule

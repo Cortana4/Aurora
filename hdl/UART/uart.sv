@@ -1,6 +1,6 @@
 module uart
 #(
-	parameter	BASE_ADDR			= 'h00000000,
+	parameter	BASE_ADDR			= 32'h00000000,
 	parameter	TX_ADDR_WIDTH		= 5,
 	parameter	RX_ADDR_WIDTH		= 5
 )
@@ -19,7 +19,7 @@ module uart
 	input	logic					cts,
 	output	logic					rts,
 
-	output	logic					Int
+	output	logic					irq
 );
 
 	localparam	FIFO_BUF_ADDR		= BASE_ADDR + 0;
@@ -33,9 +33,9 @@ module uart
 	localparam	RX_STAT_SET_ADDR	= BASE_ADDR + 32;
 	localparam	RX_STAT_CLR_ADDR	= BASE_ADDR + 36;
 
-	logic							ena_reg;
-	logic							wen_reg;
-	logic	[31:0]					addr_reg;
+	logic							ena_buf;
+	logic							wen_buf;
+	logic	[31:0]					addr_buf;
 
 	logic							tx_wena;
 	logic	[7:0]					tx_wdata;
@@ -44,7 +44,7 @@ module uart
 
 	assign							tx_wena			= ena && wen && addr == FIFO_BUF_ADDR;
 	assign							tx_wdata		= wdata[7:0];
-	assign							rx_rena			= ena_reg && !wen_reg && addr_reg == FIFO_BUF_ADDR;
+	assign							rx_rena			= ena_buf && !wen_buf && addr_buf == FIFO_BUF_ADDR;
 
 	// control signals
 	logic	[31:0]					ctrl_reg;
@@ -151,7 +151,7 @@ module uart
 	assign							tx_watermark_reached		= tx_size <= tx_watermark;
 	assign							rx_watermark_reached		= rx_size >= rx_watermark;
 
-	assign							Int				=
+	assign							irq				=
 										tx_empty				&& tx_empty_IE				||
 										tx_watermark_reached	&& tx_watermark_reached_IE	||
 										tx_overflow_error		&& tx_overflow_error_IE		||
@@ -165,9 +165,9 @@ module uart
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset) begin
-			ena_reg					<= 1'b0;
-			wen_reg					<= 1'b0;
-			addr_reg				<= 32'h00000000;
+			ena_buf					<= 1'b0;
+			wen_buf					<= 1'b0;
+			addr_buf				<= 32'h00000000;
 			// default UART settings
 			flow_ctrl				<= 1'b1;	// rts/cts
 			parity					<= 1'b1;	// even
@@ -201,9 +201,9 @@ module uart
 		end
 
 		else begin
-			ena_reg					<= ena;
-			wen_reg					<= wen;
-			addr_reg				<= addr;
+			ena_buf					<= ena;
+			wen_buf					<= wen;
+			addr_buf				<= addr;
 			// refresh status signals
 			tx_overflow_error		<= tx_overflow_error	|| tx_wena && tx_full;
 			rx_frame_error			<= rx_frame_error		|| frame_error_w;
@@ -316,7 +316,7 @@ module uart
 	end
 
 	always_comb begin
-		case (addr_reg)
+		case (addr_buf)
 		FIFO_BUF_ADDR:		rdata = {24'h000000, rx_rdata};
 		CTRL_REG_ADDR:		rdata = ctrl_reg;
 		TX_STAT_REG_ADDR:	rdata = tx_stat_reg;
@@ -327,51 +327,51 @@ module uart
 
 	uart_tx #(TX_ADDR_WIDTH) transmitter
 	(
-		.clk(clk),
-		.reset(reset),
-		.clear(tx_clear),
+		.clk			(clk),
+		.reset			(reset),
+		.clear			(tx_clear),
 
-		.tx(tx),
-		.cts(cts),
+		.tx				(tx),
+		.cts			(cts),
 
-		.flow_ctrl(flow_ctrl),
-		.parity(parity),
-		.stop_bits(stop_bits),
-		.data_bits(data_bits),
-		.baud_reg(baud_reg),
+		.flow_ctrl		(flow_ctrl),
+		.parity			(parity),
+		.stop_bits		(stop_bits),
+		.data_bits		(data_bits),
+		.baud_reg		(baud_reg),
 
-		.wena(tx_wena),
-		.wdata(tx_wdata),
-		.size(tx_size),
-		.empty(tx_empty),
-		.full(tx_full)
+		.wena			(tx_wena),
+		.wdata			(tx_wdata),
+		.size			(tx_size),
+		.empty			(tx_empty),
+		.full			(tx_full)
 	);
 
 	uart_rx #(RX_ADDR_WIDTH) receiver
 	(
-		.clk(clk),
-		.reset(reset),
-		.clear(rx_clear),
+		.clk			(clk),
+		.reset			(reset),
+		.clear			(rx_clear),
 
-		.rx(rx),
-		.rts(rts),
+		.rx				(rx),
+		.rts			(rts),
 
-		.flow_ctrl(flow_ctrl),
-		.parity(parity),
-		.stop_bits(stop_bits),
-		.data_bits(data_bits),
-		.baud_reg(baud_reg),
+		.flow_ctrl		(flow_ctrl),
+		.parity			(parity),
+		.stop_bits		(stop_bits),
+		.data_bits		(data_bits),
+		.baud_reg		(baud_reg),
 
-		.rena(rx_rena),
-		.rdata(rx_rdata),
-		.size(rx_size),
-		.empty(rx_empty),
-		.full(rx_full),
+		.rena			(rx_rena),
+		.rdata			(rx_rdata),
+		.size			(rx_size),
+		.empty			(rx_empty),
+		.full			(rx_full),
 
-		.noise_error(noise_error_w),
-		.parity_error(parity_error_w),
-		.frame_error(frame_error_w),
-		.overflow_error(overflow_error_w)
+		.noise_error	(noise_error_w),
+		.parity_error	(parity_error_w),
+		.frame_error	(frame_error_w),
+		.overflow_error	(overflow_error_w)
 	);
 
 endmodule

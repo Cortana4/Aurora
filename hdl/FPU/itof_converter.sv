@@ -30,33 +30,33 @@ module itof_converter
 
 	logic			inc_exp;
 
-	logic	[2:0]	reg_rm;
-	logic			reg_sgn_y;
+	logic	[2:0]	rm_buf;
+	logic			sgn_y_buf;
 
 	logic			valid_in_int;
 
 	assign			sgn_y			= int_in[31] && op == FPU_OP_CVTIF;
 	assign			man_denorm		= sgn_y ? -int_in : int_in;
-	assign			float_out		= {reg_sgn_y, exp_y + inc_exp, man_y};
+	assign			float_out		= {sgn_y_buf, exp_y + inc_exp, man_y};
 
 	assign			valid_in_int	= valid_in && (op == FPU_OP_CVTIF || op == FPU_OP_CVTUF);
 	assign			ready_out		= ready_in;
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out	<= 1'b0;
-			reg_rm		<= 3'b000;
+			rm_buf		<= 3'b000;
 			man_norm	<= 32'h00000000;
 			exp_y		<= 8'h00;
-			reg_sgn_y	<= 1'b0;
+			sgn_y_buf	<= 1'b0;
+			valid_out	<= 1'b0;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out	<= 1'b1;
-			reg_rm		<= rm;
+			rm_buf		<= rm;
 			man_norm	<= 32'h00000000;
 			exp_y		<= 8'h00;
-			reg_sgn_y	<= sgn_y;
+			sgn_y_buf	<= sgn_y;
+			valid_out	<= 1'b1;
 
 			if (|int_in) begin
 				man_norm	<= man_denorm << leading_zeros;
@@ -65,35 +65,35 @@ module itof_converter
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out	<= 1'b0;
-			reg_rm		<= 3'b000;
+			rm_buf		<= 3'b000;
 			man_norm	<= 32'h00000000;
 			exp_y		<= 8'h00;
-			reg_sgn_y	<= 1'b0;
+			sgn_y_buf	<= 1'b0;
+			valid_out	<= 1'b0;
 		end
 	end
 
 	leading_zero_counter_32 LDZC_32_inst
 	(
-		.in(man_denorm),
-		.y(leading_zeros),
-		.a()
+		.in			(man_denorm),
+		.y			(leading_zeros),
+		.a			()
 	);
 
 	rounding_logic #(23) rounding_logic_inst
 	(
-		.rm(reg_rm),
+		.rm			(rm_buf),
 
-		.sticky_bit(|man_norm[6:0]),
-		.round_bit(man_norm[7]),
+		.sticky_bit	(|man_norm[6:0]),
+		.round_bit	(man_norm[7]),
 
-		.in(man_norm[30:8]),
-		.sgn(reg_sgn_y),
+		.in			(man_norm[30:8]),
+		.sgn		(sgn_y_buf),
 
-		.out(man_y),
-		.carry(inc_exp),
+		.out		(man_y),
+		.carry		(inc_exp),
 
-		.inexact(IE)
+		.inexact	(IE)
 	);
 
 endmodule

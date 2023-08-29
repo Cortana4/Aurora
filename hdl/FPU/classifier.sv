@@ -28,13 +28,13 @@ module classifier
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out	<= 1'b0;
 			int_out		<= 32'h00000000;
+			valid_out	<= 1'b0;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out	<= 1'b1;
 			int_out		<= 32'h00000000;
+			valid_out	<= 1'b1;
 
 			// 0.0
 			if (!sgn_a && zero_a)
@@ -69,8 +69,8 @@ module classifier
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out	<= 1'b0;
 			int_out		<= 32'h00000000;
+			valid_out	<= 1'b0;
 		end
 	end
 

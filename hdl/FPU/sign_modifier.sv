@@ -28,13 +28,13 @@ module sign_modifier
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out	<= 1'b0;
 			float_out	<= 32'h00000000;
+			valid_out	<= 1'b0;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out	<= 1'b1;
 			float_out	<= 32'h00000000;
+			valid_out	<= 1'b1;
 
 			case (op)
 			FPU_OP_SGNJ:	float_out <= {sgn_b, a[30:0]};
@@ -44,8 +44,8 @@ module sign_modifier
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out	<= 1'b0;
 			float_out	<= 32'h00000000;
+			valid_out	<= 1'b0;
 		end
 	end
 

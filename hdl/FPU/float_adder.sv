@@ -43,21 +43,21 @@ module float_adder
 	output	logic	[2:0]	rm_out
 );
 
-	logic			[23:0]	reg_man_a;
-	logic	signed	[9:0]	reg_exp_a;
-	logic					reg_sgn_a;
-	logic					reg_zero_a;
-	logic					reg_inf_a;
-	logic					reg_sNaN_a;
-	logic					reg_qNaN_a;
-	logic			[23:0]	reg_man_b;
-	logic	signed	[9:0]	reg_exp_b;
-	logic					reg_sgn_b;
-	logic					reg_zero_b;
-	logic					reg_inf_b;
-	logic					reg_sNaN_b;
-	logic					reg_qNaN_b;
-	logic					reg_sub;
+	logic			[23:0]	man_a_buf;
+	logic	signed	[9:0]	exp_a_buf;
+	logic					sgn_a_buf;
+	logic					zero_a_buf;
+	logic					inf_a_buf;
+	logic					sNaN_a_buf;
+	logic					qNaN_a_buf;
+	logic			[23:0]	man_b_buf;
+	logic	signed	[9:0]	exp_b_buf;
+	logic					sgn_b_buf;
+	logic					zero_b_buf;
+	logic					inf_b_buf;
+	logic					sNaN_b_buf;
+	logic					qNaN_b_buf;
+	logic					sub_buf;
 
 	logic					sgn_b_int;
 	logic					sub_int;
@@ -81,8 +81,8 @@ module float_adder
 	assign	sgn_b_int		= sgn_b ^ (op == FPU_OP_SUB);
 	assign	sub_int			= sgn_a ^ sgn_b_int;
 
-	assign	align			= reg_exp_a - reg_exp_b;
-	assign	shifter_in		= reg_sub ? -{reg_man_b, 2'b00} : {reg_man_b, 2'b00};
+	assign	align			= exp_a_buf - exp_b_buf;
+	assign	shifter_in		= sub_buf ? -{man_b_buf, 2'b00} : {man_b_buf, 2'b00};
 
 	assign	valid_in_int	= valid_in && (op == FPU_OP_ADD || op == FPU_OP_SUB);
 	assign	ready_out		= ready_in && !stall;
@@ -90,22 +90,21 @@ module float_adder
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out	<= 1'b0;
-			reg_man_a	<= 24'h000000;
-			reg_exp_a	<= 10'h000;
-			reg_sgn_a	<= 1'b0;
-			reg_zero_a	<= 1'b0;
-			reg_inf_a	<= 1'b0;
-			reg_sNaN_a	<= 1'b0;
-			reg_qNaN_a	<= 1'b0;
-			reg_man_b	<= 24'h000000;
-			reg_exp_b	<= 10'h000;
-			reg_sgn_b	<= 1'b0;
-			reg_zero_b	<= 1'b0;
-			reg_inf_b	<= 1'b0;
-			reg_sNaN_b	<= 1'b0;
-			reg_qNaN_b	<= 1'b0;
-			reg_sub		<= 1'b0;
+			man_a_buf	<= 24'h000000;
+			exp_a_buf	<= 10'h000;
+			sgn_a_buf	<= 1'b0;
+			zero_a_buf	<= 1'b0;
+			inf_a_buf	<= 1'b0;
+			sNaN_a_buf	<= 1'b0;
+			qNaN_a_buf	<= 1'b0;
+			man_b_buf	<= 24'h000000;
+			exp_b_buf	<= 10'h000;
+			sgn_b_buf	<= 1'b0;
+			zero_b_buf	<= 1'b0;
+			inf_b_buf	<= 1'b0;
+			sNaN_b_buf	<= 1'b0;
+			qNaN_b_buf	<= 1'b0;
+			sub_buf		<= 1'b0;
 			man_y		<= 24'h000000;
 			exp_y		<= 10'h000;
 			sgn_y		<= 1'b0;
@@ -116,26 +115,26 @@ module float_adder
 			IV			<= 1'b0;
 			sum			<= 25'h0000000;
 			rm_out		<= 3'b000;
+			valid_out	<= 1'b0;
 			state		<= IDLE;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out	<= 1'b0;
-			reg_man_a	<= man_a;
-			reg_exp_a	<= exp_a;
-			reg_sgn_a	<= sgn_a;
-			reg_zero_a	<= zero_a;
-			reg_inf_a	<= inf_a;
-			reg_sNaN_a	<= sNaN_a;
-			reg_qNaN_a	<= qNaN_a;
-			reg_man_b	<= man_b;
-			reg_exp_b	<= exp_b;
-			reg_sgn_b	<= sgn_b_int;
-			reg_zero_b	<= zero_b;
-			reg_inf_b	<= inf_b;
-			reg_sNaN_b	<= sNaN_b;
-			reg_qNaN_b	<= qNaN_b;
-			reg_sub		<= sub_int;
+			man_a_buf	<= man_a;
+			exp_a_buf	<= exp_a;
+			sgn_a_buf	<= sgn_a;
+			zero_a_buf	<= zero_a;
+			inf_a_buf	<= inf_a;
+			sNaN_a_buf	<= sNaN_a;
+			qNaN_a_buf	<= qNaN_a;
+			man_b_buf	<= man_b;
+			exp_b_buf	<= exp_b;
+			sgn_b_buf	<= sgn_b_int;
+			zero_b_buf	<= zero_b;
+			inf_b_buf	<= inf_b;
+			sNaN_b_buf	<= sNaN_b;
+			qNaN_b_buf	<= qNaN_b;
+			sub_buf		<= sub_int;
 			man_y		<= 24'h000000;
 			exp_y		<= 10'h000;
 			sgn_y		<= 1'b0;
@@ -146,27 +145,27 @@ module float_adder
 			IV			<= 1'b0;
 			sum			<= 25'h0000000;
 			rm_out		<= rm;
+			valid_out	<= 1'b0;
 			state		<= INIT;
 		end
 
 		else case (state)
 			IDLE:	if (valid_out && ready_in) begin
-						valid_out	<= 1'b0;
-						reg_man_a	<= 24'h000000;
-						reg_exp_a	<= 10'h000;
-						reg_sgn_a	<= 1'b0;
-						reg_zero_a	<= 1'b0;
-						reg_inf_a	<= 1'b0;
-						reg_sNaN_a	<= 1'b0;
-						reg_qNaN_a	<= 1'b0;
-						reg_man_b	<= 24'h000000;
-						reg_exp_b	<= 10'h000;
-						reg_sgn_b	<= 1'b0;
-						reg_zero_b	<= 1'b0;
-						reg_inf_b	<= 1'b0;
-						reg_sNaN_b	<= 1'b0;
-						reg_qNaN_b	<= 1'b0;
-						reg_sub		<= 1'b0;
+						man_a_buf	<= 24'h000000;
+						exp_a_buf	<= 10'h000;
+						sgn_a_buf	<= 1'b0;
+						zero_a_buf	<= 1'b0;
+						inf_a_buf	<= 1'b0;
+						sNaN_a_buf	<= 1'b0;
+						qNaN_a_buf	<= 1'b0;
+						man_b_buf	<= 24'h000000;
+						exp_b_buf	<= 10'h000;
+						sgn_b_buf	<= 1'b0;
+						zero_b_buf	<= 1'b0;
+						inf_b_buf	<= 1'b0;
+						sNaN_b_buf	<= 1'b0;
+						qNaN_b_buf	<= 1'b0;
+						sub_buf		<= 1'b0;
 						man_y		<= 24'h000000;
 						exp_y		<= 10'h000;
 						sgn_y		<= 1'b0;
@@ -177,82 +176,83 @@ module float_adder
 						IV			<= 1'b0;
 						sum			<= 25'h0000000;
 						rm_out		<= 3'b000;
+						valid_out	<= 1'b0;
 						state		<= IDLE;
 					end
 
 			INIT:	begin
 						// NaN
-						if (reg_sNaN_a || reg_sNaN_b || reg_qNaN_a || reg_qNaN_b ||
-							(reg_sub && reg_inf_a && reg_inf_b)) begin
-							valid_out	<= 1'b1;
+						if (sNaN_a_buf || sNaN_b_buf || qNaN_a_buf || qNaN_b_buf ||
+							(sub_buf && inf_a_buf && inf_b_buf)) begin
 							man_y		<= 24'hc00000;
 							exp_y		<= 10'h0ff;
 							sgn_y		<= 1'b0;
 							skip_round	<= 1'b1;
-							IV			<= ~(reg_qNaN_a || reg_qNaN_b);
+							IV			<= ~(qNaN_a_buf || qNaN_b_buf);
+							valid_out	<= 1'b1;
 							state		<= IDLE;
 						end
 						// inf
-						else if (reg_inf_a || reg_inf_b) begin
-							valid_out	<= 1'b1;
+						else if (inf_a_buf || inf_b_buf) begin
 							man_y		<= 24'h800000;
 							exp_y		<= 10'h0ff;
-							sgn_y		<= reg_sgn_a;
+							sgn_y		<= sgn_a_buf;
 							skip_round	<= 1'b1;
+							valid_out	<= 1'b1;
 							state		<= IDLE;
 						end
 						// zero (0 +- 0)
-						else if (reg_zero_a && reg_zero_b) begin
-							valid_out	<= 1'b1;
-							sgn_y		<= reg_sgn_a && reg_sgn_b;
+						else if (zero_a_buf && zero_b_buf) begin
+							sgn_y		<= sgn_a_buf && sgn_b_buf;
 							skip_round	<= 1'b1;
+							valid_out	<= 1'b1;
 							state		<= IDLE;
 						end
 						// zero (x - x)
-						else if (reg_exp_a == reg_exp_b &&
-								 reg_man_a == reg_man_b && reg_sub) begin
-							valid_out	<= 1'b1;
+						else if (exp_a_buf == exp_b_buf &&
+								 man_a_buf == man_b_buf && sub_buf) begin
 							sgn_y		<= rm_out == FPU_RM_RDN;
 							skip_round	<= 1'b1;
+							valid_out	<= 1'b1;
 							state		<= IDLE;
 						end
 						// a
-						else if (reg_zero_b) begin
-							valid_out	<= 1'b1;
-							man_y		<= reg_man_a;
-							exp_y		<= reg_exp_a;
-							sgn_y		<= reg_sgn_a;
+						else if (zero_b_buf) begin
+							man_y		<= man_a_buf;
+							exp_y		<= exp_a_buf;
+							sgn_y		<= sgn_a_buf;
 							skip_round	<= 1'b0;
+							valid_out	<= 1'b1;
 							state		<= IDLE;
 						end
 						// b
-						else if (reg_zero_a) begin
-							valid_out	<= 1'b1;
-							man_y		<= reg_man_b;
-							exp_y		<= reg_exp_b;
-							sgn_y		<= reg_sgn_b;
+						else if (zero_a_buf) begin
+							man_y		<= man_b_buf;
+							exp_y		<= exp_b_buf;
+							sgn_y		<= sgn_b_buf;
 							skip_round	<= 1'b0;
+							valid_out	<= 1'b1;
 							state		<= IDLE;
 						end
 						// swap inputs if abs(a) < abs(b)
-						else if ((reg_zero_a && !reg_zero_b) || (reg_exp_a < reg_exp_b) ||
-								 (reg_exp_a == reg_exp_b && reg_man_a < reg_man_b)) begin
-							reg_man_a	<= reg_man_b;
-							reg_exp_a	<= reg_exp_b;
-							reg_man_b	<= reg_man_a;
-							reg_exp_b	<= reg_exp_a;
-							sgn_y		<= reg_sgn_b;
+						else if ((zero_a_buf && !zero_b_buf) || (exp_a_buf < exp_b_buf) ||
+								 (exp_a_buf == exp_b_buf && man_a_buf < man_b_buf)) begin
+							man_a_buf	<= man_b_buf;
+							exp_a_buf	<= exp_b_buf;
+							man_b_buf	<= man_a_buf;
+							exp_b_buf	<= exp_a_buf;
+							sgn_y		<= sgn_b_buf;
 							state		<= ALIGN;
 						end
 
 						else begin
-							sgn_y		<= reg_sgn_a;
+							sgn_y		<= sgn_a_buf;
 							state		<= ALIGN;
 						end
 					end
 
 			ALIGN:	begin
-						reg_man_b	<= shifter_out[25:2];
+						man_b_buf	<= shifter_out[25:2];
 						guard_bit	<= shifter_out[1];
 						round_bit	<= shifter_out[0];
 						sticky_bit	<= sticky_bit_int;
@@ -260,15 +260,15 @@ module float_adder
 					end
 
 			ADD:	begin
-						sum			<= reg_man_a + reg_man_b;
+						sum			<= man_a_buf + man_b_buf;
 						state		<= NORM;
 					end
 
 			NORM:	begin
 						// shift right 1 digit (only if there was a carry after addition)
-						if (!reg_sub && sum[24]) begin
+						if (!sub_buf && sum[24]) begin
 							man_y		<= sum[24:1];
-							exp_y		<= reg_exp_a + 10'd1;
+							exp_y		<= exp_a_buf + 10'd1;
 							sticky_bit	<= guard_bit || round_bit || sticky_bit;
 							round_bit	<= sum[0];
 						end
@@ -276,19 +276,19 @@ module float_adder
 						// subtraction, so carry is a dont care in this case)
 						else if (sum[23]) begin
 							man_y		<= sum[23:0];
-							exp_y		<= reg_exp_a;
+							exp_y		<= exp_a_buf;
 							sticky_bit	<= round_bit || sticky_bit;
 							round_bit	<= guard_bit;
 						end
 						// shift left 1 digit
 						else if (!sum[23] && sum[22]) begin
 							man_y		<= {sum[22:0], guard_bit};
-							exp_y		<= reg_exp_a - leading_zeros;
+							exp_y		<= exp_a_buf - leading_zeros;
 						end
 						// shift left more than 1 digit
 						else begin
 							man_y		<= {sum[22:0], guard_bit} << (leading_zeros - 5'd1);
-							exp_y		<= reg_exp_a - leading_zeros;
+							exp_y		<= exp_a_buf - leading_zeros;
 							sticky_bit	<= 1'b0;
 							round_bit	<= 1'b0;
 						end
@@ -301,19 +301,19 @@ module float_adder
 
 	rshifter #(26, 5) rshifter_inst
 	(
-		.in(shifter_in),
-		.sel(|align[9:5] ? 5'b11111 : align[4:0]),
-		.sgn(reg_sub),
+		.in			(shifter_in),
+		.sel		(|align[9:5] ? 5'b11111 : align[4:0]),
+		.sgn		(sub_buf),
 
-		.out(shifter_out),
-		.sticky_bit(sticky_bit_int)
+		.out		(shifter_out),
+		.sticky_bit	(sticky_bit_int)
 	);
 
 	leading_zero_counter_24 LDZC_24_inst
 	(
-		.in(sum[23:0]),
-		.y(leading_zeros),
-		.a()
+		.in			(sum[23:0]),
+		.y			(leading_zeros),
+		.a			()
 	);
 
 endmodule

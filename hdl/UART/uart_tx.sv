@@ -48,7 +48,7 @@ module uart_tx
 			state	<= IDLE;
 			counter	<= 25'h0000000;
 			bit_idx	<= 3'b000;
-			rena		<= 1'b0;
+			rena	<= 1'b0;
 		end
 
 		else case (state)
@@ -101,7 +101,7 @@ module uart_tx
 						end
 			STOP:		begin
 							if (rena) begin
-								rena		<= 1'b0;
+								rena	<= 1'b0;
 								state	<= IDLE;
 							end
 
@@ -120,19 +120,19 @@ module uart_tx
 
 	fifo_buf #(ADDR_WIDTH, 8) tx_fifo_buf
 	(
-		.clk(clk),
-		.reset(reset),
-		.clear(clear),
+		.clk	(clk),
+		.reset	(reset),
+		.clear	(clear),
 
-		.wena(wena),
-		.wdata(wdata),
+		.wena	(wena),
+		.wdata	(wdata),
 		
-		.rena(rena),
-		.rdata(rdata),
+		.rena	(rena),
+		.rdata	(rdata),
 
-		.size(size),
-		.empty(empty),
-		.full(full)
+		.size	(size),
+		.empty	(empty),
+		.full	(full)
 	);
 
 endmodule

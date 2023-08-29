@@ -39,15 +39,15 @@ module float_comparator_seq
 
 	always_ff @(posedge clk, posedge reset) begin
 		if (reset || flush) begin
-			valid_out	<= 1'b0;
 			y			<= 1'b0;
 			IV			<= 1'b0;
+			valid_out	<= 1'b0;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out	<= 1'b1;
 			y			<= 1'b0;
 			IV			<= 1'b0;
+			valid_out	<= 1'b1;
 
 			case (op)
 			FPU_OP_SEQ:	begin
@@ -66,26 +66,26 @@ module float_comparator_seq
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out	<= 1'b0;
 			y			<= 1'b0;
 			IV			<= 1'b0;
+			valid_out	<= 1'b0;
 		end
 	end
 
 	float_comparator_comb float_comparator_inst
 	(
-		.a(a),
-		.b(b),
+		.a			(a),
+		.b			(b),
 
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
-		.sNaN_b(sNaN_b),
-		.qNaN_b(qNaN_b),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
+		.sNaN_b		(sNaN_b),
+		.qNaN_b		(qNaN_b),
 
-		.greater(),
-		.equal(equal),
-		.less(less),
-		.unordered()
+		.greater	(),
+		.equal		(equal),
+		.less		(less),
+		.unordered	()
 	);
 
 endmodule

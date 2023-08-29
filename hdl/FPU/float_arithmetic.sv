@@ -159,200 +159,200 @@ module float_arithmetic
 
 	float_adder float_adder_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
+		.flush		(flush),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_add),
-		.valid_out(valid_out_add),
-		.ready_in(ready_out_pp),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_add),
+		.valid_out	(valid_out_add),
+		.ready_in	(ready_out_pp),
 
-		.op(op),
-		.rm(rm),
+		.op			(op),
+		.rm			(rm),
 
-		.man_a(man_a),
-		.exp_a(exp_a),
-		.sgn_a(sgn_a),
-		.zero_a(zero_a),
-		.inf_a(inf_a),
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
+		.man_a		(man_a),
+		.exp_a		(exp_a),
+		.sgn_a		(sgn_a),
+		.zero_a		(zero_a),
+		.inf_a		(inf_a),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
 
-		.man_b(man_b),
-		.exp_b(exp_b),
-		.sgn_b(sgn_b),
-		.zero_b(zero_b),
-		.inf_b(inf_b),
-		.sNaN_b(sNaN_b),
-		.qNaN_b(qNaN_b),
+		.man_b		(man_b),
+		.exp_b		(exp_b),
+		.sgn_b		(sgn_b),
+		.zero_b		(zero_b),
+		.inf_b		(inf_b),
+		.sNaN_b		(sNaN_b),
+		.qNaN_b		(qNaN_b),
 
-		.man_y(man_y_add),
-		.exp_y(exp_y_add),
-		.sgn_y(sgn_y_add),
+		.man_y		(man_y_add),
+		.exp_y		(exp_y_add),
+		.sgn_y		(sgn_y_add),
 
-		.round_bit(round_bit_add),
-		.sticky_bit(sticky_bit_add),
-		.skip_round(skip_round_add),
+		.round_bit	(round_bit_add),
+		.sticky_bit	(sticky_bit_add),
+		.skip_round	(skip_round_add),
 
-		.IV(IV_add),
+		.IV			(IV_add),
 
-		.rm_out(rm_add)
+		.rm_out		(rm_add)
 	);
 
 	float_multiplier float_multiplier_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
+		.flush		(flush),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_mul),
-		.valid_out(valid_out_mul),
-		.ready_in(ready_out_pp),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_mul),
+		.valid_out	(valid_out_mul),
+		.ready_in	(ready_out_pp),
 
-		.op(op),
-		.rm(rm),
+		.op			(op),
+		.rm			(rm),
 
-		.man_a(man_a),
-		.exp_a(exp_a),
-		.sgn_a(sgn_a),
-		.zero_a(zero_a),
-		.inf_a(inf_a),
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
+		.man_a		(man_a),
+		.exp_a		(exp_a),
+		.sgn_a		(sgn_a),
+		.zero_a		(zero_a),
+		.inf_a		(inf_a),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
 
-		.man_b(man_b),
-		.exp_b(exp_b),
-		.sgn_b(sgn_b),
-		.zero_b(zero_b),
-		.inf_b(inf_b),
-		.sNaN_b(sNaN_b),
-		.qNaN_b(qNaN_b),
+		.man_b		(man_b),
+		.exp_b		(exp_b),
+		.sgn_b		(sgn_b),
+		.zero_b		(zero_b),
+		.inf_b		(inf_b),
+		.sNaN_b		(sNaN_b),
+		.qNaN_b		(qNaN_b),
 
-		.man_y(man_y_mul),
-		.exp_y(exp_y_mul),
-		.sgn_y(sgn_y_mul),
+		.man_y		(man_y_mul),
+		.exp_y		(exp_y_mul),
+		.sgn_y		(sgn_y_mul),
 
-		.round_bit(round_bit_mul),
-		.sticky_bit(sticky_bit_mul),
-		.skip_round(skip_round_mul),
+		.round_bit	(round_bit_mul),
+		.sticky_bit	(sticky_bit_mul),
+		.skip_round	(skip_round_mul),
 
-		.IV(IV_mul),
+		.IV			(IV_mul),
 
-		.rm_out(rm_mul)
+		.rm_out		(rm_mul)
 	);
 
 	float_divider float_divider_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
+		.flush		(flush),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_div),
-		.valid_out(valid_out_div),
-		.ready_in(ready_out_pp),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_div),
+		.valid_out	(valid_out_div),
+		.ready_in	(ready_out_pp),
 
-		.op(op),
-		.rm(rm),
+		.op			(op),
+		.rm			(rm),
 
-		.man_a(man_a),
-		.exp_a(exp_a),
-		.sgn_a(sgn_a),
-		.zero_a(zero_a),
-		.inf_a(inf_a),
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
+		.man_a		(man_a),
+		.exp_a		(exp_a),
+		.sgn_a		(sgn_a),
+		.zero_a		(zero_a),
+		.inf_a		(inf_a),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
 
-		.man_b(man_b),
-		.exp_b(exp_b),
-		.sgn_b(sgn_b),
-		.zero_b(zero_b),
-		.inf_b(inf_b),
-		.sNaN_b(sNaN_b),
-		.qNaN_b(qNaN_b),
+		.man_b		(man_b),
+		.exp_b		(exp_b),
+		.sgn_b		(sgn_b),
+		.zero_b		(zero_b),
+		.inf_b		(inf_b),
+		.sNaN_b		(sNaN_b),
+		.qNaN_b		(qNaN_b),
 
-		.man_y(man_y_div),
-		.exp_y(exp_y_div),
-		.sgn_y(sgn_y_div),
+		.man_y		(man_y_div),
+		.exp_y		(exp_y_div),
+		.sgn_y		(sgn_y_div),
 
-		.round_bit(round_bit_div),
-		.sticky_bit(sticky_bit_div),
-		.skip_round(skip_round_div),
+		.round_bit	(round_bit_div),
+		.sticky_bit	(sticky_bit_div),
+		.skip_round	(skip_round_div),
 
-		.IV(IV_div),
-		.DZ(DZ_div),
+		.IV			(IV_div),
+		.DZ			(DZ_div),
 
-		.rm_out(rm_div)
+		.rm_out		(rm_div)
 	);
 
 	float_sqrt float_sqrt_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
+		.flush		(flush),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_sqrt),
-		.valid_out(valid_out_sqrt),
-		.ready_in(ready_out_pp),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_sqrt),
+		.valid_out	(valid_out_sqrt),
+		.ready_in	(ready_out_pp),
 
-		.op(op),
-		.rm(rm),
+		.op			(op),
+		.rm			(rm),
 
-		.man_a(man_a),
-		.exp_a(exp_a),
-		.sgn_a(sgn_a),
-		.zero_a(zero_a),
-		.inf_a(inf_a),
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
+		.man_a		(man_a),
+		.exp_a		(exp_a),
+		.sgn_a		(sgn_a),
+		.zero_a		(zero_a),
+		.inf_a		(inf_a),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
 
-		.man_y(man_y_sqrt),
-		.exp_y(exp_y_sqrt),
-		.sgn_y(sgn_y_sqrt),
+		.man_y		(man_y_sqrt),
+		.exp_y		(exp_y_sqrt),
+		.sgn_y		(sgn_y_sqrt),
 
-		.round_bit(round_bit_sqrt),
-		.sticky_bit(sticky_bit_sqrt),
-		.skip_round(skip_round_sqrt),
+		.round_bit	(round_bit_sqrt),
+		.sticky_bit	(sticky_bit_sqrt),
+		.skip_round	(skip_round_sqrt),
 
-		.IV(IV_sqrt),
+		.IV			(IV_sqrt),
 
-		.rm_out(rm_sqrt)
+		.rm_out		(rm_sqrt)
 	);
 
 	post_processor post_processor_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
+		.flush		(flush),
 
-		.valid_in(valid_in_pp),
-		.ready_out(ready_out_pp),
-		.valid_out(valid_out),
-		.ready_in(ready_in),
+		.valid_in	(valid_in_pp),
+		.ready_out	(ready_out_pp),
+		.valid_out	(valid_out),
+		.ready_in	(ready_in),
 
-		.rm(rm_pp),
+		.rm			(rm_pp),
 
-		.man_in(man_in_pp),
-		.exp_in(exp_in_pp),
-		.sgn_in(sgn_in_pp),
+		.man_in		(man_in_pp),
+		.exp_in		(exp_in_pp),
+		.sgn_in		(sgn_in_pp),
 
-		.round_bit(round_bit_pp),
-		.sticky_bit(sticky_bit_pp),
-		.skip_round(skip_round_pp),
+		.round_bit	(round_bit_pp),
+		.sticky_bit	(sticky_bit_pp),
+		.skip_round	(skip_round_pp),
 
-		.IV_in(IV_in_pp),
-		.DZ_in(DZ_in_pp),
+		.IV_in		(IV_in_pp),
+		.DZ_in		(DZ_in_pp),
 
-		.float_out(float_out),
+		.float_out	(float_out),
 
-		.IV(IV),
-		.DZ(DZ),
-		.OF(OF),
-		.UF(UF),
-		.IE(IE)
+		.IV			(IV),
+		.DZ			(DZ),
+		.OF			(OF),
+		.UF			(UF),
+		.IE			(IE)
 	);
 
 endmodule

@@ -12,7 +12,6 @@ module ALU
 
 	always_comb begin
 		case (op)
-		ALU_ADD:	y = a + b;
 		ALU_SUB:	y = a - b;
 		ALU_AND:	y = a & b;
 		ALU_OR:		y = a | b;
@@ -27,7 +26,7 @@ module ALU
 		ALU_SGE:	y = {31'b0, $signed(a) >= $signed(b)};
 		ALU_SGEU:	y = {31'b0, a >= b};
 		ALU_INC:	y = a + 32'd4;
-		default:	y = 32'h00000000;
+		default:	y = a + b;
 		endcase
 	end
 
