@@ -4,7 +4,6 @@ module float_sqrt
 (
 	input	logic					clk,
 	input	logic					reset,
-	input	logic					flush,
 
 	input	logic					valid_in,
 	output	logic					ready_out,
@@ -55,8 +54,8 @@ module float_sqrt
 	assign			ready_out		= ready_in && !stall;
 	assign			stall			= state != IDLE;
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			rad_buf		<= 26'h0000000;
 			res_buf		<= 26'h0000000;
 			rem_buf		<= 28'h0000000;

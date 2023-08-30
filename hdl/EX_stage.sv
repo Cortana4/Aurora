@@ -239,7 +239,7 @@ module EX_stage
 	end
 
 	// EX/MEM pipeline registers
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset || flush_in) begin
 			PC_EX					<= 32'h00000000;
 			IR_EX					<= 32'h00000000;
@@ -417,12 +417,10 @@ module EX_stage
 		.y					(alu_out)
 	);
 
-	//int_multiplier #(32, 8) int_multiplier_inst
-	int_multiplier #(32, 8) int_multiplier_inst
+	int_multiplier #(32, 3) int_multiplier_inst
 	(
 		.clk				(clk),
 		.reset				(reset || flush_out),
-		//.flush				(flush_out),
 
 		.valid_in			(valid_in_mul && !exc_pend_ID),
 		.ready_out			(ready_out_mul),
@@ -440,8 +438,7 @@ module EX_stage
 	int_divider #(32, 2) int_divider_inst
 	(
 		.clk				(clk),
-		.reset				(reset),
-		.flush				(flush_out),
+		.reset				(reset || flush_out),
 
 		.valid_in			(valid_in_div && !exc_pend_ID),
 		.ready_out			(ready_out_div),
@@ -459,8 +456,7 @@ module EX_stage
 	FPU FPU_inst
 	(
 		.clk				(clk),
-		.reset				(reset),
-		.flush				(flush_out),
+		.reset				(reset || flush_out),
 
 		.valid_in			(valid_in_fpu && !exc_pend_ID),
 		.ready_out			(ready_out_fpu),

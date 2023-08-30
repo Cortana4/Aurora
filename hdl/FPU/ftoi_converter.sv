@@ -4,7 +4,6 @@ module ftoi_converter
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -87,8 +86,8 @@ module ftoi_converter
 		end
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			rm_buf			<= 3'b000;
 			int_buf			<= 32'h00000000;
 			sgn_buf			<= 1'b0;

@@ -4,7 +4,6 @@ module post_processor
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -143,8 +142,8 @@ module post_processor
 		end
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			rm_buf			<= 3'b000;
 			man_buf			<= 23'h000000;
 			exp_buf			<= 10'h000;

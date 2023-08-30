@@ -66,7 +66,7 @@ module WB_stage
 	assign			stall_irq	= exc_pend_EX  || csr_wena_EX  || csr_rena_EX  ||
 								  exc_pend_MEM || csr_wena_MEM || csr_rena_MEM;
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset || flush_in) begin
 			PC_WB		<= 32'h00000000;
 			IR_WB		<= 32'h00000000;

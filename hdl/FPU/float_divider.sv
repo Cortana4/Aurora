@@ -4,7 +4,6 @@ module float_divider
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -85,8 +84,8 @@ module float_divider
 		end
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			man_b_buf	<= 24'h000000;
 			res_buf		<= {24'hc00000, 2'b00};
 			rem_buf		<= 27'h0000000;

@@ -4,7 +4,6 @@ module FPU
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -56,8 +55,8 @@ module FPU
 	assign			ready_out	= ready_in && !stall;
 	assign			stall		= reg_op != FPU_OP_NOP && !valid_out;
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			op_core			<= 5'd0;
 			rm_core			<= 3'b000;
 			a_core			<= 32'h00000000;
@@ -147,7 +146,6 @@ module FPU
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in_core),
 		.ready_out	(ready_out_core),

@@ -2,9 +2,8 @@
 
 module branch_predictor
 #(
-	parameter	n			= 2,	// considered PC bits
-	parameter	INFER_RAM	= 1		// add/remove PHT reset and thus
-)									// infer registers or distributed RAM
+	parameter	n			= 2	// considered PC bits
+)
 (
 	input	logic			clk,
 	input	logic			reset,
@@ -48,7 +47,7 @@ module branch_predictor
 	assign			jump_addr_IF	= trap_ret_IF ? trap_raddr_csr : PC_IF + IM_IF;
 	assign			jump_pred_IF	= jump_ena_IF && !jump_ind_IF && (PHT[rPtr][1] || jump_alw_IF);
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset)
 			GBH	<= 0;
 
@@ -56,34 +55,13 @@ module branch_predictor
 			GBH	<= (GBH << 1) | jump_taken_EX;
 	end
 
-	generate
-		if (INFER_RAM) begin
-			always_ff @(posedge clk) begin
-				if (update_history) begin
-					if (jump_taken_EX)
-						PHT[wPtr]	<= PHT[wPtr] + ~&PHT[wPtr];
-					else
-						PHT[wPtr]	<= PHT[wPtr] - |PHT[wPtr];
-				end
-			end
+	always_ff @(posedge clk) begin
+		if (update_history) begin
+			if (jump_taken_EX)
+				PHT[wPtr]	<= PHT[wPtr] + ~&PHT[wPtr];
+			else
+				PHT[wPtr]	<= PHT[wPtr] - |PHT[wPtr];
 		end
-
-		else begin
-			always_ff @(posedge clk, posedge reset) begin
-				if (reset) begin
-					for (integer i = 0; i < 2**n; i = i+1)
-						PHT[i]		<= 2'b11;
-				end
-
-				else if (update_history) begin
-					if (jump_taken_EX)
-						PHT[wPtr]	<= PHT[wPtr] + ~&PHT[wPtr];
-
-					else
-						PHT[wPtr]	<= PHT[wPtr] - |PHT[wPtr];
-				end
-			end
-		end
-	endgenerate
+	end
 
 endmodule

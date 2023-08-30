@@ -85,7 +85,7 @@ module IF_stage
 		.full		()
 	);
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			start_cycle		<= 1'b1;
 			jump_addr_buf	<= 32'h00000000;
@@ -136,7 +136,7 @@ module IF_stage
 	end
 
 	// IF/ID pipeline registers
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset || flush_in) begin
 			PC_IF_int		<= 32'h00000000;
 			IR_IF			<= 32'h00000000;

@@ -4,7 +4,6 @@ module float_comparator_seq
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -37,8 +36,8 @@ module float_comparator_seq
 	assign	valid_in_int	= valid_in && (op == FPU_OP_SEQ || op == FPU_OP_SLE || op == FPU_OP_SLT);
 	assign	ready_out		= ready_in;
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			y			<= 1'b0;
 			IV			<= 1'b0;
 			valid_out	<= 1'b0;

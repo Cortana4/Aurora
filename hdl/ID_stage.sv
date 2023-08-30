@@ -152,7 +152,7 @@ module ID_stage
 	end
 
 	// ID/EX pipeline registers
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset || flush_in) begin
 			PC_ID			<= 32'h00000000;
 			IR_ID			<= 32'h00000000;
@@ -356,7 +356,7 @@ module ID_stage
 		.illegal_inst		(illegal_inst)
 	);
 
-	branch_predictor #(6, 1) branch_predictor_inst
+	branch_predictor #(6) branch_predictor_inst
 	(
 		.clk				(clk),
 		.reset				(reset),

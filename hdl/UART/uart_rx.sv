@@ -5,7 +5,6 @@ module uart_rx
 (
 	input	logic					clk,
 	input	logic					reset,
-	input	logic					clear,
 
 	input	logic					rx,
 	output	logic					rts,
@@ -16,6 +15,7 @@ module uart_rx
 	input	logic					data_bits,
 	input	logic	[23:0]			baud_reg,
 
+	input	logic					clear,
 	input	logic					rena,
 	output	logic	[7:0]			rdata,
 	output	logic	[ADDR_WIDTH:0]	size,
@@ -64,7 +64,7 @@ module uart_rx
 			rx_stable		<= {rx_stable[0], rx};
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			noise_e_reg		<= 1'b0;
 			parity_e_reg	<= 1'b0;
@@ -220,8 +220,7 @@ module uart_rx
 	fifo_buf #(ADDR_WIDTH, 8) rx_fifo_buf
 	(
 		.clk	(clk),
-		.reset	(reset),
-		.clear	(clear),
+		.reset	(reset || clear),
 
 		.wena	(wena),
 		.wdata	(wdata),

@@ -4,7 +4,7 @@ module FPGA_top_tb();
 	logic	reset;
 
 	initial begin
-		$readmemh("uart.mem", FPGA_top_inst.genblk2.RAM_inst.ram);
+		$readmemh("mul.mem", FPGA_top_inst.genblk2.RAM_inst.ram);
 
 		clk		= 1'b0;
 		reset	= 1'b1;

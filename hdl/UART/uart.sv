@@ -7,7 +7,7 @@ module uart
 (
 	input	logic					clk,
 	input	logic					reset,
-	
+
 	input	logic					ena,
 	input	logic					wen,
 	input	logic	[31:0]			addr,
@@ -163,7 +163,7 @@ module uart
 										rx_parity_error			&& rx_parity_error_IE		||
 										rx_frame_error			&& rx_frame_error_IE;
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			ena_buf					<= 1'b0;
 			wen_buf					<= 1'b0;
@@ -329,7 +329,6 @@ module uart
 	(
 		.clk			(clk),
 		.reset			(reset),
-		.clear			(tx_clear),
 
 		.tx				(tx),
 		.cts			(cts),
@@ -340,6 +339,7 @@ module uart
 		.data_bits		(data_bits),
 		.baud_reg		(baud_reg),
 
+		.clear			(tx_clear),
 		.wena			(tx_wena),
 		.wdata			(tx_wdata),
 		.size			(tx_size),
@@ -351,7 +351,6 @@ module uart
 	(
 		.clk			(clk),
 		.reset			(reset),
-		.clear			(rx_clear),
 
 		.rx				(rx),
 		.rts			(rts),
@@ -362,6 +361,7 @@ module uart
 		.data_bits		(data_bits),
 		.baud_reg		(baud_reg),
 
+		.clear			(rx_clear),
 		.rena			(rx_rena),
 		.rdata			(rx_rdata),
 		.size			(rx_size),

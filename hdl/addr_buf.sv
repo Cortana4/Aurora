@@ -33,7 +33,7 @@ module addr_buf
 	assign						rdata		= data_buf[rPtr];
 	assign						valid		= valid_buf[rPtr];
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			rPtr			<= 0;
 			wPtr			<= 0;
@@ -64,7 +64,7 @@ module addr_buf
 			data_buf[wPtr]	<= wdata;
 	end
 	
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset || flush) begin
 			for (integer i = 0; i < 2**ADDR_WIDTH; i = i+1)
 				valid_buf[i]	<= 1'b0;

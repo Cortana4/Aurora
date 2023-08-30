@@ -4,7 +4,6 @@ module itof_converter
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -42,8 +41,8 @@ module itof_converter
 	assign			valid_in_int	= valid_in && (op == FPU_OP_CVTIF || op == FPU_OP_CVTUF);
 	assign			ready_out		= ready_in;
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			rm_buf		<= 3'b000;
 			man_norm	<= 32'h00000000;
 			exp_y		<= 8'h00;

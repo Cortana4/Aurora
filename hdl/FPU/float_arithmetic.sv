@@ -2,7 +2,6 @@ module float_arithmetic
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -161,7 +160,6 @@ module float_arithmetic
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_add),
@@ -200,11 +198,10 @@ module float_arithmetic
 		.rm_out		(rm_add)
 	);
 
-	float_multiplier float_multiplier_inst
+	float_multiplier #(4) float_multiplier_inst
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_mul),
@@ -247,7 +244,6 @@ module float_arithmetic
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_div),
@@ -291,7 +287,6 @@ module float_arithmetic
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_sqrt),
@@ -326,7 +321,6 @@ module float_arithmetic
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in_pp),
 		.ready_out	(ready_out_pp),

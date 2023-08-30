@@ -154,7 +154,7 @@ module bus_multiplexer
 		end
 	end
 	
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			rdata_buf		<= 32'h00000000;
 			bypass_rdata	<= 1'b1;

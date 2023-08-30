@@ -2,7 +2,6 @@ module FPU_core
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -226,7 +225,6 @@ module FPU_core
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_arith),
@@ -265,7 +263,6 @@ module FPU_core
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_sgn_mod),
@@ -284,7 +281,6 @@ module FPU_core
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_ftoi),
@@ -312,7 +308,6 @@ module FPU_core
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_itof),
@@ -331,7 +326,6 @@ module FPU_core
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_cmp),
@@ -351,7 +345,6 @@ module FPU_core
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_sel),
@@ -371,7 +364,6 @@ module FPU_core
 	(
 		.clk		(clk),
 		.reset		(reset),
-		.flush		(flush),
 
 		.valid_in	(valid_in),
 		.ready_out	(ready_out_class),

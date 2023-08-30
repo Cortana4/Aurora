@@ -4,7 +4,6 @@ module selector
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -31,8 +30,8 @@ module selector
 	logic	valid_in_int	= valid_in && (op == FPU_OP_MIN || op == FPU_OP_MAX);
 	assign	ready_out		= ready_in;
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			float_out	<= 32'h00000000;
 			IV			<= 1'b0;
 			valid_out	<= 1'b0;

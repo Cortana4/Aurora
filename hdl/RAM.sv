@@ -53,7 +53,7 @@ module RAM
 		end
 		
 		else begin
-			always_ff @(posedge clk, posedge rst) begin
+			always_ff @(posedge clk) begin
 				if (rst) begin
 					douta	<= {(COL_NUM*COL_WIDTH-1){1'b0}};
 					doutb	<= {(COL_NUM*COL_WIDTH-1){1'b0}};

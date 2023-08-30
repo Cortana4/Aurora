@@ -84,7 +84,7 @@ module MEM_stage
 	end
 	
 	// MEM/WB pipeline registers
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset || flush_in) begin
 			PC_MEM			<= 32'h00000000;
 			IR_MEM			<= 32'h00000000;
