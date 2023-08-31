@@ -182,7 +182,7 @@ module float_multiplier
 
 	always_ff @(posedge clk) begin
 		if (reset) for (integer i = 0; i < m; i = i+1)
-			man_y_buf[i]	<= 'h0;
+			man_y_buf[i]	<= 48'h000000000000;
 
 		else if (state == CALC) begin
 			man_y_buf[0]	<= man_a_buf * man_b_buf;

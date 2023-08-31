@@ -43,7 +43,7 @@ module float_divider
 	output	logic	[2:0]	rm_out
 );
 
-	logic	[23:0]	man_b_buf;
+	logic	[23:0]	div_buf;
 	logic	[25:0]	res_buf;
 	logic	[26:0]	rem_buf;
 	logic	[9:0]	exp_y_buf;
@@ -86,7 +86,7 @@ module float_divider
 
 	always_ff @(posedge clk) begin
 		if (reset) begin
-			man_b_buf	<= 24'h000000;
+			div_buf		<= 24'h000000;
 			res_buf		<= {24'hc00000, 2'b00};
 			rem_buf		<= 27'h0000000;
 			exp_y_buf	<= 10'h000;
@@ -101,7 +101,7 @@ module float_divider
 		end
 
 		else if (valid_in_int && ready_out) begin
-			man_b_buf	<= man_b;
+			div_buf		<= man_b;
 			res_buf		<= 26'd0;
 			rem_buf		<= {1'b0, man_a, 2'b00};
 			exp_y_buf	<= exp_a - exp_b;
@@ -117,7 +117,7 @@ module float_divider
 			// NaN
 			if (sNaN_a || sNaN_b || qNaN_a || qNaN_b ||
 				(zero_a && zero_b) || (inf_a && inf_b)) begin
-				man_b_buf	<= 24'h000000;
+				div_buf		<= 24'h000000;
 				res_buf		<= {24'hc00000, 2'b00};
 				rem_buf		<= 27'h0000000;
 				exp_y_buf	<= 10'h0ff;
@@ -129,7 +129,7 @@ module float_divider
 			end
 			// inf
 			else if (inf_a || zero_b) begin
-				man_b_buf	<= 24'h000000;
+				div_buf		<= 24'h000000;
 				res_buf		<= {24'h800000, 2'b00};
 				rem_buf		<= 27'h0000000;
 				exp_y_buf	<= 10'h0ff;
@@ -140,7 +140,7 @@ module float_divider
 			end
 			// zero
 			else if (zero_a || inf_b) begin
-				man_b_buf	<= 24'h000000;
+				div_buf		<= 24'h000000;
 				res_buf		<= {24'h000000, 2'b00};
 				rem_buf		<= 27'h0000000;
 				exp_y_buf	<= 10'h000;
@@ -153,7 +153,7 @@ module float_divider
 
 		else case (state)
 			IDLE:	if (valid_out && ready_in) begin
-						man_b_buf	<= 24'h000000;
+						div_buf		<= 24'h000000;
 						res_buf		<= {24'hc00000, 2'b00};
 						rem_buf		<= 27'h0000000;
 						exp_y_buf	<= 10'h000;
@@ -185,7 +185,7 @@ module float_divider
 		acc[0]	= rem_buf;
 
 		for (integer i = 1; i <= 2; i = i+1) begin
-			acc[i]	= acc[i-1] - (man_b_buf << 2);
+			acc[i]	= acc[i-1] - (div_buf << 2);
 			q[2-i]	= !acc[i][26];
 			acc[i]	= (acc[i][26] ? acc[i-1] : acc[i]) << 1;
 		end

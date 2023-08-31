@@ -198,7 +198,7 @@ module float_arithmetic
 		.rm_out		(rm_add)
 	);
 
-	float_multiplier #(4) float_multiplier_inst
+	float_multiplier #(3) float_multiplier_inst
 	(
 		.clk		(clk),
 		.reset		(reset),

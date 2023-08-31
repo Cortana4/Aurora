@@ -131,7 +131,7 @@ module float_sqrt
 			CALC:	begin
 						rad_buf	<= rad_buf << 4;
 						res_buf	<= (res_buf << 2) | s;
-						rem_buf	<= acc[2]; //[27:0];
+						rem_buf	<= acc[2];
 
 						// when the calculation is finished,
 						// the MSB of the result is always 1
