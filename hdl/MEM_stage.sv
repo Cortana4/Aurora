@@ -63,8 +63,8 @@ module MEM_stage
 	logic	[31:0]	dmem_axi_rdata_aligned;
 	assign			dmem_axi_rdata_aligned	= dmem_axi_rdata >> (8*dmem_axi_araddr[1:0]);
 
-	assign			dmem_axi_bready			= wb_src_EX == SEL_MEM && !rd_wena_EX && valid_in && ready_out;
-	assign			dmem_axi_rready			= wb_src_EX == SEL_MEM &&  rd_wena_EX && valid_in && ready_out;
+	assign			dmem_axi_bready			= wb_src_EX == SEL_MEM && !rd_wena_EX && valid_in && ready_out;	// && !flush_out?
+	assign			dmem_axi_rready			= wb_src_EX == SEL_MEM &&  rd_wena_EX && valid_in && ready_out;	// && !flush_out?
 
 	assign			ready_out				= ready_in && !stall;
 	assign			flush_out				= flush_in || exc_taken_csr;
