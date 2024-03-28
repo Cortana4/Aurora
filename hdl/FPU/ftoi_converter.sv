@@ -4,7 +4,6 @@ module ftoi_converter
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -38,13 +37,13 @@ module ftoi_converter
 	logic	[32:0]	shifter_out;
 	logic			sticky_bit;
 
-	logic	[2:0]	reg_rm;
-	logic	[31:0]	reg_int;
-	logic			reg_sgn;
-	logic			reg_round_bit;
-	logic			reg_sticky_bit;
-	logic			reg_IV;
-	logic			reg_IE;
+	logic	[2:0]	rm_buf;
+	logic	[31:0]	int_buf;
+	logic			sgn_buf;
+	logic			round_bit_buf;
+	logic			sticky_bit_buf;
+	logic			IV_buf;
+	logic			IE_buf;
 	logic			negate;
 	logic			skip_round;
 
@@ -75,88 +74,88 @@ module ftoi_converter
 
 	always_comb begin
 		if (skip_round) begin
-			int_out	= reg_int;
-			IV		= reg_IV;
-			IE		= reg_IE;
+			int_out	= int_buf;
+			IV		= IV_buf;
+			IE		= IE_buf;
 		end
 
 		else begin
 			int_out	= negate ? -int_rounded : int_rounded;
-			IV		= reg_IV;
+			IV		= IV_buf;
 			IE		= inexact;
 		end
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
-			valid_out		<= 1'b0;
-			reg_rm			<= 3'b000;
-			reg_int			<= 32'h00000000;
-			reg_sgn			<= 1'b0;
-			reg_round_bit	<= 1'b0;
-			reg_sticky_bit	<= 1'b0;
-			reg_IV			<= 1'b0;
-			reg_IE			<= 1'b0;
+	always_ff @(posedge clk) begin
+		if (reset) begin
+			rm_buf			<= 3'b000;
+			int_buf			<= 32'h00000000;
+			sgn_buf			<= 1'b0;
+			round_bit_buf	<= 1'b0;
+			sticky_bit_buf	<= 1'b0;
+			IV_buf			<= 1'b0;
+			IE_buf			<= 1'b0;
 			negate			<= 1'b0;
 			skip_round		<= 1'b0;
+			valid_out		<= 1'b0;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out		<= 1'b1;
-			reg_rm			<= rm;
-			reg_int			<= shifter_out[32:1];
-			reg_sgn			<= sgn_a;
-			reg_round_bit	<= shifter_out[0];
-			reg_sticky_bit	<= sticky_bit;
-			reg_IV			<= 1'b0;
-			reg_IE			<= 1'b0;
+			rm_buf			<= rm;
+			int_buf			<= shifter_out[32:1];
+			sgn_buf			<= sgn_a;
+			round_bit_buf	<= shifter_out[0];
+			sticky_bit_buf	<= sticky_bit;
+			IV_buf			<= 1'b0;
+			IE_buf			<= 1'b0;
 			negate			<= op == FPU_OP_CVTFI && sgn_a;
 			skip_round		<= 1'b0;
+			valid_out		<= 1'b1;
 
 			// implemented non signaling IE (IEEE 754 2019 p. 39f)
 			// input is below lower limit
 			if (less || lower_limit_exc) begin
-				reg_int			<= op == FPU_OP_CVTFI ? 32'h80000000 : 32'h00000000;
-				reg_round_bit	<= 1'b0;
-				reg_sticky_bit	<= 1'b0;
-				reg_IV			<= 1'b1;
-				reg_IE			<= lower_limit_exc;
+				int_buf			<= op == FPU_OP_CVTFI ? 32'h80000000 : 32'h00000000;
+				round_bit_buf	<= 1'b0;
+				sticky_bit_buf	<= 1'b0;
+				IV_buf			<= 1'b1;
+				IE_buf			<= lower_limit_exc;
 				negate			<= 1'b0;
 				skip_round		<= 1'b1;
 			end
 			// input is above upper limit or NaN
 			else if (greater || upper_limit_exc) begin
-				reg_int			<= op == FPU_OP_CVTFI ? 32'h7fffffff : 32'hffffffff;
-				reg_round_bit	<= 1'b0;
-				reg_sticky_bit	<= 1'b0;
-				reg_IV			<= 1'b1;
-				reg_IE			<= upper_limit_exc;
+				int_buf			<= op == FPU_OP_CVTFI ? 32'h7fffffff : 32'hffffffff;
+				round_bit_buf	<= 1'b0;
+				sticky_bit_buf	<= 1'b0;
+				IV_buf			<= 1'b1;
+				IE_buf			<= upper_limit_exc;
 				negate			<= 1'b0;
 				skip_round		<= 1'b1;
 			end
 			// rounded input is zero
 			else if (zero_a || rounded_zero) begin
-				reg_int			<= 32'h0000000;
-				reg_round_bit	<= 1'b0;
-				reg_sticky_bit	<= 1'b0;
-				reg_IV			<= 1'b0;
-				reg_IE			<= rounded_zero;
+				int_buf			<= 32'h0000000;
+				round_bit_buf	<= 1'b0;
+				sticky_bit_buf	<= 1'b0;
+				IV_buf			<= 1'b0;
+				IE_buf			<= rounded_zero;
 				negate			<= 1'b0;
 				skip_round		<= 1'b1;
 			end
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out		<= 1'b0;
-			reg_rm			<= 3'b000;
-			reg_int			<= 32'h00000000;
-			reg_sgn			<= 1'b0;
-			reg_round_bit	<= 1'b0;
-			reg_sticky_bit	<= 1'b0;
-			reg_IV			<= 1'b0;
-			reg_IE			<= 1'b0;
+			rm_buf			<= 3'b000;
+			int_buf			<= 32'h00000000;
+			sgn_buf			<= 1'b0;
+			round_bit_buf	<= 1'b0;
+			sticky_bit_buf	<= 1'b0;
+			IV_buf			<= 1'b0;
+			IE_buf			<= 1'b0;
 			negate			<= 1'b0;
 			skip_round		<= 1'b0;
+			valid_out		<= 1'b0;
 		end
 	end
 
@@ -185,60 +184,60 @@ module ftoi_converter
 
 	float_comparator_comb float_comparator_inst_1
 	(
-		.a({sgn_a, exp_a, man_a[22:0]}),
-		.b(cmp_min),
+		.a			({sgn_a, exp_a, man_a[22:0]}),
+		.b			(cmp_min),
 
-		.sNaN_a(),
-		.qNaN_a(),
-		.sNaN_b(),
-		.qNaN_b(),
+		.sNaN_a		(),
+		.qNaN_a		(),
+		.sNaN_b		(),
+		.qNaN_b		(),
 
-		.greater(),
-		.equal(),
-		.less(less),
-		.unordered()
+		.greater	(),
+		.equal		(),
+		.less		(less),
+		.unordered	()
 	);
 
 	float_comparator_comb float_comparator_inst_2
 	(
-		.a({sgn_a, exp_a, man_a[22:0]}),
-		.b(cmp_max),
+		.a			({sgn_a, exp_a, man_a[22:0]}),
+		.b			(cmp_max),
 
-		.sNaN_a(),
-		.qNaN_a(),
-		.sNaN_b(),
-		.qNaN_b(),
+		.sNaN_a		(),
+		.qNaN_a		(),
+		.sNaN_b		(),
+		.qNaN_b		(),
 
-		.greater(greater),
-		.equal(),
-		.less(),
-		.unordered()
+		.greater	(greater),
+		.equal		(),
+		.less		(),
+		.unordered	()
 	);
 
 	rshifter #(33, 6) rshifter_inst
 	(
-		.in({man_a, 9'h00}),
-		.sel(|offset[7:6] ? 6'b111111 : offset[5:0]),
-		.sgn(1'b0),
+		.in			({man_a, 9'h00}),
+		.sel		(|offset[7:6] ? 6'b111111 : offset[5:0]),
+		.sgn		(1'b0),
 
-		.out(shifter_out),
-		.sticky_bit(sticky_bit)
+		.out		(shifter_out),
+		.sticky_bit	(sticky_bit)
 	);
 
 	rounding_logic #(32) rounding_logic_inst
 	(
-		.rm(reg_rm),
+		.rm			(rm_buf),
 
-		.sticky_bit(reg_sticky_bit),
-		.round_bit(reg_round_bit),
+		.sticky_bit	(sticky_bit_buf),
+		.round_bit	(round_bit_buf),
 
-		.in(reg_int),
-		.sgn(reg_sgn),
+		.in			(int_buf),
+		.sgn		(sgn_buf),
 
-		.out(int_rounded),
-		.carry(),
+		.out		(int_rounded),
+		.carry		(),
 
-		.inexact(inexact)
+		.inexact	(inexact)
 	);
 
 endmodule

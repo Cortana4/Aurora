@@ -4,7 +4,6 @@ module post_processor
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -33,15 +32,15 @@ module post_processor
 	output	logic			IE
 );
 
-	logic	[2:0]	reg_rm;
-	logic	[22:0]	reg_man;
-	logic	[9:0]	reg_exp;
-	logic			reg_sgn;
-	logic			reg_round_bit;
-	logic			reg_sticky_bit;
-	logic			reg_skip_round;
-	logic			reg_equal;
-	logic			reg_less;
+	logic	[2:0]	rm_buf;
+	logic	[22:0]	man_buf;
+	logic	[9:0]	exp_buf;
+	logic			sgn_buf;
+	logic			round_bit_buf;
+	logic			sticky_bit_buf;
+	logic			skip_round_buf;
+	logic			equal_buf;
+	logic			less_buf;
 
 	logic	[9:0]	exp_biased;
 	logic			equal;
@@ -60,9 +59,9 @@ module post_processor
 	logic			RDN;
 	logic			RUP;
 
-	assign			RTZ			= reg_rm == FPU_RM_RTZ;
-	assign			RDN			= reg_rm == FPU_RM_RDN;
-	assign			RUP			= reg_rm == FPU_RM_RUP;
+	assign			RTZ			= rm_buf == FPU_RM_RTZ;
+	assign			RDN			= rm_buf == FPU_RM_RDN;
+	assign			RUP			= rm_buf == FPU_RM_RUP;
 
 	assign			ready_out	= ready_in;
 
@@ -96,14 +95,14 @@ module post_processor
 	// output logic
 	always_comb begin
 		exp_rounded	= 10'h000;
-		float_out	= {reg_sgn, reg_exp[7:0], reg_man};
+		float_out	= {sgn_buf, exp_buf[7:0], man_buf};
 		OF			= 1'b0;
 		UF			= 1'b0;
 		IE			= 1'b0;
 
-		if (!reg_skip_round) begin
+		if (!skip_round_buf) begin
 			// rounding can cause a carry to the exponent
-			exp_rounded = reg_exp + inc_exp;
+			exp_rounded = exp_buf + inc_exp;
 
 			// overflow
 			if (&exp_rounded[7:0] || exp_rounded[8] || exp_rounded[9]) begin
@@ -112,17 +111,17 @@ module post_processor
 				UF = 1'b0;
 
 				// setFmax
-				if (RTZ || (RDN && !reg_sgn) || (RUP && reg_sgn))
-					float_out = {reg_sgn, 31'h7fffffff};
+				if (RTZ || (RDN && !sgn_buf) || (RUP && sgn_buf))
+					float_out = {sgn_buf, 31'h7fffffff};
 
 				// setInf
 				else
-					float_out = {reg_sgn, 31'h7f800000};
+					float_out = {sgn_buf, 31'h7f800000};
 			end
 
 			else begin
 				// underflow
-				if (inexact && ((reg_equal && !inc_exp) || reg_less)) begin
+				if (inexact && ((equal_buf && !inc_exp) || less_buf)) begin
 					IE	= 1'b1;
 					UF	= 1'b1;
 				end
@@ -133,7 +132,7 @@ module post_processor
 					UF	= 1'b0;
 				end
 
-				float_out = {reg_sgn, exp_rounded[7:0], man_rounded};
+				float_out = {sgn_buf, exp_rounded[7:0], man_rounded};
 			end
 
 			// If (before rounding) mantissa is 0 but round or sticky are 1
@@ -143,89 +142,89 @@ module post_processor
 		end
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
-			valid_out		<= 1'b0;
-			reg_rm			<= 3'b000;
-			reg_man			<= 23'h000000;
-			reg_exp			<= 10'h000;
-			reg_sgn			<= 1'b0;
-			reg_round_bit	<= 1'b0;
-			reg_sticky_bit	<= 1'b0;
-			reg_equal		<= 1'b0;
-			reg_less		<= 1'b0;
+	always_ff @(posedge clk) begin
+		if (reset) begin
+			rm_buf			<= 3'b000;
+			man_buf			<= 23'h000000;
+			exp_buf			<= 10'h000;
+			sgn_buf			<= 1'b0;
+			round_bit_buf	<= 1'b0;
+			sticky_bit_buf	<= 1'b0;
+			equal_buf		<= 1'b0;
+			less_buf		<= 1'b0;
 			IV				<= 1'b0;
 			DZ				<= 1'b0;
-			reg_skip_round	<= 1'b0;
+			skip_round_buf	<= 1'b0;
+			valid_out		<= 1'b0;
 		end
 
 		else if (valid_in && ready_out) begin
-			valid_out		<= 1'b1;
-			reg_rm			<= rm;
-			reg_man			<= shifter_out[23:1];
-			reg_exp			<= exp_biased;
-			reg_sgn			<= sgn_in;
-			reg_round_bit	<= shifter_out[0];
-			reg_sticky_bit	<= sticky_bit || sticky_bitt;
-			reg_equal		<= equal;
-			reg_less		<= less;
+			rm_buf			<= rm;
+			man_buf			<= shifter_out[23:1];
+			exp_buf			<= exp_biased;
+			sgn_buf			<= sgn_in;
+			round_bit_buf	<= shifter_out[0];
+			sticky_bit_buf	<= sticky_bit || sticky_bitt;
+			equal_buf		<= equal;
+			less_buf		<= less;
 			IV				<= 1'b0;
 			DZ				<= 1'b0;
-			reg_skip_round	<= skip_round;
+			skip_round_buf	<= skip_round;
+			valid_out		<= 1'b1;
 
 			if (skip_round) begin
-				reg_man			<= man_in[22:0];
-				reg_exp			<= exp_in;
-				reg_sgn			<= sgn_in;
-				reg_round_bit	<= 1'b0;
-				reg_sticky_bit	<= 1'b0;
-				reg_equal		<= 1'b0;
-				reg_less		<= 1'b0;
+				man_buf			<= man_in[22:0];
+				exp_buf			<= exp_in;
+				sgn_buf			<= sgn_in;
+				round_bit_buf	<= 1'b0;
+				sticky_bit_buf	<= 1'b0;
+				equal_buf		<= 1'b0;
+				less_buf		<= 1'b0;
 				IV				<= IV_in;
 				DZ				<= DZ_in;
 			end
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out		<= 1'b0;
-			reg_rm			<= 3'b000;
-			reg_man			<= 23'h000000;
-			reg_exp			<= 10'h000;
-			reg_sgn			<= 1'b0;
-			reg_round_bit	<= 1'b0;
-			reg_sticky_bit	<= 1'b0;
-			reg_equal		<= 1'b0;
-			reg_less		<= 1'b0;
+			rm_buf			<= 3'b000;
+			man_buf			<= 23'h000000;
+			exp_buf			<= 10'h000;
+			sgn_buf			<= 1'b0;
+			round_bit_buf	<= 1'b0;
+			sticky_bit_buf	<= 1'b0;
+			equal_buf		<= 1'b0;
+			less_buf		<= 1'b0;
 			IV				<= 1'b0;
 			DZ				<= 1'b0;
-			reg_skip_round	<= 1'b0;
+			skip_round_buf	<= 1'b0;
+			valid_out		<= 1'b0;
 		end
 	end
 
 	rshifter #(25, 5) rshifter_inst
 	(
-		.in({man_in, round_bit}),
-		.sel(|offset[9:5] ? 5'b11111 : offset[4:0]),
-		.sgn(1'b0),
+		.in			({man_in, round_bit}),
+		.sel		(|offset[9:5] ? 5'b11111 : offset[4:0]),
+		.sgn		(1'b0),
 
-		.out(shifter_out),
-		.sticky_bit(sticky_bitt)
+		.out		(shifter_out),
+		.sticky_bit	(sticky_bitt)
 	);
 
 	rounding_logic #(23) rounding_logic_inst
 	(
-		.rm(reg_rm),
+		.rm			(rm_buf),
 
-		.sticky_bit(reg_sticky_bit),
-		.round_bit(reg_round_bit),
+		.sticky_bit	(sticky_bit_buf),
+		.round_bit	(round_bit_buf),
 
-		.in(reg_man),
-		.sgn(reg_sgn),
+		.in			(man_buf),
+		.sgn		(sgn_buf),
 
-		.out(man_rounded),
-		.carry(inc_exp),
+		.out		(man_rounded),
+		.carry		(inc_exp),
 
-		.inexact(inexact)
+		.inexact	(inexact)
 	);
 
 endmodule

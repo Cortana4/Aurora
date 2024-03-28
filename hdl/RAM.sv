@@ -1,43 +1,70 @@
 module RAM
 #(
-	parameter		n = 8	// data bits
+	parameter		RAM_DEPTH	= 16384,
+	parameter		COL_WIDTH	= 8,
+	parameter		COL_NUM		= 4,
+	parameter		LATENCY		= 1
 )
 (
-	input	logic			clk,
+	input	logic							clk,
+	input	logic							rst,
 
-	input	logic	[n-1:0]	addra,
-	input	logic	[31:0]	dina,
-	output	logic	[31:0]	douta,
-	input	logic			ena,
-	input	logic	[3:0]	wea,
+	input	logic	[$clog2(RAM_DEPTH)-1:0]	addra,
+	input	logic	[COL_NUM*COL_WIDTH-1:0]	dina,
+	output	logic	[COL_NUM*COL_WIDTH-1:0]	douta,
+	input	logic							ena,
+	input	logic	[COL_NUM-1:0]			wea,
 
-	input	logic	[n-1:0]	addrb,
-	input	logic	[31:0]	dinb,
-	output	logic	[31:0]	doutb,
-	input	logic			enb,
-	input	logic	[3:0]	web
+	input	logic	[$clog2(RAM_DEPTH)-1:0]	addrb,
+	input	logic	[COL_NUM*COL_WIDTH-1:0]	dinb,
+	output	logic	[COL_NUM*COL_WIDTH-1:0]	doutb,
+	input	logic							enb,
+	input	logic	[COL_NUM-1:0]			web
 );
 
-	logic	[31:0]	mem	[2**n];
+	logic	[COL_NUM*COL_WIDTH-1:0]	ram	[RAM_DEPTH];
+	logic	[COL_NUM*COL_WIDTH-1:0]	douta_buf;
+	logic	[COL_NUM*COL_WIDTH-1:0]	doutb_buf;
 
-	always_ff @(posedge clk) begin
-		if (ena) begin
-			if (wea[3])	mem[addra][31:24]	<= dina[31:24];
-			if (wea[2])	mem[addra][23:16]	<= dina[23:16];
-			if (wea[1])	mem[addra][15:8]	<= dina[15:8];
-			if (wea[0])	mem[addra][7:0]		<= dina[7:0];
-
-			douta	<= mem[addra];
+	generate
+		for (genvar i = 0; i < COL_NUM; i = i+1) begin
+			always_ff @(posedge clk) begin
+				if (ena) begin
+					if (wea[i])	
+						ram[addra][i*COL_WIDTH+:COL_WIDTH]	<= dina[i*COL_WIDTH+:COL_WIDTH];
+					douta_buf[i*COL_WIDTH+:COL_WIDTH]		<= ram[addra][i*COL_WIDTH+:COL_WIDTH];
+				end
+			end
+			
+			always_ff @(posedge clk) begin
+				if (enb) begin
+					if (web[i])
+						ram[addrb][i*COL_WIDTH+:COL_WIDTH]	<= dinb[i*COL_WIDTH+:COL_WIDTH];
+					doutb_buf[i*COL_WIDTH+:COL_WIDTH]		<= ram[addrb][i*COL_WIDTH+:COL_WIDTH];
+				end
+			end
 		end
-
-		if (enb) begin
-			if (web[3])	mem[addrb][31:24]	<= dinb[31:24];
-			if (web[2])	mem[addrb][23:16]	<= dinb[23:16];
-			if (web[1])	mem[addrb][15:8]	<= dinb[15:8];
-			if (web[0])	mem[addrb][7:0]		<= dinb[7:0];
-
-			doutb	<= mem[addrb];
+	endgenerate
+	
+	generate
+		if (LATENCY == 1) begin
+			assign	douta	= douta_buf;
+			assign	doutb	= doutb_buf;
 		end
-	end
+		
+		else begin
+			always_ff @(posedge clk) begin
+				if (rst) begin
+					douta	<= {(COL_NUM*COL_WIDTH-1){1'b0}};
+					doutb	<= {(COL_NUM*COL_WIDTH-1){1'b0}};
+				end
+				
+				else begin
+					douta	<= douta_buf;
+					doutb	<= doutb_buf;
+				end
+			end
+		end
+	endgenerate
 
 endmodule

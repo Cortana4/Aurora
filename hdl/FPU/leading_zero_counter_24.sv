@@ -21,9 +21,8 @@ module leading_zero_counter_24
 	always_comb begin
 		y[4] = !(a5_nand_a4 || a3_nand_a2);
 		y[3] = !(a5_nand_a4 || (!a3_nand_a2 && a1_nand_a0));
-		y[2] =
-			(!a_int[0] && a_int[1] && a_int[5] && a_int[3]) ||
-			(!(a_int[2] && a_int[4]) && !(a_int[4] && !a_int[3]) && a_int[5]);
+		y[2] = (!a_int[0] && a_int[1] && a_int[5] && a_int[3]) ||
+			   (!(a_int[2] && a_int[4]) && !(a_int[4] && !a_int[3]) && a_int[5]);
 
 		case (y[4:2])
 		3'b000:		y[1:0] = y_int[5];
@@ -37,12 +36,12 @@ module leading_zero_counter_24
 	end
 
 	generate
-		for (genvar i = 0; i < 6; i = i + 1) begin: gen_LZC_4
-			leading_zero_counter_4 LZC_4_inst
+		for (genvar i = 0; i < 6; i = i + 1) begin
+			leading_zero_counter_4 LDZC_4_inst
 			(
-				.in(in[i*4+3:i*4]),
-				.y(y_int[i]),
-				.a(a_int[i])
+				.in	(in[i*4+3:i*4]),
+				.y	(y_int[i]),
+				.a	(a_int[i])
 			);
 		end
 	endgenerate

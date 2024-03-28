@@ -6,7 +6,6 @@ module fifo_buf
 (
 	input	logic						clk,
 	input	logic						reset,
-	input	logic						clear,
 
 	input	logic						wena,
 	input	logic	[DATA_WIDTH-1:0]	wdata,
@@ -32,8 +31,8 @@ module fifo_buf
 	assign						rdata		= buffer[rPtr];
 	assign						size		= {full, wPtr - rPtr};
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || clear) begin
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			rPtr	<= 0;
 			wPtr	<= 0;
 			empty	<= 1'b1;

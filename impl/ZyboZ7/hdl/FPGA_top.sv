@@ -1,6 +1,12 @@
 import CPU_pkg::*;
 
 module FPGA_top
+#(
+	parameter				SIM			= 0,
+	parameter				USE_BRAM_IP	= 1,
+	parameter				CLOCK_FREQ	= 95e6,
+	parameter				SAMPLE_RATE	= 3e-3
+)
 (
 	input	logic			ref_clk,
 	input	logic			reset_btn,
@@ -16,7 +22,7 @@ module FPGA_top
 
 	logic			clk;
 	logic			reset;
-	
+
 // imem port
 	// write address channel
 	logic	[31:0]	imem_axi_awaddr;
@@ -42,7 +48,7 @@ module FPGA_top
 	logic	[1:0]	imem_axi_rresp;
 	logic			imem_axi_rvalid;
 	logic			imem_axi_rready;
-	
+
 	logic			bram_clk_a;
 	logic			bram_en_a;
 	logic	[3:0]	bram_we_a;
@@ -75,7 +81,7 @@ module FPGA_top
 	logic	[1:0]	dmem_axi_rresp;
 	logic			dmem_axi_rvalid;
 	logic			dmem_axi_rready;
-	
+
 	logic			bram_clk_b;
 	logic			bram_en_b;
 	logic	[3:0]	bram_we_b;
@@ -83,184 +89,227 @@ module FPGA_top
 	logic	[31:0]	bram_wrdata_b;
 	logic	[31:0]	bram_rddata_b;
 
-	logic	[23:0]	counter;
 	logic	[3:0]	reset_btn_samples;
+	integer			counter;
 	
+
 	assign			tx_led	= !tx;
 	assign			rx_led	= !rx;
 
-	// button debounce
-	always_ff @(negedge clk) begin
-		// take one sample every 3 ms (1s = 16e6 cycles -> 3ms = 48000 cycles)
-		if (counter == 24'd47999) begin
-			reset_btn_samples	<= {reset_btn_samples[2:0], reset_btn};
-			counter				<= 24'h000000;
+	generate
+		if (SIM) begin
+			assign	reset	= reset_btn;
 
-			// reset = 1 as long as reset button is pressed
-			if (reset_btn_samples == 4'b1111)
-				reset	<= 1'b1;
-			// reset = 0 on falling reset button edge
-			else if (reset_btn_samples == 4'b1000)
-				reset	<= 1'b0;
+			BUFG clk_buf
+			(
+				.I			(ref_clk),
+				.O			(clk)
+			);
 		end
 
-		else
-			counter	<= counter + 24'd1;
-	end
-	
-	// ip cores
-	MMCM_IP MMCM_inst
-	(
-		.clk_in1(ref_clk),
-		.clk_out1(clk)
-	);
+		else begin
+			// button debounce
+			always_ff @(negedge clk) begin
+				if (counter == $rtoi(SAMPLE_RATE*CLOCK_FREQ-1)) begin
+					reset_btn_samples	<= {reset_btn_samples[2:0], reset_btn};
+					counter				<= 0;
+
+					// reset = 1 as long as reset button is pressed
+					if (reset_btn_samples == 4'b1111)
+						reset	<= 1'b1;
+					// reset = 0 on falling reset button edge
+					else if (reset_btn_samples == 4'b1000)
+						reset	<= 1'b0;
+				end
+
+				else
+					counter	<= counter + 1;
+			end
+
+			MMCM_IP MMCM_inst
+			(
+				.clk_in1	(ref_clk),
+				.clk_out1	(clk)
+			);
+		end
+	endgenerate
 
 	BRAM_Controller_IP imem_controller
 	(
-		.s_axi_aclk(clk),
-		.s_axi_aresetn(!reset),
-		
-		.s_axi_awaddr(imem_axi_awaddr[15:0]),
-		.s_axi_awprot(imem_axi_awprot),
-		.s_axi_awvalid(imem_axi_awvalid),
-		.s_axi_awready(imem_axi_awready),
-		
-		.s_axi_wdata(imem_axi_wdata),
-		.s_axi_wstrb(imem_axi_wstrb),
-		.s_axi_wvalid(imem_axi_wvalid),
-		.s_axi_wready(imem_axi_wready),
-		
-		.s_axi_bresp(imem_axi_bresp),
-		.s_axi_bvalid(imem_axi_bvalid),
-		.s_axi_bready(imem_axi_bready),
-		
-		.s_axi_araddr(imem_axi_araddr[15:0]),
-		.s_axi_arprot(imem_axi_arprot),
-		.s_axi_arvalid(imem_axi_arvalid),
-		.s_axi_arready(imem_axi_arready),
-		
-		.s_axi_rdata(imem_axi_rdata),
-		.s_axi_rresp(imem_axi_rresp),
-		.s_axi_rvalid(imem_axi_rvalid),
-		.s_axi_rready(imem_axi_rready),
-		
-		.bram_rst_a(),
-		.bram_clk_a(bram_clk_a),
-		.bram_en_a(bram_en_a),
-		.bram_we_a(bram_we_a),
-		.bram_addr_a(bram_addr_a),
-		.bram_wrdata_a(bram_wrdata_a),
-		.bram_rddata_a(bram_rddata_a)
+		.s_axi_aclk		(clk),
+		.s_axi_aresetn	(!reset),
+
+		.s_axi_awaddr	(imem_axi_awaddr[15:0]),
+		.s_axi_awprot	(imem_axi_awprot),
+		.s_axi_awvalid	(imem_axi_awvalid),
+		.s_axi_awready	(imem_axi_awready),
+
+		.s_axi_wdata	(imem_axi_wdata),
+		.s_axi_wstrb	(imem_axi_wstrb),
+		.s_axi_wvalid	(imem_axi_wvalid),
+		.s_axi_wready	(imem_axi_wready),
+
+		.s_axi_bresp	(imem_axi_bresp),
+		.s_axi_bvalid	(imem_axi_bvalid),
+		.s_axi_bready	(imem_axi_bready),
+
+		.s_axi_araddr	(imem_axi_araddr[15:0]),
+		.s_axi_arprot	(imem_axi_arprot),
+		.s_axi_arvalid	(imem_axi_arvalid),
+		.s_axi_arready	(imem_axi_arready),
+
+		.s_axi_rdata	(imem_axi_rdata),
+		.s_axi_rresp	(imem_axi_rresp),
+		.s_axi_rvalid	(imem_axi_rvalid),
+		.s_axi_rready	(imem_axi_rready),
+
+		.bram_rst_a		(),
+		.bram_clk_a		(bram_clk_a),
+		.bram_en_a		(bram_en_a),
+		.bram_we_a		(bram_we_a),
+		.bram_addr_a	(bram_addr_a),
+		.bram_wrdata_a	(bram_wrdata_a),
+		.bram_rddata_a	(bram_rddata_a)
 	);
-	
+
 	BRAM_Controller_IP dmem_controller
 	(
-		.s_axi_aclk(clk),
-		.s_axi_aresetn(!reset),
-		
-		.s_axi_awaddr(dmem_axi_awaddr[15:0]),
-		.s_axi_awprot(dmem_axi_awprot),
-		.s_axi_awvalid(dmem_axi_awvalid),
-		.s_axi_awready(dmem_axi_awready),
-		
-		.s_axi_wdata(dmem_axi_wdata),
-		.s_axi_wstrb(dmem_axi_wstrb),
-		.s_axi_wvalid(dmem_axi_wvalid),
-		.s_axi_wready(dmem_axi_wready),
-		
-		.s_axi_bresp(dmem_axi_bresp),
-		.s_axi_bvalid(dmem_axi_bvalid),
-		.s_axi_bready(dmem_axi_bready),
-		
-		.s_axi_araddr(dmem_axi_araddr[15:0]),
-		.s_axi_arprot(dmem_axi_arprot),
-		.s_axi_arvalid(dmem_axi_arvalid),
-		.s_axi_arready(dmem_axi_arready),
-		
-		.s_axi_rdata(dmem_axi_rdata),
-		.s_axi_rresp(dmem_axi_rresp),
-		.s_axi_rvalid(dmem_axi_rvalid),
-		.s_axi_rready(dmem_axi_rready),
-		
-		.bram_rst_a(),
-		.bram_clk_a(bram_clk_b),
-		.bram_en_a(bram_en_b),
-		.bram_we_a(bram_we_b),
-		.bram_addr_a(bram_addr_b),
-		.bram_wrdata_a(bram_wrdata_b),
-		.bram_rddata_a(bram_rddata_b)
+		.s_axi_aclk		(clk),
+		.s_axi_aresetn	(!reset),
+
+		.s_axi_awaddr	(dmem_axi_awaddr[15:0]),
+		.s_axi_awprot	(dmem_axi_awprot),
+		.s_axi_awvalid	(dmem_axi_awvalid),
+		.s_axi_awready	(dmem_axi_awready),
+
+		.s_axi_wdata	(dmem_axi_wdata),
+		.s_axi_wstrb	(dmem_axi_wstrb),
+		.s_axi_wvalid	(dmem_axi_wvalid),
+		.s_axi_wready	(dmem_axi_wready),
+
+		.s_axi_bresp	(dmem_axi_bresp),
+		.s_axi_bvalid	(dmem_axi_bvalid),
+		.s_axi_bready	(dmem_axi_bready),
+
+		.s_axi_araddr	(dmem_axi_araddr[15:0]),
+		.s_axi_arprot	(dmem_axi_arprot),
+		.s_axi_arvalid	(dmem_axi_arvalid),
+		.s_axi_arready	(dmem_axi_arready),
+
+		.s_axi_rdata	(dmem_axi_rdata),
+		.s_axi_rresp	(dmem_axi_rresp),
+		.s_axi_rvalid	(dmem_axi_rvalid),
+		.s_axi_rready	(dmem_axi_rready),
+
+		.bram_rst_a		(),
+		.bram_clk_a		(bram_clk_b),
+		.bram_en_a		(bram_en_b),
+		.bram_we_a		(bram_we_b),
+		.bram_addr_a	(bram_addr_b),
+		.bram_wrdata_a	(bram_wrdata_b),
+		.bram_rddata_a	(bram_rddata_b)
 	);
-	
-	RAM_IP RAM_inst
-	(
-		.clka(bram_clk_a),
-		.addra(bram_addr_a[15:2]),
-		.dina(bram_wrdata_a),
-		.douta(bram_rddata_a),
-		.ena(bram_en_a),
-		.wea(bram_we_a),
-		
-		.clkb(bram_clk_b),
-		.addrb(bram_addr_b[15:2]),
-		.dinb(bram_wrdata_b),
-		.doutb(bram_rddata_b),
-		.enb(bram_en_b),
-		.web(bram_we_b)
-	);
-	
+
+	generate
+		if (USE_BRAM_IP) begin
+			RAM_IP RAM_IP_inst
+			(
+				.clka		(bram_clk_a),
+				.addra		(bram_addr_a[15:2]),
+				.dina		(bram_wrdata_a),
+				.douta		(bram_rddata_a),
+				.ena		(bram_en_a),
+				.wea		(bram_we_a),
+
+				.clkb		(bram_clk_b),
+				.addrb		(bram_addr_b[15:2]),
+				.dinb		(bram_wrdata_b),
+				.doutb		(bram_rddata_b),
+				.enb		(bram_en_b),
+				.web		(bram_we_b)
+			);
+		end
+
+		else begin
+			RAM
+			#(
+				.RAM_DEPTH	(2**14),
+				.COL_WIDTH	(8),
+				.COL_NUM	(4),
+				.LATENCY	(1)
+			) RAM_inst
+			(
+				.clk		(clk),
+				.rst		(1'b0),
+
+				.addra		(bram_addr_a[15:2]),
+				.dina		(bram_wrdata_a),
+				.douta		(bram_rddata_a),
+				.ena		(bram_en_a),
+				.wea		(bram_we_a),
+
+				.addrb		(bram_addr_b[15:2]),
+				.dinb		(bram_wrdata_b),
+				.doutb		(bram_rddata_b),
+				.enb		(bram_en_b),
+				.web		(bram_we_b)
+			);
+		end
+	endgenerate
+
 	CPU aurora
 	(
-		.clk(clk),
-		.reset(reset),
-		
-		.int_req_ext(16'h0000),
-		.int_req_ictrl(1'b0),
-		.int_req_timer(1'b0),
-		.int_req_soft(1'b0),
+		.clk				(clk),
+		.reset				(reset),
 
-		.imem_axi_awaddr(imem_axi_awaddr),
-		.imem_axi_awprot(imem_axi_awprot),
-		.imem_axi_awvalid(imem_axi_awvalid),
-		.imem_axi_awready(imem_axi_awready),
-		.imem_axi_wdata(imem_axi_wdata),
-		.imem_axi_wstrb(imem_axi_wstrb),
-		.imem_axi_wvalid(imem_axi_wvalid),
-		.imem_axi_wready(imem_axi_wready),
-		.imem_axi_bresp(imem_axi_bresp),
-		.imem_axi_bvalid(imem_axi_bvalid),
-		.imem_axi_bready(imem_axi_bready),
-		.imem_axi_araddr(imem_axi_araddr),
-		.imem_axi_arprot(imem_axi_arprot),
-		.imem_axi_arvalid(imem_axi_arvalid),
-		.imem_axi_arready(imem_axi_arready),
-		.imem_axi_rdata(imem_axi_rdata),
-		.imem_axi_rresp(imem_axi_rresp),
-		.imem_axi_rvalid(imem_axi_rvalid),
-		.imem_axi_rready(imem_axi_rready),
+		.int_req_ext		(16'h0000),
+		.int_req_ictrl		(1'b0),
+		.int_req_timer		(1'b0),
+		.int_req_soft		(1'b0),
 
-		.dmem_axi_awaddr(dmem_axi_awaddr),
-		.dmem_axi_awprot(dmem_axi_awprot),
-		.dmem_axi_awvalid(dmem_axi_awvalid),
-		.dmem_axi_awready(dmem_axi_awready),
-		.dmem_axi_wdata(dmem_axi_wdata),
-		.dmem_axi_wstrb(dmem_axi_wstrb),
-		.dmem_axi_wvalid(dmem_axi_wvalid),
-		.dmem_axi_wready(dmem_axi_wready),
-		.dmem_axi_bresp(dmem_axi_bresp),
-		.dmem_axi_bvalid(dmem_axi_bvalid),
-		.dmem_axi_bready(dmem_axi_bready),
-		.dmem_axi_araddr(dmem_axi_araddr),
-		.dmem_axi_arprot(dmem_axi_arprot),
-		.dmem_axi_arvalid(dmem_axi_arvalid),
-		.dmem_axi_arready(dmem_axi_arready),
-		.dmem_axi_rdata(dmem_axi_rdata),
-		.dmem_axi_rresp(dmem_axi_rresp),
-		.dmem_axi_rvalid(dmem_axi_rvalid),
-		.dmem_axi_rready(dmem_axi_rready),
+		.imem_axi_awaddr	(imem_axi_awaddr),
+		.imem_axi_awprot	(imem_axi_awprot),
+		.imem_axi_awvalid	(imem_axi_awvalid),
+		.imem_axi_awready	(imem_axi_awready),
+		.imem_axi_wdata		(imem_axi_wdata),
+		.imem_axi_wstrb		(imem_axi_wstrb),
+		.imem_axi_wvalid	(imem_axi_wvalid),
+		.imem_axi_wready	(imem_axi_wready),
+		.imem_axi_bresp		(imem_axi_bresp),
+		.imem_axi_bvalid	(imem_axi_bvalid),
+		.imem_axi_bready	(imem_axi_bready),
+		.imem_axi_araddr	(imem_axi_araddr),
+		.imem_axi_arprot	(imem_axi_arprot),
+		.imem_axi_arvalid	(imem_axi_arvalid),
+		.imem_axi_arready	(imem_axi_arready),
+		.imem_axi_rdata		(imem_axi_rdata),
+		.imem_axi_rresp		(imem_axi_rresp),
+		.imem_axi_rvalid	(imem_axi_rvalid),
+		.imem_axi_rready	(imem_axi_rready),
 
-		.tx(tx),
-		.rx(rx),
-		.cts(cts),
-		.rts(rts)
+		.dmem_axi_awaddr	(dmem_axi_awaddr),
+		.dmem_axi_awprot	(dmem_axi_awprot),
+		.dmem_axi_awvalid	(dmem_axi_awvalid),
+		.dmem_axi_awready	(dmem_axi_awready),
+		.dmem_axi_wdata		(dmem_axi_wdata),
+		.dmem_axi_wstrb		(dmem_axi_wstrb),
+		.dmem_axi_wvalid	(dmem_axi_wvalid),
+		.dmem_axi_wready	(dmem_axi_wready),
+		.dmem_axi_bresp		(dmem_axi_bresp),
+		.dmem_axi_bvalid	(dmem_axi_bvalid),
+		.dmem_axi_bready	(dmem_axi_bready),
+		.dmem_axi_araddr	(dmem_axi_araddr),
+		.dmem_axi_arprot	(dmem_axi_arprot),
+		.dmem_axi_arvalid	(dmem_axi_arvalid),
+		.dmem_axi_arready	(dmem_axi_arready),
+		.dmem_axi_rdata		(dmem_axi_rdata),
+		.dmem_axi_rresp		(dmem_axi_rresp),
+		.dmem_axi_rvalid	(dmem_axi_rvalid),
+		.dmem_axi_rready	(dmem_axi_rready),
+
+		.tx					(tx),
+		.rx					(rx),
+		.cts				(cts),
+		.rts				(rts)
 	);
 endmodule

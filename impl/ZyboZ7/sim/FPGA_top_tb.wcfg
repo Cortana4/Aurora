@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="FPGA_top_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="CPU_pkg" />
+            <top_module name="FPGA_top_tb" />
+            <top_module name="FPU_pkg" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="346.900 ns"></ZoomStartTime>
+      <ZoomEndTime time="535.355 ns"></ZoomEndTime>
+      <Cursor1Time time="430.000 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="237"></NameColumnWidth>
+      <ValueColumnWidth column_width="80"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="4" />
+   <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/reset" type="logic">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="group151" type="group">
+      <obj_property name="label">mem interface</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject fp_name="group163" type="group">
+         <obj_property name="label">imem</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="group159" type="group">
+            <obj_property name="label">prim</obj_property>
+            <obj_property name="DisplayName">label</obj_property>
+            <obj_property name="isExpanded"></obj_property>
+            <wvobject fp_name="group105" type="group">
+               <obj_property name="label">write addr ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_awaddr" type="array">
+                  <obj_property name="ElementShortName">imem_axi_awaddr[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_awaddr[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_awvalid" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_awvalid</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_awvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_awready" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_awready</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_awready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group106" type="group">
+               <obj_property name="label">write data ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_wdata" type="array">
+                  <obj_property name="ElementShortName">imem_axi_wdata[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_wdata[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_wstrb" type="array">
+                  <obj_property name="ElementShortName">imem_axi_wstrb[3:0]</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_wstrb[3:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_wvalid" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_wvalid</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_wvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_wready" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_wready</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_wready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group107" type="group">
+               <obj_property name="label">write resp ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_bresp" type="array">
+                  <obj_property name="ElementShortName">imem_axi_bresp[1:0]</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_bresp[1:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_bvalid" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_bvalid</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_bvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_bready" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_bready</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_bready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group108" type="group">
+               <obj_property name="label">read addr ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_araddr" type="array">
+                  <obj_property name="ElementShortName">imem_axi_araddr[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_araddr[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_arvalid" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_arvalid</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_arvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_arready" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_arready</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_arready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group143" type="group">
+               <obj_property name="label">read data ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_rdata" type="array">
+                  <obj_property name="ElementShortName">imem_axi_rdata[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_rdata[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_rresp" type="array">
+                  <obj_property name="ElementShortName">imem_axi_rresp[1:0]</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_rresp[1:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_rvalid" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_rvalid</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_rvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/imem_axi_rready" type="logic">
+                  <obj_property name="ElementShortName">imem_axi_rready</obj_property>
+                  <obj_property name="ObjectShortName">imem_axi_rready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group144" type="group">
+               <obj_property name="label">bram a</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_en_a" type="logic">
+                  <obj_property name="ElementShortName">bram_en_a</obj_property>
+                  <obj_property name="ObjectShortName">bram_en_a</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_we_a" type="array">
+                  <obj_property name="ElementShortName">bram_we_a[3:0]</obj_property>
+                  <obj_property name="ObjectShortName">bram_we_a[3:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_addr_a" type="array">
+                  <obj_property name="ElementShortName">bram_addr_a[15:0]</obj_property>
+                  <obj_property name="ObjectShortName">bram_addr_a[15:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_wrdata_a" type="array">
+                  <obj_property name="ElementShortName">bram_wrdata_a[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">bram_wrdata_a[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_rddata_a" type="array">
+                  <obj_property name="ElementShortName">bram_rddata_a[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">bram_rddata_a[31:0]</obj_property>
+               </wvobject>
+            </wvobject>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group160" type="group">
+         <obj_property name="label">dmem</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="group161" type="group">
+            <obj_property name="label">prim</obj_property>
+            <obj_property name="DisplayName">label</obj_property>
+            <obj_property name="isExpanded"></obj_property>
+            <wvobject fp_name="group145" type="group">
+               <obj_property name="label">write addr ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_awaddr" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_awaddr[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_awaddr[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_awvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_awvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_awvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_awready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_awready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_awready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group146" type="group">
+               <obj_property name="label">write data ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_wdata" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_wdata[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_wdata[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_wstrb" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_wstrb[3:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_wstrb[3:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_wvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_wvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_wvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_wready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_wready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_wready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group147" type="group">
+               <obj_property name="label">write resp ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_bresp" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_bresp[1:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_bresp[1:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_bvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_bvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_bvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_bready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_bready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_bready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group148" type="group">
+               <obj_property name="label">read addr ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_araddr" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_araddr[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_araddr[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_arvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_arvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_arvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_arready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_arready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_arready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group149" type="group">
+               <obj_property name="label">read data ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_rdata" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_rdata[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_rdata[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_rresp" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_rresp[1:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_rresp[1:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/dmem_axi_rvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_rvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_rvalid</obj_property>
+               </wvobject>
+            </wvobject>
+         </wvobject>
+         <wvobject fp_name="group162" type="group">
+            <obj_property name="label">sec</obj_property>
+            <obj_property name="DisplayName">label</obj_property>
+            <obj_property name="isExpanded"></obj_property>
+            <wvobject fp_name="group145" type="group">
+               <obj_property name="label">write addr ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_awaddr" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_awaddr[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_awaddr[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_awvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_awvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_awvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_awready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_awready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_awready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group146" type="group">
+               <obj_property name="label">write data ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_wdata" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_wdata[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_wdata[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_wstrb" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_wstrb[3:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_wstrb[3:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_wvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_wvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_wvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_wready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_wready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_wready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group147" type="group">
+               <obj_property name="label">write resp ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_bresp" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_bresp[1:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_bresp[1:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_bvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_bvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_bvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_bready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_bready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_bready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group148" type="group">
+               <obj_property name="label">read addr ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_araddr" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_araddr[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_araddr[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_arvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_arvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_arvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_arready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_arready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_arready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group149" type="group">
+               <obj_property name="label">read data ch</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_rresp" type="array">
+                  <obj_property name="ElementShortName">dmem_axi_rresp[1:0]</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_rresp[1:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_rvalid" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_rvalid</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_rvalid</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/dmem_axi_rready" type="logic">
+                  <obj_property name="ElementShortName">dmem_axi_rready</obj_property>
+                  <obj_property name="ObjectShortName">dmem_axi_rready</obj_property>
+               </wvobject>
+            </wvobject>
+            <wvobject fp_name="group150" type="group">
+               <obj_property name="label">bram b</obj_property>
+               <obj_property name="DisplayName">label</obj_property>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_en_b" type="logic">
+                  <obj_property name="ElementShortName">bram_en_b</obj_property>
+                  <obj_property name="ObjectShortName">bram_en_b</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_we_b" type="array">
+                  <obj_property name="ElementShortName">bram_we_b[3:0]</obj_property>
+                  <obj_property name="ObjectShortName">bram_we_b[3:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_addr_b" type="array">
+                  <obj_property name="ElementShortName">bram_addr_b[15:0]</obj_property>
+                  <obj_property name="ObjectShortName">bram_addr_b[15:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_wrdata_b" type="array">
+                  <obj_property name="ElementShortName">bram_wrdata_b[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">bram_wrdata_b[31:0]</obj_property>
+               </wvobject>
+               <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/bram_rddata_b" type="array">
+                  <obj_property name="ElementShortName">bram_rddata_b[31:0]</obj_property>
+                  <obj_property name="ObjectShortName">bram_rddata_b[31:0]</obj_property>
+               </wvobject>
+            </wvobject>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group765" type="group">
+         <obj_property name="label">peripherals</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="group764" type="group">
+            <obj_property name="label">uart</obj_property>
+            <obj_property name="DisplayName">label</obj_property>
+            <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/uart_ena" type="logic">
+               <obj_property name="ElementShortName">uart_ena</obj_property>
+               <obj_property name="ObjectShortName">uart_ena</obj_property>
+            </wvobject>
+            <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/uart_wen" type="array">
+               <obj_property name="ElementShortName">uart_wen[3:0]</obj_property>
+               <obj_property name="ObjectShortName">uart_wen[3:0]</obj_property>
+            </wvobject>
+            <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/uart_addr" type="array">
+               <obj_property name="ElementShortName">uart_addr[31:0]</obj_property>
+               <obj_property name="ObjectShortName">uart_addr[31:0]</obj_property>
+            </wvobject>
+            <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/uart_wdata" type="array">
+               <obj_property name="ElementShortName">uart_wdata[31:0]</obj_property>
+               <obj_property name="ObjectShortName">uart_wdata[31:0]</obj_property>
+            </wvobject>
+            <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/uart_rdata" type="array">
+               <obj_property name="ElementShortName">uart_rdata[31:0]</obj_property>
+               <obj_property name="ObjectShortName">uart_rdata[31:0]</obj_property>
+            </wvobject>
+         </wvobject>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group192" type="group">
+      <obj_property name="label">pipeline</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject fp_name="group429" type="group">
+         <obj_property name="label">PC</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/PC_IF" type="array">
+            <obj_property name="ElementShortName">PC_IF[31:0]</obj_property>
+            <obj_property name="ObjectShortName">PC_IF[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/PC_ID" type="array">
+            <obj_property name="ElementShortName">PC_ID[31:0]</obj_property>
+            <obj_property name="ObjectShortName">PC_ID[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/PC_EX" type="array">
+            <obj_property name="ElementShortName">PC_EX[31:0]</obj_property>
+            <obj_property name="ObjectShortName">PC_EX[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/PC_MEM" type="array">
+            <obj_property name="ElementShortName">PC_MEM[31:0]</obj_property>
+            <obj_property name="ObjectShortName">PC_MEM[31:0]</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="group430" type="group">
+         <obj_property name="label">IR</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="isExpanded"></obj_property>
+         <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/IR_IF" type="array">
+            <obj_property name="ElementShortName">IR_IF[31:0]</obj_property>
+            <obj_property name="ObjectShortName">IR_IF[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/IR_ID" type="array">
+            <obj_property name="ElementShortName">IR_ID[31:0]</obj_property>
+            <obj_property name="ObjectShortName">IR_ID[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/IR_EX" type="array">
+            <obj_property name="ElementShortName">IR_EX[31:0]</obj_property>
+            <obj_property name="ObjectShortName">IR_EX[31:0]</obj_property>
+         </wvobject>
+         <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/IR_MEM" type="array">
+            <obj_property name="ElementShortName">IR_MEM[31:0]</obj_property>
+            <obj_property name="ObjectShortName">IR_MEM[31:0]</obj_property>
+         </wvobject>
+      </wvobject>
+      <wvobject fp_name="/FPGA_top_tb/FPGA_top_inst/aurora/pipeline_inst/ID_stage_inst/reg_file_inst/registers" type="array">
+         <obj_property name="ElementShortName">registers[63:1][31:0]</obj_property>
+         <obj_property name="ObjectShortName">registers[63:1][31:0]</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>

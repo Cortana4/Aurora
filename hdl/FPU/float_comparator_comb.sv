@@ -22,17 +22,17 @@ module float_comparator_comb
 
 	splitter splitter_a
 	(
-		.float_in(a),
+		.float_in	(a),
 
-		.man(man_a),
-		.Exp(exp_a),
-		.sgn(sgn_a),
+		.man		(man_a),
+		.Exp		(exp_a),
+		.sgn		(sgn_a),
 
-		.zero(zero_a),
-		.inf(),
-		.sNaN(sNaN_a),
-		.qNaN(qNaN_a),
-		.denormal()
+		.zero		(zero_a),
+		.inf		(),
+		.sNaN		(sNaN_a),
+		.qNaN		(qNaN_a),
+		.denormal	()
 	);
 
 	// input b
@@ -43,17 +43,17 @@ module float_comparator_comb
 
 	splitter splitter_b
 	(
-		.float_in(b),
+		.float_in	(b),
 
-		.man(man_b),
-		.Exp(exp_b),
-		.sgn(sgn_b),
+		.man		(man_b),
+		.Exp		(exp_b),
+		.sgn		(sgn_b),
 
-		.zero(zero_b),
-		.inf(),
-		.sNaN(sNaN_b),
-		.qNaN(qNaN_b),
-		.denormal()
+		.zero		(zero_b),
+		.inf		(),
+		.sNaN		(sNaN_b),
+		.qNaN		(qNaN_b),
+		.denormal	()
 	);
 
 	logic	sgn_a_int;

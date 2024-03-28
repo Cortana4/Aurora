@@ -5,7 +5,6 @@ module uart_tx
 (
 	input	logic					clk,
 	input	logic					reset,
-	input	logic					clear,
 
 	output	logic					tx,
 	input	logic					cts,
@@ -16,6 +15,7 @@ module uart_tx
 	input	logic					data_bits,
 	input	logic	[23:0]			baud_reg,
 
+	input	logic					clear,
 	input	logic					wena,
 	input	logic	[7:0]			wdata,
 	output	logic	[ADDR_WIDTH:0]	size,
@@ -34,7 +34,7 @@ module uart_tx
 	enum	logic	[2:0]	{IDLE, START, DATA, PARITY, STOP}	state;
 
 	// cross clock domain
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset)
 			cts_stable		<= 2'b11;
 
@@ -42,13 +42,13 @@ module uart_tx
 			cts_stable		<= {cts_stable[0], cts};
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			tx		<= 1'b1;
 			state	<= IDLE;
 			counter	<= 25'h0000000;
 			bit_idx	<= 3'b000;
-			rena		<= 1'b0;
+			rena	<= 1'b0;
 		end
 
 		else case (state)
@@ -101,7 +101,7 @@ module uart_tx
 						end
 			STOP:		begin
 							if (rena) begin
-								rena		<= 1'b0;
+								rena	<= 1'b0;
 								state	<= IDLE;
 							end
 
@@ -120,19 +120,18 @@ module uart_tx
 
 	fifo_buf #(ADDR_WIDTH, 8) tx_fifo_buf
 	(
-		.clk(clk),
-		.reset(reset),
-		.clear(clear),
+		.clk	(clk),
+		.reset	(reset || clear),
 
-		.wena(wena),
-		.wdata(wdata),
+		.wena	(wena),
+		.wdata	(wdata),
 		
-		.rena(rena),
-		.rdata(rdata),
+		.rena	(rena),
+		.rdata	(rdata),
 
-		.size(size),
-		.empty(empty),
-		.full(full)
+		.size	(size),
+		.empty	(empty),
+		.full	(full)
 	);
 
 endmodule

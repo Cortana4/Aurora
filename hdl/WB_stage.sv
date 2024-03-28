@@ -55,7 +55,7 @@ module WB_stage
 );
 
 	logic	[31:0]	csr_rdata;
-	logic			stall_int;
+	logic			stall_irq;
 
 	assign			rd_wena_WB	= rd_wena_MEM && !exc_taken_csr && valid_in && ready_out;
 	assign			rd_addr_WB	= rd_addr_MEM;
@@ -63,69 +63,69 @@ module WB_stage
 
 	assign			ready_out	= ready_in;
 	assign			flush_out	= flush_in;
-	assign			stall_int	= exc_pend_EX  || csr_wena_EX  || csr_rena_EX  ||
+	assign			stall_irq	= exc_pend_EX  || csr_wena_EX  || csr_rena_EX  ||
 								  exc_pend_MEM || csr_wena_MEM || csr_rena_MEM;
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset || flush_in) begin
-			valid_out	<= 1'b0;
 			PC_WB		<= 32'h00000000;
 			IR_WB		<= 32'h00000000;
+			valid_out	<= 1'b0;
 		end
 
 		else if (valid_in && ready_out && !flush_out) begin
-			valid_out	<= 1'b1;
 			PC_WB		<= PC_MEM;
 			IR_WB		<= IR_MEM;
+			valid_out	<= 1'b1;
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out	<= 1'b0;
 			PC_WB		<= 32'h00000000;
 			IR_WB		<= 32'h00000000;
+			valid_out	<= 1'b0;
 		end
 	end
 
 	csr_file csr_file_inst
 	(
-		.clk(clk),
-		.reset(reset),
+		.clk			(clk),
+		.reset			(reset),
 
-		.valid_in(valid_in),
-		.ready_in(ready_in),
+		.valid_in		(valid_in),
+		.ready_in		(ready_in),
 
-		.op(csr_op_MEM),
+		.op				(csr_op_MEM),
 
-		.csr_addr(csr_addr_MEM),
-		.csr_wena(csr_wena_MEM),
-		.csr_wdata(csr_wdata_MEM),
-		.csr_rena(csr_rena_MEM),
-		.csr_rdata(csr_rdata),
+		.csr_addr		(csr_addr_MEM),
+		.csr_wena		(csr_wena_MEM),
+		.csr_wdata		(csr_wdata_MEM),
+		.csr_rena		(csr_rena_MEM),
+		.csr_rdata		(csr_rdata),
 
-		.M_ena(M_ena_csr),
-		.F_ena(F_ena_csr),
+		.M_ena			(M_ena_csr),
+		.F_ena			(F_ena_csr),
 
-		.fpu_dirty(rd_wena_MEM && rd_addr_MEM[5]),
-		.fpu_flags(fpu_flags_MEM),
-		.fpu_rm(fpu_rm_csr),
+		.fpu_dirty		(rd_wena_MEM && rd_addr_MEM[5]),
+		.fpu_flags		(fpu_flags_MEM),
+		.fpu_rm			(fpu_rm_csr),
 
-		.exc_PC(PC_MEM),
-		.exc_pend(exc_pend_MEM),
-		.exc_cause(exc_cause_MEM),
-		.exc_taken(exc_taken_csr),
+		.exc_PC			(PC_MEM),
+		.exc_pend		(exc_pend_MEM),
+		.exc_cause		(exc_cause_MEM),
+		.exc_taken		(exc_taken_csr),
 
-		.int_PC(int_PC),
-		.int_ena(!stall_int),
-		.int_req_ext(int_req_ext),
-		.int_req_ictrl(int_req_ictrl),
-		.int_req_timer(int_req_timer),
-		.int_req_soft(int_req_soft),
-		.int_taken(int_taken_csr),
+		.int_PC			(int_PC),
+		.int_ena		(!stall_irq),
+		.int_req_ext	(int_req_ext),
+		.int_req_ictrl	(int_req_ictrl),
+		.int_req_timer	(int_req_timer),
+		.int_req_soft	(int_req_soft),
+		.int_taken		(int_taken_csr),
 
-		.trap_taken(trap_taken_csr),
-		.trap_addr(trap_addr_csr),
-		.trap_ret(trap_ret_MEM),
-		.trap_raddr(trap_raddr_csr)
+		.trap_taken		(trap_taken_csr),
+		.trap_addr		(trap_addr_csr),
+		.trap_ret		(trap_ret_MEM),
+		.trap_raddr		(trap_raddr_csr)
 	);
 
 endmodule

@@ -3,12 +3,11 @@ import CPU_pkg::*;
 module int_multiplier
 #(
 	parameter		n = 32,	// data width
-	parameter		m = 8	// add stages per cycle
+	parameter		m = 1	// cycles per multiplication
 )
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -23,85 +22,72 @@ module int_multiplier
 	output	logic	[n-1:0]	y
 );
 
-	logic	[1:0]		prev_op;
-	logic	[n-1:0]		prev_a;
-	logic	[n-1:0]		prev_b;
+	logic	signed	[n:0]			a_buf, a_int;
+	logic	signed	[n:0]			b_buf, b_int;
+	logic	signed	[2*n-1:0]		y_buf[m:0];
+	logic			[1:0]			op_buf;
 
-	logic	[1:0]		reg_op;
-	logic	[n-1:0]		reg_b;
-	logic	[2*n-1:0]	reg_res;
-	logic				reg_sgn;
+	logic							stall;
 
-	logic	[n+m-1:0]	acc;
+	integer							counter;
 
-	logic				stall;
+	enum	logic	{IDLE, CALC}	state;
 
-	integer				counter;
-
-	enum	logic		{IDLE, CALC} state;
-
-	assign				prev_op		= reg_op;
-
-	assign				ready_out	= ready_in && !stall;
-	assign				stall		= state != IDLE;
+	assign							ready_out	= ready_in && !stall;
+	assign							stall		= state != IDLE;
 
 	always_comb begin
-		case (reg_op)
-		UMULL:	y	= reg_res[n-1:0];
-		UMULH:	y	= reg_res[2*n-1:n];
-		SMULH,
-		SUMULH:	y	= reg_sgn ? -reg_res[2*n-1:n] : reg_res[2*n-1:n];
+		a_int[n-1:0]	= a;
+		b_int[n-1:0]	= b;
+
+		// sign extend
+		case (op)
+		SMULH:		begin
+						a_int[n]	= a[n-1];
+						b_int[n]	= b[n-1];
+					end
+		SUMULH:		begin
+						a_int[n]	= a[n-1];
+						b_int[n]	= 1'b0;
+					end
+		default:	begin
+						a_int[n]	= 1'b0;
+						b_int[n]	= 1'b0;
+					end
 		endcase
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
-			valid_out	<= 1'b0;
-			prev_a		<= 0;
-			prev_b		<= 0;
-			reg_op		<= 2'd0;
-			reg_b		<= 0;
-			reg_res		<= 0;
-			reg_sgn		<= 1'b0;
+	always_comb begin
+		case (op_buf)
+		UMULL:		y = y_buf[m][0*n+:n];
+		default:	y = y_buf[m][1*n+:n];
+		endcase
+	end
+
+	always_ff @(posedge clk) begin
+		if (reset) begin
+			a_buf		<= 'h0;
+			b_buf		<= 'h0;
+			op_buf		<= 'h0;
 			counter		<= 0;
+			valid_out	<= 1'b0;
 			state		<= IDLE;
 		end
 
 		else if (valid_in && ready_out) begin
-			prev_a		<= a;
-			prev_b		<= b;
-			reg_op		<= op;
+			a_buf		<= a_int;
+			b_buf		<= b_int;
+			op_buf		<= op;
+			counter		<= 0;
 
-			if ((prev_op != UMULL && op == UMULL  ||
-				 prev_op == UMULL && op == UMULH) &&
-				 prev_a == a && prev_b == b) begin
+			if (a_int == a_buf && b_int == b_buf) begin
 				valid_out	<= 1'b1;
 				state		<= IDLE;
 			end
 
 			else begin
 				valid_out	<= 1'b0;
-				counter		<= 0;
 				state		<= CALC;
-
-				case (op)
-				UMULL,
-				UMULH:		begin
-								reg_b	<= b;
-								reg_res	<= {{n{1'b0}}, a};
-								reg_sgn	<= 1'b0;
-							end
-				SMULH:		begin
-								reg_b	<= b[n-1] ? -b : b;
-								reg_res	<= {{n{1'b0}}, a[n-1] ? -a : a};
-								reg_sgn	<= a[n-1] ^ b[n-1];
-							end
-				SUMULH:	begin
-								reg_b	<= b;
-								reg_res	<= {{n{1'b0}}, a[n-1] ? -a : a};
-								reg_sgn	<= a[n-1];
-							end
-				endcase
 			end
 		end
 
@@ -110,9 +96,7 @@ module int_multiplier
 						valid_out	<= 1'b0;
 					end
 			CALC:	begin
-						reg_res	<= {acc, reg_res[n-1:m]};
-
-						if (counter == n/m-1) begin
+						if (counter == m) begin
 							valid_out	<= 1'b1;
 							state		<= IDLE;
 						end
@@ -123,12 +107,15 @@ module int_multiplier
 		endcase
 	end
 
-	always_comb begin
-		acc	= {{m{1'b0}}, reg_res[2*n-1:n]};
+	always_ff @(posedge clk) begin
+		if (reset) for (integer i = 0; i < m; i = i+1)
+			y_buf[i]	<= 'h0;
 
-		for (integer i = 0; i < m; i = i+1) begin
-			if (reg_res[i])
-				acc = acc + (reg_b << i);
+		else if (state == CALC) begin
+			y_buf[0]	<= a_buf * b_buf;
+
+			for (integer i = 0; i < m; i = i+1)
+				y_buf[i+1]	<= y_buf[i];
 		end
 	end
 

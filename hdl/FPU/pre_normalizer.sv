@@ -25,7 +25,7 @@ module pre_normalizer
 			man_out = man_in << leading_zeros;
 
 			//exponent is smallest possible (-126) minus the number of shifts needed to normalize
-			exp_out = 10'h382 - {5'b0, leading_zeros};
+			exp_out = 10'h382 - leading_zeros;
 		end
 
 		else begin
@@ -33,15 +33,15 @@ module pre_normalizer
 			man_out = man_in;
 
 			//subtract bias from exponent
-			exp_out = {2'b00, exp_in[7:0]} - 10'h07f;
+			exp_out = exp_in[7:0] - 10'h07f;
 		end
 	end
 
-	leading_zero_counter_24 LZC_24_inst
+	leading_zero_counter_24 LDZC_24_inst
 	(
-		.in(man_in),
-		.y(leading_zeros),
-		.a()
+		.in	(man_in),
+		.y	(leading_zeros),
+		.a	()
 	);
 
 endmodule

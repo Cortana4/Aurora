@@ -2,7 +2,6 @@ module FPU_core
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -170,224 +169,217 @@ module FPU_core
 
 	splitter splitter_a
 	(
-		.float_in(a),
+		.float_in	(a),
 
-		.man(man_a),
-		.Exp(exp_a),
-		.sgn(sgn_a),
+		.man		(man_a),
+		.Exp		(exp_a),
+		.sgn		(sgn_a),
 
-		.zero(zero_a),
-		.inf(inf_a),
-		.sNaN(sNaN_a),
-		.qNaN(qNaN_a),
-		.denormal(denormal_a)
+		.zero		(zero_a),
+		.inf		(inf_a),
+		.sNaN		(sNaN_a),
+		.qNaN		(qNaN_a),
+		.denormal	(denormal_a)
 	);
 
 	pre_normalizer pre_normalizer_a
 	(
-		.zero(zero_a),
-		.denormal(denormal_a),
+		.zero		(zero_a),
+		.denormal	(denormal_a),
 
-		.man_in(man_a),
-		.exp_in(exp_a),
+		.man_in		(man_a),
+		.exp_in		(exp_a),
 
-		.man_out(man_a_norm),
-		.exp_out(exp_a_norm)
+		.man_out	(man_a_norm),
+		.exp_out	(exp_a_norm)
 	);
 
 	splitter splitter_b
 	(
-		.float_in(b),
+		.float_in	(b),
 
-		.man(man_b),
-		.Exp(exp_b),
-		.sgn(sgn_b),
+		.man		(man_b),
+		.Exp		(exp_b),
+		.sgn		(sgn_b),
 
-		.zero(zero_b),
-		.inf(inf_b),
-		.sNaN(sNaN_b),
-		.qNaN(qNaN_b),
-		.denormal(denormal_b)
+		.zero		(zero_b),
+		.inf		(inf_b),
+		.sNaN		(sNaN_b),
+		.qNaN		(qNaN_b),
+		.denormal	(denormal_b)
 	);
 
 	pre_normalizer pre_normalizer_b
 	(
-		.zero(zero_b),
-		.denormal(denormal_b),
+		.zero		(zero_b),
+		.denormal	(denormal_b),
 
-		.man_in(man_b),
-		.exp_in(exp_b),
+		.man_in		(man_b),
+		.exp_in		(exp_b),
 
-		.man_out(man_b_norm),
-		.exp_out(exp_b_norm)
+		.man_out	(man_b_norm),
+		.exp_out	(exp_b_norm)
 	);
 
 	float_arithmetic float_arithmetic_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_arith),
-		.valid_out(valid_out_arith),
-		.ready_in(ready_in),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_arith),
+		.valid_out	(valid_out_arith),
+		.ready_in	(ready_in),
 
-		.op(op),
-		.rm(rm),
+		.op			(op),
+		.rm			(rm),
 
-		.man_a(man_a_norm),
-		.exp_a(exp_a_norm),
-		.sgn_a(sgn_a),
-		.zero_a(zero_a),
-		.inf_a(inf_a),
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
+		.man_a		(man_a_norm),
+		.exp_a		(exp_a_norm),
+		.sgn_a		(sgn_a),
+		.zero_a		(zero_a),
+		.inf_a		(inf_a),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
 
-		.man_b(man_b_norm),
-		.exp_b(exp_b_norm),
-		.sgn_b(sgn_b),
-		.zero_b(zero_b),
-		.inf_b(inf_b),
-		.sNaN_b(sNaN_b),
-		.qNaN_b(qNaN_b),
+		.man_b		(man_b_norm),
+		.exp_b		(exp_b_norm),
+		.sgn_b		(sgn_b),
+		.zero_b		(zero_b),
+		.inf_b		(inf_b),
+		.sNaN_b		(sNaN_b),
+		.qNaN_b		(qNaN_b),
 
-		.float_out(y_arith),
+		.float_out	(y_arith),
 
-		.IV(IV_arith),
-		.DZ(DZ_arith),
-		.OF(OF_arith),
-		.UF(UF_arith),
-		.IE(IE_arith)
+		.IV			(IV_arith),
+		.DZ			(DZ_arith),
+		.OF			(OF_arith),
+		.UF			(UF_arith),
+		.IE			(IE_arith)
 	);
 
 	sign_modifier sign_modifier_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_sgn_mod),
-		.valid_out(valid_out_sgn_mod),
-		.ready_in(ready_in),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_sgn_mod),
+		.valid_out	(valid_out_sgn_mod),
+		.ready_in	(ready_in),
 
-		.op(op),
+		.op			(op),
 
-		.a(a),
-		.sgn_b(b[31]),
+		.a			(a),
+		.sgn_b		(b[31]),
 
-		.float_out(y_sgn_mod)
+		.float_out	(y_sgn_mod)
 	);
 
 	ftoi_converter ftoi_converter_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_ftoi),
-		.valid_out(valid_out_ftoi),
-		.ready_in(ready_in),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_ftoi),
+		.valid_out	(valid_out_ftoi),
+		.ready_in	(ready_in),
 
-		.op(op),
-		.rm(rm),
+		.op			(op),
+		.rm			(rm),
 
-		.man_a(man_a),
-		.exp_a(exp_a),
-		.sgn_a(sgn_a),
-		.zero_a(zero_a),
-		.inf_a(inf_a),
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
+		.man_a		(man_a),
+		.exp_a		(exp_a),
+		.sgn_a		(sgn_a),
+		.zero_a		(zero_a),
+		.inf_a		(inf_a),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
 
-		.int_out(y_ftoi),
+		.int_out	(y_ftoi),
 
-		.IV(IV_ftoi),
-		.IE(IE_ftoi)
+		.IV			(IV_ftoi),
+		.IE			(IE_ftoi)
 	);
 
 	itof_converter itof_converter_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_itof),
-		.valid_out(valid_out_itof),
-		.ready_in(ready_in),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_itof),
+		.valid_out	(valid_out_itof),
+		.ready_in	(ready_in),
 
-		.op(op),
-		.rm(rm),
+		.op			(op),
+		.rm			(rm),
 
-		.int_in(a),
-		.float_out(y_itof),
-		.IE(IE_itof)
+		.int_in		(a),
+		.float_out	(y_itof),
+		.IE			(IE_itof)
 	);
 
 	float_comparator_seq float_comparator_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_cmp),
-		.valid_out(valid_out_cmp),
-		.ready_in(ready_in),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_cmp),
+		.valid_out	(valid_out_cmp),
+		.ready_in	(ready_in),
 
-		.op(op),
+		.op			(op),
 
-		.a(a),
-		.b(b),
+		.a			(a),
+		.b			(b),
 
-		.int_out(y_cmp),
-		.IV(IV_cmp)
+		.int_out	(y_cmp),
+		.IV			(IV_cmp)
 	);
 
 	selector selector_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_sel),
-		.valid_out(valid_out_sel),
-		.ready_in(ready_in),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_sel),
+		.valid_out	(valid_out_sel),
+		.ready_in	(ready_in),
 
-		.op(op),
+		.op			(op),
 
-		.a(a),
-		.b(b),
+		.a			(a),
+		.b			(b),
 
-		.float_out(y_sel),
-		.IV(IV_sel)
+		.float_out	(y_sel),
+		.IV			(IV_sel)
 	);
 
 	classifier classifier_inst
 	(
-		.clk(clk),
-		.reset(reset),
-		.flush(flush),
+		.clk		(clk),
+		.reset		(reset),
 
-		.valid_in(valid_in),
-		.ready_out(ready_out_class),
-		.valid_out(valid_out_class),
-		.ready_in(ready_in),
+		.valid_in	(valid_in),
+		.ready_out	(ready_out_class),
+		.valid_out	(valid_out_class),
+		.ready_in	(ready_in),
 
-		.op(op),
+		.op			(op),
 
-		.sgn_a(sgn_a),
-		.zero_a(zero_a),
-		.inf_a(inf_a),
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
-		.denormal_a(denormal_a),
+		.sgn_a		(sgn_a),
+		.zero_a		(zero_a),
+		.inf_a		(inf_a),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
+		.denormal_a	(denormal_a),
 
-		.int_out(y_class)
+		.int_out	(y_class)
 	);
 
 endmodule

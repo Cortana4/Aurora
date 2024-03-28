@@ -4,7 +4,6 @@ module selector
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -31,17 +30,17 @@ module selector
 	logic	valid_in_int	= valid_in && (op == FPU_OP_MIN || op == FPU_OP_MAX);
 	assign	ready_out		= ready_in;
 
-	always_ff @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
-			valid_out	<= 1'b0;
+	always_ff @(posedge clk) begin
+		if (reset) begin
 			float_out	<= 32'h00000000;
 			IV			<= 1'b0;
+			valid_out	<= 1'b0;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out	<= 1'b1;
 			float_out	<= 32'h00000000;
 			IV			<= sNaN_a || sNaN_b;
+			valid_out	<= 1'b1;
 
 			case (op)
 			FPU_OP_MIN:	begin
@@ -77,26 +76,26 @@ module selector
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out	<= 1'b0;
 			float_out	<= 32'h00000000;
 			IV			<= 1'b0;
+			valid_out	<= 1'b0;
 		end
 	end
 
 	float_comparator_comb float_comparator_inst
 	(
-		.a(a),
-		.b(b),
+		.a			(a),
+		.b			(b),
 
-		.sNaN_a(sNaN_a),
-		.qNaN_a(qNaN_a),
-		.sNaN_b(sNaN_b),
-		.qNaN_b(qNaN_b),
+		.sNaN_a		(sNaN_a),
+		.qNaN_a		(qNaN_a),
+		.sNaN_b		(sNaN_b),
+		.qNaN_b		(qNaN_b),
 
-		.greater(greater),
-		.equal(equal),
-		.less(less),
-		.unordered()
+		.greater	(greater),
+		.equal		(equal),
+		.less		(less),
+		.unordered	()
 	);
 
 endmodule

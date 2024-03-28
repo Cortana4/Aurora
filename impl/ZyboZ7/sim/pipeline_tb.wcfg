@@ -15,13 +15,13 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="449.170 ns"></ZoomStartTime>
-      <ZoomEndTime time="646.971 ns"></ZoomEndTime>
-      <Cursor1Time time="530.000 ns"></Cursor1Time>
+      <ZoomStartTime time="50.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="467.925 ns"></ZoomEndTime>
+      <Cursor1Time time="190.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="209"></NameColumnWidth>
-      <ValueColumnWidth column_width="60"></ValueColumnWidth>
+      <NameColumnWidth column_width="207"></NameColumnWidth>
+      <ValueColumnWidth column_width="92"></ValueColumnWidth>
    </column_width_setting>
    <WVObjectSize size="4" />
    <wvobject fp_name="/pipeline_tb/clk" type="logic">
@@ -35,9 +35,11 @@
    <wvobject fp_name="group151" type="group">
       <obj_property name="label">mem interface</obj_property>
       <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
       <wvobject fp_name="group105" type="group">
          <obj_property name="label">imem write address ch</obj_property>
          <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="isExpanded"></obj_property>
          <wvobject fp_name="/pipeline_tb/imem_axi_awaddr" type="array">
             <obj_property name="ElementShortName">imem_axi_awaddr[31:0]</obj_property>
             <obj_property name="ObjectShortName">imem_axi_awaddr[31:0]</obj_property>
@@ -182,6 +184,7 @@
       <wvobject fp_name="group146" type="group">
          <obj_property name="label">dmem write data ch</obj_property>
          <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="isExpanded"></obj_property>
          <wvobject fp_name="/pipeline_tb/dmem_axi_wdata" type="array">
             <obj_property name="ElementShortName">dmem_axi_wdata[31:0]</obj_property>
             <obj_property name="ObjectShortName">dmem_axi_wdata[31:0]</obj_property>
@@ -258,6 +261,7 @@
       <wvobject fp_name="group150" type="group">
          <obj_property name="label">bram b</obj_property>
          <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="isExpanded"></obj_property>
          <wvobject fp_name="/pipeline_tb/bram_clk_b" type="logic">
             <obj_property name="ElementShortName">bram_clk_b</obj_property>
             <obj_property name="ObjectShortName">bram_clk_b</obj_property>

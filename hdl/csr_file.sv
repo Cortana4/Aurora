@@ -282,7 +282,7 @@ module csr_file
 		endcase
 	end
 
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			M_ena		<= 1'b1;		// misa
 			F_ena		<= 1'b1;

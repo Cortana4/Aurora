@@ -63,9 +63,17 @@ module ID_stage
 	output	logic	[31:0]	exc_cause_ID,
 
 	input	logic	[31:0]	PC_EX,
+	input	logic			rd_wena_EX,
+	input	logic	[5:0]	rd_addr_EX,
+	input	logic	[31:0]	rd_data_EX,
+	input	logic	[2:0]	wb_src_EX,
 	input	logic			jump_ena_EX,
 	input	logic			jump_alw_EX,
 	input	logic			jump_taken_EX,
+
+	input	logic			rd_wena_MEM,
+	input	logic	[5:0]	rd_addr_MEM,
+	input	logic	[31:0]	rd_data_MEM,
 
 	input	logic			rd_wena_WB,
 	input	logic	[5:0]	rd_addr_WB,
@@ -107,6 +115,10 @@ module ID_stage
 	logic			env_call;
 	logic			trap_ret;
 	logic			illegal_inst;
+	
+	logic	[31:0]	rs1_data_bypassed;
+	logic	[31:0]	rs2_data_bypassed;
+	logic	[31:0]	rs3_data_bypassed;
 
 	logic			exc_pend;
 	logic	[31:0]	exc_cause;
@@ -140,12 +152,8 @@ module ID_stage
 	end
 
 	// ID/EX pipeline registers
-	always_ff @(posedge clk, posedge reset) begin
+	always_ff @(posedge clk) begin
 		if (reset || flush_in) begin
-			valid_out		<= 1'b0;
-			valid_out_mul	<= 1'b0;
-			valid_out_div	<= 1'b0;
-			valid_out_fpu	<= 1'b0;
 			PC_ID			<= 32'h00000000;
 			IR_ID			<= 32'h00000000;
 			IM_ID			<= 32'h00000000;
@@ -180,13 +188,13 @@ module ID_stage
 			trap_ret_ID		<= 1'b0;
 			exc_pend_ID		<= 1'b0;
 			exc_cause_ID	<= 32'h00000000;
+			valid_out_mul	<= 1'b0;
+			valid_out_div	<= 1'b0;
+			valid_out_fpu	<= 1'b0;
+			valid_out		<= 1'b0;
 		end
 
 		else if (valid_in && ready_out && !flush_out) begin
-			valid_out		<= 1'b1;
-			valid_out_mul	<= wb_src == SEL_MUL;
-			valid_out_div	<= wb_src == SEL_DIV;
-			valid_out_fpu	<= wb_src == SEL_FPU;
 			PC_ID			<= PC_IF;
 			IR_ID			<= IR_IF;
 			IM_ID			<= immediate;
@@ -221,13 +229,13 @@ module ID_stage
 			trap_ret_ID		<= trap_ret;
 			exc_pend_ID		<= exc_pend;
 			exc_cause_ID	<= exc_cause;
+			valid_out_mul	<= wb_src == SEL_MUL;
+			valid_out_div	<= wb_src == SEL_DIV;
+			valid_out_fpu	<= wb_src == SEL_FPU;
+			valid_out		<= 1'b1;
 		end
 
 		else if (valid_out && ready_in) begin
-			valid_out		<= 1'b0;
-			valid_out_mul	<= 1'b0;
-			valid_out_div	<= 1'b0;
-			valid_out_fpu	<= 1'b0;
 			PC_ID			<= 32'h00000000;
 			IR_ID			<= 32'h00000000;
 			IM_ID			<= 32'h00000000;
@@ -262,9 +270,17 @@ module ID_stage
 			trap_ret_ID		<= 1'b0;
 			exc_pend_ID		<= 1'b0;
 			exc_cause_ID	<= 32'h00000000;
+			valid_out_mul	<= 1'b0;
+			valid_out_div	<= 1'b0;
+			valid_out_fpu	<= 1'b0;
+			valid_out		<= 1'b0;
 		end
 
 		else begin
+			rs1_data_ID		<= rs1_data_bypassed;
+			rs2_data_ID		<= rs2_data_bypassed;
+			rs3_data_ID		<= rs3_data_bypassed;
+
 			if (valid_out_mul && ready_in_mul)
 				valid_out_mul	<= 1'b0;
 
@@ -275,88 +291,112 @@ module ID_stage
 				valid_out_fpu	<= 1'b0;
 		end
 	end
+	
+	bypass_logic bypass_logic_inst
+	(
+		.rs1_rena_ID		(rs1_rena_ID),
+		.rs1_addr_ID		(rs1_addr_ID),
+		.rs1_data_ID		(rs1_data_ID),
+		.rs2_rena_ID		(rs2_rena_ID),
+		.rs2_addr_ID		(rs2_addr_ID),
+		.rs2_data_ID		(rs2_data_ID),
+		.rs3_rena_ID		(rs3_rena_ID),
+		.rs3_addr_ID		(rs3_addr_ID),
+		.rs3_data_ID		(rs3_data_ID),
+
+		.rd_wena_EX			(rd_wena_EX),
+		.rd_addr_EX			(rd_addr_EX),
+		.rd_data_EX			(rd_data_EX),
+		.wb_src_EX			(wb_src_EX),
+
+		.rd_wena_MEM		(rd_wena_MEM),
+		.rd_addr_MEM		(rd_addr_MEM),
+		.rd_data_MEM		(rd_data_MEM),
+
+		.rs1_data			(rs1_data_bypassed),
+		.rs2_data			(rs2_data_bypassed),
+		.rs3_data			(rs3_data_bypassed),
+		.rd_after_ld_hazard	()
+	);
 
 	inst_decoder inst_decoder_inst
 	(
-		.IR_IF(IR_IF),
+		.IR_IF				(IR_IF),
 
-		.M_ena(M_ena_csr),
-		.F_ena(F_ena_csr),
+		.M_ena				(M_ena_csr),
+		.F_ena				(F_ena_csr),
 
-		.immediate(immediate),
-		.rs1_rena(rs1_rena),
-		.rs1_addr(rs1_addr),
-		.rs2_rena(rs2_rena),
-		.rs2_addr(rs2_addr),
-		.rs3_rena(rs3_rena),
-		.rs3_addr(rs3_addr),
-		.rd_wena(rd_wena),
-		.rd_addr(rd_addr),
-		.csr_addr(csr_addr),
-		.csr_rena(csr_rena),
-		.csr_wena(csr_wena),
-		.sel_PC(sel_PC),
-		.sel_IM(sel_IM),
-		.wb_src(wb_src),
-		.alu_op(alu_op),
-		.mem_op(mem_op),
-		.csr_op(csr_op),
-		.mul_op(mul_op),
-		.div_op(div_op),
-		.fpu_op(fpu_op),
-		.fpu_rm(fpu_rm),
-		.jump_ena(jump_ena),
-		.jump_ind(jump_ind),
-		.jump_alw(jump_alw),
-		.env_call(env_call),
-		.trap_ret(trap_ret),
-		.illegal_inst(illegal_inst)
+		.immediate			(immediate),
+		.rs1_rena			(rs1_rena),
+		.rs1_addr			(rs1_addr),
+		.rs2_rena			(rs2_rena),
+		.rs2_addr			(rs2_addr),
+		.rs3_rena			(rs3_rena),
+		.rs3_addr			(rs3_addr),
+		.rd_wena			(rd_wena),
+		.rd_addr			(rd_addr),
+		.csr_addr			(csr_addr),
+		.csr_rena			(csr_rena),
+		.csr_wena			(csr_wena),
+		.sel_PC				(sel_PC),
+		.sel_IM				(sel_IM),
+		.wb_src				(wb_src),
+		.alu_op				(alu_op),
+		.mem_op				(mem_op),
+		.csr_op				(csr_op),
+		.mul_op				(mul_op),
+		.div_op				(div_op),
+		.fpu_op				(fpu_op),
+		.fpu_rm				(fpu_rm),
+		.jump_ena			(jump_ena),
+		.jump_ind			(jump_ind),
+		.jump_alw			(jump_alw),
+		.env_call			(env_call),
+		.trap_ret			(trap_ret),
+		.illegal_inst		(illegal_inst)
 	);
 
-	branch_predictor #(6, 1) branch_predictor_inst
+	branch_predictor #(6) branch_predictor_inst
 	(
-		.clk(clk),
-		.reset(reset),
+		.clk				(clk),
+		.reset				(reset),
 
-		.valid_in(valid_in),
-		.ready_in(ready_in),
+		.trap_raddr_csr		(trap_raddr_csr),
 
-		.trap_raddr_csr(trap_raddr_csr),
+		.PC_IF				(PC_IF),
+		.IM_IF				(immediate),
+		.jump_ena_IF		(jump_ena),
+		.jump_alw_IF		(jump_alw),
+		.jump_ind_IF		(jump_ind),
+		.trap_ret_IF		(trap_ret),
+		.jump_pred_IF		(jump_pred_IF),
+		.jump_addr_IF		(jump_addr_IF),
 
-		.PC_IF(PC_IF),
-		.IM_IF(immediate),
-		.jump_ena_IF(jump_ena),
-		.jump_alw_IF(jump_alw),
-		.jump_ind_IF(jump_ind),
-		.trap_ret_IF(trap_ret),
-		.jump_pred_IF(jump_pred_IF),
-		.jump_addr_IF(jump_addr_IF),
-
-		.PC_EX(PC_EX),
-		.jump_ena_EX(jump_ena_EX),
-		.jump_alw_EX(jump_alw_EX),
-		.jump_taken_EX(jump_taken_EX)
+		.PC_EX				(PC_EX),
+		.jump_ena_EX		(jump_ena_EX),
+		.jump_alw_EX		(jump_alw_EX),
+		.jump_taken_EX		(jump_taken_EX)
 	);
 
 	reg_file reg_file_inst
 	(
-		.clk(clk),
+		.clk				(clk),
 
-		.rd_wena(rd_wena_WB),
-		.rd_addr(rd_addr_WB),
-		.rd_data(rd_data_WB),
+		.rd_wena			(rd_wena_WB),
+		.rd_addr			(rd_addr_WB),
+		.rd_data			(rd_data_WB),
 
-		.rs1_rena(rs1_rena),
-		.rs1_addr(rs1_addr),
-		.rs1_data(rs1_data),
+		.rs1_rena			(rs1_rena),
+		.rs1_addr			(rs1_addr),
+		.rs1_data			(rs1_data),
 
-		.rs2_rena(rs2_rena),
-		.rs2_addr(rs2_addr),
-		.rs2_data(rs2_data),
+		.rs2_rena			(rs2_rena),
+		.rs2_addr			(rs2_addr),
+		.rs2_data			(rs2_data),
 
-		.rs3_rena(rs3_rena),
-		.rs3_addr(rs3_addr),
-		.rs3_data(rs3_data)
+		.rs3_rena			(rs3_rena),
+		.rs3_addr			(rs3_addr),
+		.rs3_data			(rs3_data)
 	);
 
 endmodule

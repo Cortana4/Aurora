@@ -1,10 +1,12 @@
 import FPU_pkg::*;
 
 module float_multiplier
+#(
+	parameter				m = 1	// cycles per multiplication
+)
 (
 	input	logic			clk,
 	input	logic			reset,
-	input	logic			flush,
 
 	input	logic			valid_in,
 	output	logic			ready_out,
@@ -43,16 +45,17 @@ module float_multiplier
 	output	logic	[2:0]	rm_out
 );
 
-	logic	[23:0]	reg_man_b;
-	logic	[47:0]	reg_res;
-	logic	[9:0]	reg_exp_y;
-	logic			reg_sgn_y;
-	logic	[1:0]	counter;
-
-	logic	[29:0]	acc;
+	logic	[23:0]	man_a_buf;
+	logic	[23:0]	man_b_buf;
+	logic	[47:0]	man_y_buf[m:0];
+	logic	[47:0]	man_y_exc;
+	logic	[9:0]	exp_y_buf;
+	logic			sgn_y_buf;
 
 	logic			valid_in_int;
 	logic			stall;
+	
+	integer			counter;
 
 	enum	logic	{IDLE, CALC} state;
 
@@ -61,116 +64,131 @@ module float_multiplier
 	assign			stall			= state != IDLE;
 
 	always_comb begin
-		if (reg_res[47] || skip_round) begin
-			sgn_y		= reg_sgn_y;
-			exp_y		= reg_exp_y + !skip_round;
-			man_y		= reg_res[47:24];
-			round_bit	= reg_res[23];
-			sticky_bit	= |reg_res[22:0];
+		if (skip_round) begin
+			sgn_y		= sgn_y_buf;
+			exp_y		= exp_y_buf;
+			man_y		= man_y_exc[47:24];
+			round_bit	= 1'b0;
+			sticky_bit	= 1'b0;
+		end
+
+		else if (man_y_buf[m][47]) begin
+			sgn_y		= sgn_y_buf;
+			exp_y		= exp_y_buf + 10'd1;
+			man_y		= man_y_buf[m][47:24];
+			round_bit	= man_y_buf[m][23];
+			sticky_bit	= |man_y_buf[m][22:0];
 		end
 
 		else begin
-			sgn_y		= reg_sgn_y;
-			exp_y		= reg_exp_y;
-			man_y		= reg_res[46:23];
-			round_bit	= reg_res[22];
-			sticky_bit	= |reg_res[21:0];
+			sgn_y		= sgn_y_buf;
+			exp_y		= exp_y_buf;
+			man_y		= man_y_buf[m][46:23];
+			round_bit	= man_y_buf[m][22];
+			sticky_bit	= |man_y_buf[m][21:0];
 		end
 	end
 
-	always @(posedge clk, posedge reset) begin
-		if (reset || flush) begin
-			valid_out	<= 1'b0;
-			reg_man_b	<= 24'h000000;
-			reg_res		<= 48'h000000000000;
-			reg_exp_y	<= 10'h000;
-			reg_sgn_y	<= 1'b0;
+	always @(posedge clk) begin
+		if (reset) begin
+			man_a_buf	<= 24'h000000;
+			man_b_buf	<= 24'h000000;
+			man_y_exc	<= 48'h000000000000;
+			exp_y_buf	<= 10'h000;
+			sgn_y_buf	<= 1'b0;
 			skip_round	<= 1'b0;
 			IV			<= 1'b0;
 			rm_out		<= 3'b000;
-			counter		<= 2'd0;
+			counter		<= 0;
+			valid_out	<= 1'b0;
 			state		<= IDLE;
 		end
 
 		else if (valid_in_int && ready_out) begin
-			valid_out	<= 1'b0;
-			reg_man_b	<= man_b;
-			reg_res		<= {24'h000000, man_a};
-			reg_exp_y	<= exp_a + exp_b;
-			reg_sgn_y	<= sgn_a ^ sgn_b;
+			man_a_buf	<= man_a;
+			man_b_buf	<= man_b;
+			man_y_exc	<= 48'h000000000000;
+			exp_y_buf	<= exp_a + exp_b;
+			sgn_y_buf	<= sgn_a ^ sgn_b;
 			skip_round	<= 1'b0;
 			IV			<= 1'b0;
 			rm_out		<= rm;
-			counter		<= 2'd0;
+			counter		<= 0;
+			valid_out	<= 1'b0;
 			state		<= CALC;
 
 			// NaN
 			if (sNaN_a || sNaN_b || qNaN_a || qNaN_b ||
 				(zero_a && inf_b) || (inf_a && zero_b)) begin
-				valid_out	<= 1'b1;
-				reg_man_b	<= 24'h000000;
-				reg_res		<= {24'hc00000, 24'h000000};
-				reg_exp_y	<= 10'h0ff;
-				reg_sgn_y	<= 1'b0;
+				man_a_buf	<= 24'h000000;
+				man_b_buf	<= 24'h000000;
+				man_y_exc	<= {24'hc00000, 24'h000000};
+				exp_y_buf	<= 10'h0ff;
+				sgn_y_buf	<= 1'b0;
 				skip_round	<= 1'b1;
 				IV			<= ~(qNaN_a || qNaN_b);
+				valid_out	<= 1'b1;
 				state		<= IDLE;
 			end
 			// inf
 			else if (inf_a || inf_b) begin
-				valid_out	<= 1'b1;
-				reg_man_b	<= 24'h000000;
-				reg_res		<= {24'h800000, 24'h000000};
-				reg_exp_y	<= 10'h0ff;
-				reg_sgn_y	<= sgn_a ^ sgn_b;
+				man_a_buf	<= 24'h000000;
+				man_b_buf	<= 24'h000000;
+				man_y_exc	<= {24'h800000, 24'h000000};
+				exp_y_buf	<= 10'h0ff;
+				sgn_y_buf	<= sgn_a ^ sgn_b;
 				skip_round	<= 1'b1;
+				valid_out	<= 1'b1;
 				state		<= IDLE;
 			end
 			// zero
 			else if (zero_a || zero_b) begin
-				valid_out	<= 1'b1;
-				reg_man_b	<= 24'h000000;
-				reg_res		<= {24'h000000, 24'h000000};
-				reg_exp_y	<= 10'h000;
-				reg_sgn_y	<= sgn_a ^ sgn_b;
+				man_a_buf	<= 24'h000000;
+				man_b_buf	<= 24'h000000;
+				man_y_exc	<= 48'h000000000000;
+				exp_y_buf	<= 10'h000;
+				sgn_y_buf	<= sgn_a ^ sgn_b;
 				skip_round	<= 1'b1;
+				valid_out	<= 1'b1;
 				state		<= IDLE;
 			end
 		end
 
 		else case (state)
 			IDLE:	if (valid_out && ready_in) begin
-						valid_out	<= 1'b0;
-						reg_man_b	<= 24'h000000;
-						reg_res		<= 48'h000000000000;
-						reg_exp_y	<= 10'h000;
-						reg_sgn_y	<= 1'b0;
+						man_a_buf	<= 24'h000000;
+						man_b_buf	<= 24'h000000;
+						man_y_exc	<= 48'h000000000000;
+						exp_y_buf	<= 10'h000;
+						sgn_y_buf	<= 1'b0;
 						skip_round	<= 1'b0;
 						IV			<= 1'b0;
 						rm_out		<= 3'b000;
-						counter		<= 2'd0;
+						counter		<= 0;
+						valid_out	<= 1'b0;
 					end
 
 			CALC:	begin
-						reg_res		<= {acc, reg_res[23:6]};
-
-						if (counter == 2'd3) begin
+						if (counter == m) begin
 							valid_out	<= 1'b1;
 							state		<= IDLE;
 						end
 
 						else
-							counter		<= counter + 2'd1;
+							counter		<= counter + 1;
 					end
 		endcase
 	end
 
-	always_comb begin
-		acc	= {6'b000000, reg_res[47:24]};
+	always_ff @(posedge clk) begin
+		if (reset) for (integer i = 0; i < m; i = i+1)
+			man_y_buf[i]	<= 48'h000000000000;
 
-		for (integer i = 0; i < 6; i = i+1) begin
-			if (reg_res[i])
-				acc = acc + (reg_man_b << i);
+		else if (state == CALC) begin
+			man_y_buf[0]	<= man_a_buf * man_b_buf;
+
+			for (integer i = 0; i < m; i = i+1)
+				man_y_buf[i+1]	<= man_y_buf[i];
 		end
 	end
 
